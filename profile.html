@@ -499,30 +499,112 @@
             window.location.href = 'index.html';
         }
 
-        // --- TICKET LOGIC ---
+        // --- TICKET & SECURITY LOGIC ---
         function switchTab(tab) {
             const ordersBtn = document.getElementById('btn-orders');
             const supportBtn = document.getElementById('btn-support');
-            const ordersSec = document.getElementById('order-list').parentElement; // Main Content H1 Wrapper
+            const securityBtn = document.getElementById('btn-security');
+
+            const ordersSec = document.getElementById('order-list');
+            const ordersHeader = document.querySelector('.lg\\:col-span-3 h1').parentElement; // Title Wrapper            
             const supportSec = document.getElementById('support-section');
-            const header = document.querySelector('.lg\\:col-span-3 h1'); // Header Title
+            const securitySec = document.getElementById('security-section');
+
+            // Reset Classes
+            const inactiveClass = "w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3";
+            const activeClass = "w-full text-left px-4 py-3 rounded-xl bg-brand-600 text-white font-bold transition-all flex items-center gap-3 shadow-lg shadow-brand-500/20";
+
+            if (ordersBtn) ordersBtn.className = inactiveClass;
+            if (supportBtn) supportBtn.className = inactiveClass;
+            if (securityBtn) securityBtn.className = inactiveClass;
+
+            if (ordersSec) ordersSec.classList.add('hidden');
+            if (ordersHeader) ordersHeader.classList.add('hidden');
+            if (supportSec) supportSec.classList.add('hidden');
+            if (securitySec) securitySec.classList.add('hidden');
 
             if (tab === 'support') {
-                ordersBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3";
-                supportBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-brand-600 text-white font-bold transition-all flex items-center gap-3 shadow-lg shadow-brand-500/20";
-
-                // Hide Orders, Show Support
-                document.getElementById('order-list').classList.add('hidden');
-                header.parentElement.classList.add('hidden'); // Hide Order Header
-                supportSec.classList.remove('hidden');
+                if (supportBtn) supportBtn.className = activeClass;
+                if (supportSec) supportSec.classList.remove('hidden');
+            } else if (tab === 'security') {
+                if (securityBtn) securityBtn.className = activeClass;
+                if (securitySec) securitySec.classList.remove('hidden');
             } else {
-                ordersBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-brand-600 text-white font-bold transition-all flex items-center gap-3 shadow-lg shadow-brand-500/20";
-                supportBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3";
-
-                document.getElementById('order-list').classList.remove('hidden');
-                header.parentElement.classList.remove('hidden');
-                supportSec.classList.add('hidden');
+                if (ordersBtn) ordersBtn.className = activeClass;
+                if (ordersSec) ordersSec.classList.remove('hidden');
+                if (ordersHeader) ordersHeader.classList.remove('hidden');
             }
+        }
+
+        async function changePassword(e) {
+            e.preventDefault();
+            const oldPass = document.getElementById('cp-old').value;
+            const newPass = document.getElementById('cp-new').value;
+            const confirmPass = document.getElementById('cp-confirm').value;
+            const btn = document.getElementById('cp-btn');
+
+            if (newPass.length < 4) return showNotification("Password must be at least 4 characters long.", "error");
+            if (newPass !== confirmPass) return showNotification("New passwords do not match!", "error");
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            const originalText = btn.innerText;
+            btn.innerText = "Updating...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('api/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id, email: user.email, oldPass, newPass })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    showNotification("Password Updated Successfully! Please login again.", "success");
+                    setTimeout(() => logoutUser(), 2000);
+                } else {
+                    showNotification(result.message || "Failed to update password", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification("Server Error", "error");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // --- CUSTOM NOTIFICATION LOGIC ---
+        function showNotification(msg, type = "success") {
+            const modal = document.getElementById('custom-alert');
+            const icon = document.getElementById('alert-icon');
+            const bg = document.getElementById('alert-icon-bg');
+            const title = document.getElementById('alert-title');
+
+            if (!modal) return alert(msg); // Fallback
+
+            document.getElementById('alert-msg').innerText = msg;
+
+            modal.style.pointerEvents = "auto";
+            modal.style.opacity = "1";
+            modal.children[1].style.transform = "scale(1)";
+
+            if (type === "success") {
+                icon.className = "fa-solid fa-check text-emerald-400 text-3xl";
+                bg.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20";
+                title.innerText = "Success";
+            } else {
+                icon.className = "fa-solid fa-xmark text-red-400 text-3xl";
+                bg.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/20";
+                title.innerText = "Error";
+            }
+        }
+
+        function closeAlert() {
+            const modal = document.getElementById('custom-alert');
+            modal.style.opacity = "0";
+            modal.style.pointerEvents = "none";
+            modal.children[1].style.transform = "scale(0.9)";
         }
 
         let base64Image = "";
