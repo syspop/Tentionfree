@@ -143,90 +143,106 @@
                 </div>
             </div>
 
-            <!-- Main Content: Orders -->
-            <div class="lg:col-span-3">
-                <div class="flex items-center justify-between mb-8">
-                    <h1 class="text-3xl font-bold flex items-center gap-3">
+            <!-- Sidebar Menu -->
+            <div class="mt-6 space-y-2">
+                <button onclick="switchTab('orders')" id="btn-orders"
+                    class="w-full text-left px-4 py-3 rounded-xl bg-brand-600 text-white font-bold transition-all flex items-center gap-3 shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-list-check"></i> Orders
+                </button>
+                <button onclick="switchTab('support')" id="btn-support"
+                    class="w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3">
+                    <i class="fa-solid fa-headset"></i> Support
+                </button>
+                <button onclick="switchTab('security')" id="btn-security"
+                    class="w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3">
+                    <i class="fa-solid fa-shield-halved"></i> Security
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content: Orders -->
+        <div class="lg:col-span-3">
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-3xl font-bold flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    Order History
+                </h1>
+                <button onclick="location.href='products.html'"
+                    class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-cart-shopping"></i> New Order
+                </button>
+            </div>
+
+            <div id="order-list" class="space-y-4">
+                <!-- Loading Skeleton -->
+                <div class="glass-panel p-8 rounded-2xl text-center text-slate-400 animate-pulse">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 block"></i>
+                    Fetching your purchase history...
+                </div>
+            </div>
+
+            <!-- Support Section (Hidden by default) -->
+            <div id="support-section" class="hidden animate-[fadeInUp_0.3s_ease-out]">
+                <div class="glass-panel p-8 rounded-3xl border border-white/5">
+                    <div class="text-center mb-8">
                         <div
-                            class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
-                            <i class="fa-solid fa-layer-group"></i>
+                            class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-400 border border-blue-500/20">
+                            <i class="fa-solid fa-life-ring text-3xl"></i>
                         </div>
-                        Order History
-                    </h1>
-                    <button onclick="location.href='products.html'"
-                        class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-cart-shopping"></i> New Order
-                    </button>
-                </div>
-
-                <div id="order-list" class="space-y-4">
-                    <!-- Loading Skeleton -->
-                    <div class="glass-panel p-8 rounded-2xl text-center text-slate-400 animate-pulse">
-                        <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 block"></i>
-                        Fetching your purchase history...
+                        <h2 class="text-2xl font-bold text-white mb-2">Need Help?</h2>
+                        <p class="text-slate-400 text-sm">Submit a ticket and our team will fix it promptly.</p>
                     </div>
-                </div>
 
-                <!-- Support Section (Hidden by default) -->
-                <div id="support-section" class="hidden animate-[fadeInUp_0.3s_ease-out]">
-                    <div class="glass-panel p-8 rounded-3xl border border-white/5">
-                        <div class="text-center mb-8">
-                            <div
-                                class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-400 border border-blue-500/20">
-                                <i class="fa-solid fa-life-ring text-3xl"></i>
-                            </div>
-                            <h2 class="text-2xl font-bold text-white mb-2">Need Help?</h2>
-                            <p class="text-slate-400 text-sm">Submit a ticket and our team will fix it promptly.</p>
+                    <form onsubmit="submitTicket(event)" class="space-y-5 max-w-lg mx-auto">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Subject</label>
+                            <select id="t-subject"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none">
+                                <option value="Delivery Issue">Order Not Received</option>
+                                <option value="Login Issue">Account/Login Issue</option>
+                                <option value="Payment Issue">Payment Problem</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
 
-                        <form onsubmit="submitTicket(event)" class="space-y-5 max-w-lg mx-auto">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Subject</label>
-                                <select id="t-subject"
-                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none">
-                                    <option value="Delivery Issue">Order Not Received</option>
-                                    <option value="Login Issue">Account/Login Issue</option>
-                                    <option value="Payment Issue">Payment Problem</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Description</label>
+                            <textarea id="t-desc" rows="4"
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none"
+                                placeholder="Describe your issue..." required></textarea>
+                        </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Description</label>
-                                <textarea id="t-desc" rows="4"
-                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none"
-                                    placeholder="Describe your issue..." required></textarea>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Screenshot
+                                (Optional)</label>
+                            <div class="relative">
+                                <input type="file" id="t-file" accept="image/*" class="hidden"
+                                    onchange="previewImage(this)">
+                                <label for="t-file"
+                                    class="flex items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 hover:bg-slate-800/50 transition-all group"
+                                    id="drop-zone">
+                                    <div class="text-center" id="upload-prompt">
+                                        <i
+                                            class="fa-solid fa-cloud-upload-alt text-2xl text-slate-500 group-hover:text-brand-400 mb-2"></i>
+                                        <p class="text-xs text-slate-500">Click to upload image</p>
+                                    </div>
+                                    <img id="img-preview" class="hidden h-full w-full object-contain rounded-lg p-2">
+                                </label>
                             </div>
+                        </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Screenshot
-                                    (Optional)</label>
-                                <div class="relative">
-                                    <input type="file" id="t-file" accept="image/*" class="hidden"
-                                        onchange="previewImage(this)">
-                                    <label for="t-file"
-                                        class="flex items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 hover:bg-slate-800/50 transition-all group"
-                                        id="drop-zone">
-                                        <div class="text-center" id="upload-prompt">
-                                            <i
-                                                class="fa-solid fa-cloud-upload-alt text-2xl text-slate-500 group-hover:text-brand-400 mb-2"></i>
-                                            <p class="text-xs text-slate-500">Click to upload image</p>
-                                        </div>
-                                        <img id="img-preview"
-                                            class="hidden h-full w-full object-contain rounded-lg p-2">
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button type="submit" id="submit-btn"
-                                class="w-full bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all">
-                                Submit Ticket
-                            </button>
-                        </form>
-                    </div>
+                        <button type="submit" id="submit-btn"
+                            class="w-full bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all">
+                            Submit Ticket
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <script>
