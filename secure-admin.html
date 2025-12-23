@@ -420,7 +420,7 @@
     <div class="admin-box" id="main-content" style="display:none;">
         <div style="text-align:right;">
             <button onclick="logout()"
-                style="background:none; border:none; color:var(--red); cursor:pointer; font-size:12px;">ðŸ”’
+                style="background:none; border:none; color:var(--red); cursor:pointer; font-size:12px;">🔒
                 Logout</button>
         </div>
         <h2>Admin Center</h2>
@@ -438,13 +438,13 @@
 
         <!-- Dashboard Section -->
         <div id="dashboard-sec" class="section active">
-            <h3>ðŸ“Š Business Overview</h3>
+            <h3>📊 Business Overview</h3>
 
             <div class="dash-grid">
                 <div class="stat-card">
                     <i class="fa-solid fa-bangladeshi-taka-sign stat-icon" style="color:#00b894;"></i>
                     <div class="stat-label">Total Revenue</div>
-                    <div class="stat-value" id="dash-revenue">à§³0</div>
+                    <div class="stat-value" id="dash-revenue">৳0</div>
                     <div style="color:#00b894; font-size:12px;">Lifetime Earnings</div>
                 </div>
                 <div class="stat-card">
@@ -561,7 +561,7 @@
         <!-- Order History Section -->
         <div id="order-history-sec" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>ðŸ“œ Order History</h3>
+                <h3>📜 Order History</h3>
                 <input type="text" id="history-search" class="input-box" placeholder="Search Order ID..."
                     style="margin:0; width:200px; padding:8px;" onkeyup="filterHistory()">
             </div>
@@ -584,7 +584,7 @@
         <!-- Manage Products Section -->
         <div id="manage-sec" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>ðŸ“‹ Product List</h3>
+                <h3>📋 Product List</h3>
                 <div>
                     <button id="btn-reorder" onclick="toggleReorder()" class="action-btn"
                         style="background:#e67e22; margin-right:5px;">Enable Reorder</button>
@@ -1995,7 +1995,7 @@
         // --- TICKET LOGIC ---
         async function loadTickets() {
             const list = document.getElementById('ticket-list');
-            if(!list) return;
+            if (!list) return;
             list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Tickets...</td></tr>";
 
             try {
@@ -2055,7 +2055,7 @@
         }
 
         async function resolveTicket(id) {
-            if(!confirm("Mark this ticket as Solved? It will be removed.")) return;
+            if (!confirm("Mark this ticket as Solved? It will be removed.")) return;
             // For now, solve = delete.
             deleteTicket(id);
         }
@@ -2064,16 +2064,17 @@
             try {
                 const res = await fetch('api/tickets/' + id, { method: 'DELETE' });
                 const result = await res.json();
-                if(result.success) {
+                if (result.success) {
                     loadTickets();
                 } else {
                     alert("Failed to delete ticket.");
                 }
-            } catch(e) {
+            } catch (e) {
                 console.error(e);
                 alert("Server Error");
             }
         }
     </script>
 </body>
+
 </html>
