@@ -609,12 +609,12 @@
         <!-- Customer Section -->
         <div id="customers-sec" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>ðŸ‘¥ Customer Database</h3>
+                <h3>👥 Customer Database</h3>
                 <div style="display:flex; gap:10px;">
                     <input type="text" id="cust-search" class="input-box" placeholder="Search Name, Email, ID..."
                         style="margin:0; width:250px; padding:8px;" onkeyup="renderCustomers()">
                     <button onclick="loadCustomers()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">â†»
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
                         Refresh</button>
                 </div>
             </div>
@@ -634,9 +634,9 @@
             <!-- Ticket Section -->
             <div id="tickets-sec" class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>ðŸŽ« Support Tickets</h3>
+                    <h3>🎫 Support Tickets</h3>
                     <button onclick="loadTickets()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">â†»
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
                         Refresh</button>
                 </div>
 
@@ -769,7 +769,7 @@
 
                 // 2. Update Cards
                 // Animate Numbers
-                animateValue("dash-revenue", 0, totalRevenue, 1000, "à§³");
+                animateValue("dash-revenue", 0, totalRevenue, 1000, "৳");
                 animateValue("dash-orders", 0, totalOrders, 1000, "");
                 animateValue("dash-users", 0, totalUsers, 1000, "");
 
@@ -823,7 +823,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Revenue (à§³)',
+                        label: 'Revenue (৳)',
                         data: data,
                         borderColor: '#6c5ce7',
                         backgroundColor: 'rgba(108, 92, 231, 0.1)',
@@ -878,8 +878,8 @@
                 <tr>
                     <td style="padding:10px; border-bottom:1px solid #eee;">${item.name} <br><small>${item.variant || ''}</small></td>
                     <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.qty}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">à§³${item.price}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">à§³${item.price * item.qty}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price * item.qty}</td>
                 </tr>
             `).join('');
 
@@ -939,7 +939,7 @@
                     </table>
 
                     <div class="total">
-                        Total Amount: à§³${order.totalAmount}
+                        Total Amount: ৳${order.totalAmount}
                     </div>
 
                     <div class="footer">
@@ -983,7 +983,7 @@
                 <input type="text" placeholder="Label (e.g. 1 Month)" class="input-box" style="margin:0" value="${label}">
                 <input type="number" placeholder="Price" class="input-box" style="margin:0" value="${price}">
                 <input type="number" placeholder="Org. Price" class="input-box" style="margin:0" value="${original}">
-                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">Ã—</button>
+                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
             `;
             container.appendChild(div);
         }
@@ -1134,7 +1134,7 @@
             );
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>âœ… All clear! No active orders.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>✅ All clear! No active orders.</div></td></tr>";
                 return;
             }
 
@@ -1175,7 +1175,7 @@
             );
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='5'><div class='empty-state'>ðŸ“œ No order history found.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='5'><div class='empty-state'>📜 No order history found.</div></td></tr>";
                 return;
             }
 
@@ -1188,7 +1188,7 @@
                         <td><small>${o.date}</small></td>
                         <td><b>${o.customer}</b></td>
                         <td><b>#${o.id}</b></td>
-                        <td>à§³${o.price}</td>
+                        <td>৳${o.price}</td>
                         <td>${statusBadge}</td>
                     </tr>
                 `;
@@ -1357,7 +1357,7 @@
             );
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>ðŸ” No customers found matching your search.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>🔍 No customers found matching your search.</div></td></tr>";
                 return;
             }
 
@@ -1371,8 +1371,8 @@
                             <b>${u.name}</b>
                         </td>
                         <td>
-                            <div style="font-size:13px;">ðŸ“§ ${u.email}</div>
-                            <div style="font-size:13px; color:var(--gray); margin-top:2px;">ðŸ“ž ${u.phone}</div>
+                            <div style="font-size:13px;">📧 ${u.email}</div>
+                            <div style="font-size:13px; color:var(--gray); margin-top:2px;">📞 ${u.phone}</div>
                         </td>
                         <td>
                             <span style="color:var(--gray); font-size:13px;">${(u.joined || u.created_at || 'N/A').split('T')[0]}</span>
@@ -1471,7 +1471,7 @@
                     <div style="margin-bottom: 12px;">${itemsHtml}</div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <div style="font-size: 16px; font-weight: bold; color: white;">à§³${o.price}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: white;">৳${o.price}</div>
                         <div style="font-size: 11px; font-weight: bold; color: ${statusColor}; text-transform: uppercase; border: 1px solid ${statusColor}33; background: ${statusColor}11; padding: 2px 8px; border-radius: 20px;">
                             ${o.status}
                         </div>
@@ -1525,7 +1525,7 @@
                 products.forEach((p, index) => {
                     list.innerHTML += `
                 <tr data-id="${p.id}">
-                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">â˜°</td>
+                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
                     <td><img src="${p.image}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
                     <td>
                         <b>${p.name}</b><br>
@@ -1689,7 +1689,7 @@
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
         <div
             style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
-            <h3 style="color:var(--red); margin-top:0;">âš ï¸ Cancel Order</h3>
+            <h3 style="color:var(--red); margin-top:0;">⚠️ Cancel Order</h3>
             <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Please provide a reason for cancellation.
                 This will be visible to the customer.</p>
 
@@ -1710,7 +1710,7 @@
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
         <div
             style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
-            <h3 style="color:var(--green); margin-top:0;">âœ… Complete Order</h3>
+            <h3 style="color:var(--green); margin-top:0;">✅ Complete Order</h3>
             <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Optional: Provide delivery details (e.g.
                 credentials, codes). <br>This will be visible to the customer.</p>
 
@@ -1763,7 +1763,7 @@
                 if (order.items && Array.isArray(order.items) && order.items.length > 0) {
                     itemsHtml = '<ul style="padding-left:20px; margin:5px 0;">';
                     order.items.forEach(item => {
-                        itemsHtml += `<li>${item.name} <span style="color:var(--blue)">x${item.quantity}</span> - à§³${item.price * item.quantity}</li>`;
+                        itemsHtml += `<li>${item.name} <span style="color:var(--blue)">x${item.quantity}</span> - ৳${item.price * item.quantity}</li>`;
                     });
                     itemsHtml += '</ul>';
                 } else {
@@ -1783,21 +1783,21 @@
                     </div>
 
                     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:15px;">
-                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">ðŸ‘¤ Customer Info</strong>
+                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">👤 Customer Info</strong>
                         <div><strong>Name:</strong> ${order.customer}</div>
                         <div><strong>Phone:</strong> ${order.phone}</div>
                         <div><strong>Email:</strong> ${order.email}</div>
-                        ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="margin-top:5px; color:#fdcb6e;"><strong>ðŸŽ® Game UID:</strong> ${order.gameUid}</div>` : ''}
+                        ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="margin-top:5px; color:#fdcb6e;"><strong>🎮 Game UID:</strong> ${order.gameUid}</div>` : ''}
                     </div>
 
                     <div style="margin-bottom:15px;">
-                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">ðŸ›’ Items</strong>
+                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">🛒 Items</strong>
                         ${itemsHtml}
-                        <div style="text-align:right; font-weight:bold; font-size:16px; margin-top:5px;">Total: à§³${order.price}</div>
+                        <div style="text-align:right; font-weight:bold; font-size:16px; margin-top:5px;">Total: ৳${order.price}</div>
                     </div>
 
                     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
-                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">ðŸ’³ Payment Details</strong>
+                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">💳 Payment Details</strong>
                         <div><strong>Method:</strong> <span style="text-transform:uppercase; font-weight:bold;">${order.paymentMethod || 'N/A'}</span></div>
                         <div><strong>TrxID:</strong> <code style="background:#333; padding:2px 6px; border-radius:4px;">${order.trx || 'Pending'}</code></div>
                     </div>
