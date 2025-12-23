@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1766514070436,
+        "userId": "test_user_123",
+        "userName": "Test User",
+        "email": "test@example.com",
+        "subject": "Test Ticket",
+        "desc": "This is a test ticket to verify backend storage.",
+        "image": "",
+        "date": "12/24/2025, 12:21:10 AM"
+    }
+]
