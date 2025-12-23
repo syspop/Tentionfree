@@ -4,7 +4,7 @@
         "name": "Netflix Premium (4K)",
         "badge": "10% OFF",
         "category": "streaming",
-        "image": "images/Netflix.png",
+        "image": "assets/images/Netflix.png",
         "price": 340,
         "originalPrice": 500,
         "desc": "4K UHD | Private Profile",
@@ -47,7 +47,7 @@
         "category": "streaming",
         "price": 150,
         "originalPrice": 300,
-        "image": "images/spotify.png",
+        "image": "assets/images/spotify.png",
         "desc": "Individual Plan | Ad-free",
         "longDesc": "🎵 Spotify Premium (Family Invitation Method)\nআপনার পার্সোনাল জিমেইল-এ Spotify Family Invitation পাঠানো হবে।\nইনভিটেশন Accept করার পরই আপনার একাউন্টে Spotify Premium Active হয়ে যাবে।",
         "features": [
@@ -90,7 +90,7 @@
         "category": "tools",
         "price": 50,
         "originalPrice": 100,
-        "image": "images/Canva.png",
+        "image": "assets/images/Canva.png",
         "desc": "Education | Pro Features",
         "longDesc": "Canva Pro / Canva Education (Team Invitation).\nActivation Method: Team Invitation\nআপনার দেওয়া জিমেইল অ্যাড্রেসে টিম ইনভিটেশন পাঠানো হবে। ইনভিটেশন একসেপ্ট করার সাথে সাথেই আপনার নেওয়া Canva Pro অথবা Canva Education সাবস্ক্রিপশন অ্যাক্টিভ হয়ে যাবে।",
         "features": [
@@ -128,7 +128,7 @@
         "category": "streaming",
         "price": 120,
         "originalPrice": 200,
-        "image": "images/Youtube.png",
+        "image": "assets/images/Youtube.png",
         "desc": "Ad-free | Background Play",
         "longDesc": "YouTube Premium (Family Invitation Method)\nকিভাবে কাজ করবে:\nআপনার দেওয়া জিমেইল ঠিকানায় YouTube Family Invitation পাঠানো হবে।\nইনভিটেশন Accept করার সাথে সাথেই আপনার একাউন্টে YouTube Premium Active হয়ে যাবে।",
         "features": [
@@ -169,7 +169,7 @@
         "category": "gaming",
         "price": 85,
         "originalPrice": 90,
-        "image": "images/Freefire.png",
+        "image": "assets/images/Freefire.png",
         "desc": "UID Topup | Instant",
         "longDesc": "🎮 Free Fire 115 Diamonds\n💎 প্রিমিয়াম ইন-গেম কারেন্সি\n🚀 Player ID (UID) তে সরাসরি ডেলিভারি\n⏱ ৫–১০ মিনিটের মধ্যে ডায়মন্ড যুক্ত হবে",
         "features": [
@@ -187,7 +187,7 @@
         "category": "gaming",
         "price": 95,
         "originalPrice": 100,
-        "image": "images/PUBG.jpeg",
+        "image": "assets/images/PUBG.jpeg",
         "desc": "Global ID | Instant",
         "longDesc": "🎮 PUBG Mobile 60 UC\n💎 প্রিমিয়াম ইন-গেম কারেন্সি (UC)\n🚀 Player ID তে সরাসরি ডেলিভারি\n⏱ ৫–১০ মিনিটের মধ্যে UC যুক্ত হবে",
         "features": [
@@ -205,7 +205,7 @@
         "category": "streaming",
         "price": 250,
         "originalPrice": 500,
-        "image": "images/Amazon Prime.png",
+        "image": "assets/images/Amazon Prime.png",
         "desc": "4K Support | Exclusive",
         "longDesc": "Amazon Prime Video Premium:\nঅর্ডার কনফার্ম হওয়ার ১০ মিনিটের মধ্যেই আপনার দেওয়া WhatsApp নম্বর অথবা ইমেইলে অ্যাকাউন্ট ডেলিভারি করা হবে।\nঅ্যাকাউন্ট ব্যবহারে কোনো সমস্যা হলে আমাদের WhatsApp সাপোর্টে যোগাযোগ করুন — দ্রুত সমাধান দেওয়া হবে。",
         "features": [
@@ -236,7 +236,7 @@
         "category": "tools",
         "price": 200,
         "originalPrice": 400,
-        "image": "images/Google Ai Pro.png",
+        "image": "assets/images/Google Ai Pro.png",
         "desc": "Gemini Advanced | 2TB",
         "longDesc": "Google AI Pro (Invitation Method)\nকিভাবে কাজ করবে:\nআপনার দেওয়া Gmail ঠিকানায় Google AI Pro Invitation পাঠানো হবে।\nইনভিটেশন Accept করার সাথে সাথেই আপনার একাউন্টে Google AI Pro Active হয়ে যাবে।",
         "features": [
@@ -279,7 +279,7 @@
         "category": "tools",
         "price": 300,
         "originalPrice": 600,
-        "image": "images/Combo YT+Storage.png",
+        "image": "assets/images/Combo YT+Storage.png",
         "desc": "YouTube Premium + 2TB",
         "longDesc": "🎁 Combo Pack (YouTube Premium + Google Storage 2TB)\nকিভাবে কাজ করবে:\nআপনার দেওয়া জিমেইল ঠিকানায় YouTube Family Invitation ও Google One (2TB) Family Invitation পাঠানো হবে।",
         "features": [
@@ -322,7 +322,7 @@
         "category": "streaming",
         "price": 50,
         "originalPrice": 80,
-        "image": "images/Youtube.png",
+        "image": "assets/images/Youtube.png",
         "desc": "Non-Renewable | 1 Month",
         "longDesc": "🎬 YouTube Premium (Non-Renewable Package)\nকিভাবে কাজ করবে:\nআপনার দেওয়া জিমেইল ঠিকানায় YouTube Family Invitation পাঠানো হবে।\nইনভিটেশন Accept করার সাথে সাথেই আপনার একাউন্টে YouTube Premium Active হয়ে যাবে。",
         "features": [
