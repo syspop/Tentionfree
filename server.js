@@ -105,21 +105,37 @@ const TICKETS_FILE = path.join(__dirname, 'data', 'tickets.json');
 
 // GET Tickets (Admin)
 app.get('/api/tickets', (req, res) => {
+    console.log("GET /api/tickets requested");
+    console.log("Reading tickets from:", TICKETS_FILE);
+
     fs.readFile(TICKETS_FILE, 'utf8', (err, data) => {
         if (err) {
-            if (err.code === 'ENOENT') return res.json([]);
-            console.error(err);
+            console.error("Error reading tickets file:", err);
+            if (err.code === 'ENOENT') {
+                console.log("Tickets file not found, returning empty.");
+                return res.json([]);
+            }
             return res.status(500).json({ error: 'Failed to read tickets' });
         }
-        res.json(JSON.parse(data));
+        try {
+            const tickets = JSON.parse(data);
+            console.log(`Successfully read ${tickets.length} tickets.`);
+            res.json(tickets);
+        } catch (e) {
+            console.error("JSON Parse Error:", e);
+            res.json([]);
+        }
     });
 });
 
 // POST Ticket (User)
 app.post('/api/tickets', (req, res) => {
+    console.log("POST /api/tickets received");
     const { userId, userName, email, subject, desc, image } = req.body;
+    console.log("Payload:", { userId, userName, email, subject });
 
     if (!userId || !desc) {
+        console.error("Missing required fields");
         return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
@@ -138,7 +154,11 @@ app.post('/api/tickets', (req, res) => {
         tickets.push(newTicket);
 
         fs.writeFile(TICKETS_FILE, JSON.stringify(tickets, null, 4), 'utf8', (err) => {
-            if (err) return res.status(500).json({ success: false });
+            if (err) {
+                console.error("Error writing ticket file:", err);
+                return res.status(500).json({ success: false });
+            }
+            console.log("Ticket saved successfully. Total count:", tickets.length);
             res.json({ success: true, message: 'Ticket submitted' });
         });
     });

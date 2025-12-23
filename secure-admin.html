@@ -634,7 +634,8 @@
             <!-- Ticket Section -->
             <div id="tickets-sec" class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>🎫 Support Tickets</h3>
+                    <h3>🎫 Support Tickets <span id="ticket-debug-msg"
+                            style="color:yellow; font-size:12px; margin-left:10px;"></span></h3>
                     <button onclick="loadTickets()"
                         style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
                         Refresh</button>
@@ -2003,8 +2004,10 @@
                 const tickets = await res.json();
 
                 if (Array.isArray(tickets)) {
+                    document.getElementById('ticket-debug-msg').innerText = `(Debug: Found ${tickets.length} tickets)`;
                     renderTickets(tickets.reverse());
                 } else {
+                    document.getElementById('ticket-debug-msg').innerText = `(Debug: Invalid Data)`;
                     list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No tickets found.</td></tr>";
                 }
             } catch (e) {
