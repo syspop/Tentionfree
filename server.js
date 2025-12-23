@@ -144,6 +144,22 @@ app.post('/api/tickets', (req, res) => {
     });
 });
 
+// DELETE Ticket (Admin)
+app.delete('/api/tickets/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    fs.readFile(TICKETS_FILE, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ success: false });
+
+        let tickets = JSON.parse(data);
+        const filtered = tickets.filter(t => t.id !== id);
+
+        fs.writeFile(TICKETS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (err) => {
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true });
+        });
+    });
+});
+
 // DELETE Ticket (Solve)
 app.delete('/api/tickets/:id', (req, res) => {
     const id = parseInt(req.params.id);
