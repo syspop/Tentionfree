@@ -517,8 +517,9 @@
             // Reset Classes
             // Reset Classes (Updated for Compact)
             // Reset Classes (Updated for Compact)
-            const inactiveClass = "w-full flex flex-row items-center justify-center gap-1 px-1 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-all overflow-hidden whitespace-nowrap";
-            const activeClass = "w-full flex flex-row items-center justify-center gap-1 px-1 py-1.5 rounded-lg bg-brand-600 text-white shadow-sm transition-all overflow-hidden whitespace-nowrap";
+            // Reset Classes (Updated for Compact & Fixed Height)
+            const inactiveClass = "w-full h-9 flex flex-row items-center justify-center gap-1 px-1 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-all overflow-hidden whitespace-nowrap";
+            const activeClass = "w-full h-9 flex flex-row items-center justify-center gap-1 px-1 rounded-lg bg-brand-600 text-white shadow-sm transition-all overflow-hidden whitespace-nowrap";
 
             if (ordersBtn) ordersBtn.className = inactiveClass;
             if (supportBtn) supportBtn.className = inactiveClass;
