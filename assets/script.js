@@ -283,7 +283,7 @@ const defaultProducts = [
 // --- Load Products ---
 // API Persistence Configuration
 // --- Load Products (Node.js API) ---
-const API_URL = 'api/products';
+const API_URL = 'data/products.json';
 
 async function fetchProducts() {
     try {
@@ -554,6 +554,12 @@ function updateCardPrice(id) {
 
 function filterProducts(category) {
     currentFilter = category;
+    // Reset search query when changing category to avoid empty results
+    if (searchQuery) {
+        searchQuery = '';
+        const inputs = document.querySelectorAll('.search-input, .search-input-lg, #search-input, #mobile-search-input');
+        inputs.forEach(i => i.value = '');
+    }
     document.querySelectorAll('.filter-btn').forEach(btn => {
         if (btn.innerText.toLowerCase() === category || (category === 'all' && btn.innerText === 'All')) {
             btn.className = 'filter-btn active bg-brand-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg shadow-brand-500/30 whitespace-nowrap';
@@ -621,6 +627,19 @@ function setupSearchInput(inputId, initialValue = '') {
     input.addEventListener('input', (e) => {
         const query = e.target.value;
         searchQuery = query; // Update global state
+
+        // Reset category filter when searching to search ALL products
+        if (query.trim().length > 0 && currentFilter !== 'all') {
+            currentFilter = 'all';
+            // Update UI buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.innerText === 'All') {
+                    btn.className = 'filter-btn active bg-brand-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg shadow-brand-500/30 whitespace-nowrap';
+                } else {
+                    btn.className = 'filter-btn bg-transparent text-gray-400 hover:text-white hover:bg-white/5 px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap';
+                }
+            });
+        }
 
         // If on products page, filter grid immediately
         if (document.getElementById('product-grid')) {
