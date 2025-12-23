@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -420,7 +420,7 @@
     <div class="admin-box" id="main-content" style="display:none;">
         <div style="text-align:right;">
             <button onclick="logout()"
-                style="background:none; border:none; color:var(--red); cursor:pointer; font-size:12px;">🔒
+                style="background:none; border:none; color:var(--red); cursor:pointer; font-size:12px;">ðŸ”’
                 Logout</button>
         </div>
         <h2>Admin Center</h2>
@@ -438,13 +438,13 @@
 
         <!-- Dashboard Section -->
         <div id="dashboard-sec" class="section active">
-            <h3>📊 Business Overview</h3>
+            <h3>ðŸ“Š Business Overview</h3>
 
             <div class="dash-grid">
                 <div class="stat-card">
                     <i class="fa-solid fa-bangladeshi-taka-sign stat-icon" style="color:#00b894;"></i>
                     <div class="stat-label">Total Revenue</div>
-                    <div class="stat-value" id="dash-revenue">৳0</div>
+                    <div class="stat-value" id="dash-revenue">à§³0</div>
                     <div style="color:#00b894; font-size:12px;">Lifetime Earnings</div>
                 </div>
                 <div class="stat-card">
@@ -476,7 +476,7 @@
 
         <!-- Add Product Section -->
         <div id="product-sec" class="section">
-            <h3>📦 New Product Setup</h3>
+            <h3>ðŸ“¦ New Product Setup</h3>
 
             <div class="grid-2" style="grid-template-columns: 2fr 1fr;">
                 <div>
@@ -516,7 +516,7 @@
 
             <!-- Variants Section -->
             <div style="background:#020617; padding:15px; border-radius:10px; margin-bottom:20px;">
-                <h4 style="margin-top:0; color:var(--blue)">🏷️ Pricing Variants</h4>
+                <h4 style="margin-top:0; color:var(--blue)">ðŸ·ï¸ Pricing Variants</h4>
                 <div id="variants-container">
                     <!-- Dynamic Variants will be added here -->
                 </div>
@@ -532,13 +532,13 @@
         <div id="manage-orders-sec" class="section">
             <div
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-                <h3>🛡️ Manage Orders</h3>
+                <h3>ðŸ›¡ï¸ Manage Orders</h3>
 
                 <div style="display:flex; gap:10px;">
                     <input type="text" id="order-search" class="input-box" placeholder="Search Order ID..."
                         style="margin:0; width:200px; padding:8px;" onkeyup="filterOrders()">
                     <button onclick="loadOrders()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">â†»
                         Refresh</button>
                 </div>
             </div>
@@ -561,7 +561,7 @@
         <!-- Order History Section -->
         <div id="order-history-sec" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>📜 Order History</h3>
+                <h3>ðŸ“œ Order History</h3>
                 <input type="text" id="history-search" class="input-box" placeholder="Search Order ID..."
                     style="margin:0; width:200px; padding:8px;" onkeyup="filterHistory()">
             </div>
@@ -584,7 +584,7 @@
         <!-- Manage Products Section -->
         <div id="manage-sec" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>📋 Product List</h3>
+                <h3>ðŸ“‹ Product List</h3>
                 <div>
                     <button id="btn-reorder" onclick="toggleReorder()" class="action-btn"
                         style="background:#e67e22; margin-right:5px;">Enable Reorder</button>
@@ -609,12 +609,12 @@
         <!-- Customer Section -->
         <div id="customers-sec" class="section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>👥 Customer Database</h3>
+                <h3>ðŸ‘¥ Customer Database</h3>
                 <div style="display:flex; gap:10px;">
                     <input type="text" id="cust-search" class="input-box" placeholder="Search Name, Email, ID..."
                         style="margin:0; width:250px; padding:8px;" onkeyup="renderCustomers()">
                     <button onclick="loadCustomers()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">â†»
                         Refresh</button>
                 </div>
             </div>
@@ -634,9 +634,9 @@
             <!-- Ticket Section -->
             <div id="tickets-sec" class="section">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>🎫 Support Tickets</h3>
+                    <h3>ðŸŽ« Support Tickets</h3>
                     <button onclick="loadTickets()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">â†»
                         Refresh</button>
                 </div>
 
@@ -769,7 +769,7 @@
 
                 // 2. Update Cards
                 // Animate Numbers
-                animateValue("dash-revenue", 0, totalRevenue, 1000, "৳");
+                animateValue("dash-revenue", 0, totalRevenue, 1000, "à§³");
                 animateValue("dash-orders", 0, totalOrders, 1000, "");
                 animateValue("dash-users", 0, totalUsers, 1000, "");
 
@@ -823,7 +823,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Revenue (৳)',
+                        label: 'Revenue (à§³)',
                         data: data,
                         borderColor: '#6c5ce7',
                         backgroundColor: 'rgba(108, 92, 231, 0.1)',
@@ -878,8 +878,8 @@
                 <tr>
                     <td style="padding:10px; border-bottom:1px solid #eee;">${item.name} <br><small>${item.variant || ''}</small></td>
                     <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.qty}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price * item.qty}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">à§³${item.price}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">à§³${item.price * item.qty}</td>
                 </tr>
             `).join('');
 
@@ -939,7 +939,7 @@
                     </table>
 
                     <div class="total">
-                        Total Amount: ৳${order.totalAmount}
+                        Total Amount: à§³${order.totalAmount}
                     </div>
 
                     <div class="footer">
@@ -983,7 +983,7 @@
                 <input type="text" placeholder="Label (e.g. 1 Month)" class="input-box" style="margin:0" value="${label}">
                 <input type="number" placeholder="Price" class="input-box" style="margin:0" value="${price}">
                 <input type="number" placeholder="Org. Price" class="input-box" style="margin:0" value="${original}">
-                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
+                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">Ã—</button>
             `;
             container.appendChild(div);
         }
@@ -1114,7 +1114,7 @@
 
             } catch (err) {
                 console.error(err);
-                manageList.innerHTML = "<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ Error loading orders.</div></td></tr>";
+                manageList.innerHTML = "<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>âŒ Error loading orders.</div></td></tr>";
             }
         }
 
@@ -1134,7 +1134,7 @@
             );
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>✅ All clear! No active orders.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>âœ… All clear! No active orders.</div></td></tr>";
                 return;
             }
 
@@ -1175,7 +1175,7 @@
             );
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='5'><div class='empty-state'>📜 No order history found.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='5'><div class='empty-state'>ðŸ“œ No order history found.</div></td></tr>";
                 return;
             }
 
@@ -1188,7 +1188,7 @@
                         <td><small>${o.date}</small></td>
                         <td><b>${o.customer}</b></td>
                         <td><b>#${o.id}</b></td>
-                        <td>৳${o.price}</td>
+                        <td>à§³${o.price}</td>
                         <td>${statusBadge}</td>
                     </tr>
                 `;
@@ -1340,7 +1340,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ Failed to load customers.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>âŒ Failed to load customers.</div></td></tr>";
             }
         }
 
@@ -1357,7 +1357,7 @@
             );
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>🔍 No customers found matching your search.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>ðŸ” No customers found matching your search.</div></td></tr>";
                 return;
             }
 
@@ -1371,8 +1371,8 @@
                             <b>${u.name}</b>
                         </td>
                         <td>
-                            <div style="font-size:13px;">📧 ${u.email}</div>
-                            <div style="font-size:13px; color:var(--gray); margin-top:2px;">📞 ${u.phone}</div>
+                            <div style="font-size:13px;">ðŸ“§ ${u.email}</div>
+                            <div style="font-size:13px; color:var(--gray); margin-top:2px;">ðŸ“ž ${u.phone}</div>
                         </td>
                         <td>
                             <span style="color:var(--gray); font-size:13px;">${(u.joined || u.created_at || 'N/A').split('T')[0]}</span>
@@ -1471,7 +1471,7 @@
                     <div style="margin-bottom: 12px;">${itemsHtml}</div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
-                        <div style="font-size: 16px; font-weight: bold; color: white;">৳${o.price}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: white;">à§³${o.price}</div>
                         <div style="font-size: 11px; font-weight: bold; color: ${statusColor}; text-transform: uppercase; border: 1px solid ${statusColor}33; background: ${statusColor}11; padding: 2px 8px; border-radius: 20px;">
                             ${o.status}
                         </div>
@@ -1525,7 +1525,7 @@
                 products.forEach((p, index) => {
                     list.innerHTML += `
                 <tr data-id="${p.id}">
-                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
+                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">â˜°</td>
                     <td><img src="${p.image}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
                     <td>
                         <b>${p.name}</b><br>
@@ -1689,7 +1689,7 @@
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
         <div
             style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
-            <h3 style="color:var(--red); margin-top:0;">⚠️ Cancel Order</h3>
+            <h3 style="color:var(--red); margin-top:0;">âš ï¸ Cancel Order</h3>
             <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Please provide a reason for cancellation.
                 This will be visible to the customer.</p>
 
@@ -1710,7 +1710,7 @@
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
         <div
             style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
-            <h3 style="color:var(--green); margin-top:0;">✅ Complete Order</h3>
+            <h3 style="color:var(--green); margin-top:0;">âœ… Complete Order</h3>
             <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Optional: Provide delivery details (e.g.
                 credentials, codes). <br>This will be visible to the customer.</p>
 
@@ -1732,7 +1732,7 @@
         <div id="view-modal-content"
             style="background:var(--bg-card); width:500px; max-width:90%; padding:25px; border-radius:15px; position:relative; animation:fadeIn 0.3s ease-out; color:white; border:1px solid var(--border);">
             <button onclick="closeViewModal()"
-                style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:24px; cursor:pointer;">×</button>
+                style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:24px; cursor:pointer;">Ã—</button>
             <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:10px;">Order Details</h3>
             <div id="view-modal-body"></div>
             <div style="text-align:right; margin-top:20px;">
@@ -1763,7 +1763,7 @@
                 if (order.items && Array.isArray(order.items) && order.items.length > 0) {
                     itemsHtml = '<ul style="padding-left:20px; margin:5px 0;">';
                     order.items.forEach(item => {
-                        itemsHtml += `<li>${item.name} <span style="color:var(--blue)">x${item.quantity}</span> - ৳${item.price * item.quantity}</li>`;
+                        itemsHtml += `<li>${item.name} <span style="color:var(--blue)">x${item.quantity}</span> - à§³${item.price * item.quantity}</li>`;
                     });
                     itemsHtml += '</ul>';
                 } else {
@@ -1783,21 +1783,21 @@
                     </div>
 
                     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:15px;">
-                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">👤 Customer Info</strong>
+                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">ðŸ‘¤ Customer Info</strong>
                         <div><strong>Name:</strong> ${order.customer}</div>
                         <div><strong>Phone:</strong> ${order.phone}</div>
                         <div><strong>Email:</strong> ${order.email}</div>
-                        ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="margin-top:5px; color:#fdcb6e;"><strong>🎮 Game UID:</strong> ${order.gameUid}</div>` : ''}
+                        ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="margin-top:5px; color:#fdcb6e;"><strong>ðŸŽ® Game UID:</strong> ${order.gameUid}</div>` : ''}
                     </div>
 
                     <div style="margin-bottom:15px;">
-                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">🛒 Items</strong>
+                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">ðŸ›’ Items</strong>
                         ${itemsHtml}
-                        <div style="text-align:right; font-weight:bold; font-size:16px; margin-top:5px;">Total: ৳${order.price}</div>
+                        <div style="text-align:right; font-weight:bold; font-size:16px; margin-top:5px;">Total: à§³${order.price}</div>
                     </div>
 
                     <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
-                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">💳 Payment Details</strong>
+                        <strong style="color:var(--blue); display:block; margin-bottom:5px;">ðŸ’³ Payment Details</strong>
                         <div><strong>Method:</strong> <span style="text-transform:uppercase; font-weight:bold;">${order.paymentMethod || 'N/A'}</span></div>
                         <div><strong>TrxID:</strong> <code style="background:#333; padding:2px 6px; border-radius:4px;">${order.trx || 'Pending'}</code></div>
                     </div>
@@ -1991,89 +1991,89 @@
             }, 3000);
         }
     </script>
-</body>
+    <script>
+        // --- TICKET LOGIC ---
+        async function loadTickets() {
+            const list = document.getElementById('ticket-list');
+            if(!list) return;
+            list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Tickets...</td></tr>";
 
+            try {
+                const res = await fetch('api/tickets');
+                const tickets = await res.json();
+
+                if (Array.isArray(tickets)) {
+                    renderTickets(tickets.reverse());
+                } else {
+                    list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No tickets found.</td></tr>";
+                }
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading tickets.</td></tr>";
+            }
+        }
+
+        function renderTickets(tickets) {
+            const list = document.getElementById('ticket-list');
+            list.innerHTML = "";
+
+            if (tickets.length === 0) {
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:20px; color:var(--gray);'>No pending tickets.</td></tr>";
+                return;
+            }
+
+            tickets.forEach(t => {
+                let imgHtml = t.image ? `<img src="${t.image}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; cursor:pointer; border:1px solid #334155;" onclick="openImageModal('${t.image}')">` : '<span style="color:var(--gray); font-size:12px;">No Img</span>';
+
+                list.innerHTML += `
+                    <tr>
+                        <td>
+                            <div style="font-weight:bold; color:white;">${t.userName || 'Unknown'}</div>
+                            <div style="font-size:12px; color:var(--gray);">${t.email}</div>
+                            <div style="font-size:11px; margin-top:2px; font-family:monospace; background:#0f172a; display:inline-block; padding:2px 4px; border-radius:4px;">${t.userId || 'N/A'}</div>
+                        </td>
+                        <td>
+                            <span style="background:rgba(108, 92, 231, 0.1); color:#a29bfe; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px;">${t.subject}</span>
+                            <div style="font-size:11px; color:var(--gray); margin-top:4px;">${t.date}</div>
+                        </td>
+                        <td>
+                            <div style="font-size:13px; color:#cbd5e1; max-width:250px; white-space:pre-wrap;">${t.desc}</div>
+                        </td>
+                        <td>${imgHtml}</td>
+                        <td>
+                            <button onclick="resolveTicket(${t.id})" class="success-btn" style="margin-right:5px;"><i class="fa-solid fa-check"></i> Solve</button>
+                            <button onclick="deleteTicket(${t.id})" class="action-btn"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openImageModal(src) {
+            document.getElementById('zoom-img').src = src;
+            document.getElementById('img-modal').style.display = 'flex';
+        }
+
+        async function resolveTicket(id) {
+            if(!confirm("Mark this ticket as Solved? It will be removed.")) return;
+            // For now, solve = delete.
+            deleteTicket(id);
+        }
+
+        async function deleteTicket(id) {
+            try {
+                const res = await fetch('api/tickets/' + id, { method: 'DELETE' });
+                const result = await res.json();
+                if(result.success) {
+                    loadTickets();
+                } else {
+                    alert("Failed to delete ticket.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Server Error");
+            }
+        }
+    </script>
+</body>
 </html>
-``` 
- / /   - - -   T I C K E T   L O G I C   - - -  
- a s y n c   f u n c t i o n   l o a d T i c k e t s ( )   {  
-         c o n s t   l i s t   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' t i c k e t - l i s t ' ) ;  
-         l i s t . i n n e r H T M L   =   " < t r > < t d   c o l s p a n = ' 5 '   s t y l e = ' t e x t - a l i g n : c e n t e r ; ' > L o a d i n g   T i c k e t s . . . < / t d > < / t r > " ;  
-  
-         t r y   {  
-                 c o n s t   r e s   =   a w a i t   f e t c h ( ' a p i / t i c k e t s ' ) ;  
-                 c o n s t   t i c k e t s   =   a w a i t   r e s . j s o n ( ) ;  
-  
-                 i f   ( A r r a y . i s A r r a y ( t i c k e t s ) )   {  
-                         r e n d e r T i c k e t s ( t i c k e t s . r e v e r s e ( ) ) ;  
-                 }   e l s e   {  
-                         l i s t . i n n e r H T M L   =   " < t r > < t d   c o l s p a n = ' 5 '   s t y l e = ' t e x t - a l i g n : c e n t e r ; ' > N o   t i c k e t s   f o u n d . < / t d > < / t r > " ;  
-                 }  
-         }   c a t c h   ( e )   {  
-                 c o n s o l e . e r r o r ( e ) ;  
-                 l i s t . i n n e r H T M L   =   " < t r > < t d   c o l s p a n = ' 5 '   s t y l e = ' t e x t - a l i g n : c e n t e r ;   c o l o r : r e d ; ' > E r r o r   l o a d i n g   t i c k e t s . < / t d > < / t r > " ;  
-         }  
- }  
-  
- f u n c t i o n   r e n d e r T i c k e t s ( t i c k e t s )   {  
-         c o n s t   l i s t   =   d o c u m e n t . g e t E l e m e n t B y I d ( ' t i c k e t - l i s t ' ) ;  
-         l i s t . i n n e r H T M L   =   " " ;  
-  
-         i f   ( t i c k e t s . l e n g t h   = = =   0 )   {  
-                 l i s t . i n n e r H T M L   =   " < t r > < t d   c o l s p a n = ' 5 '   s t y l e = ' t e x t - a l i g n : c e n t e r ;   p a d d i n g : 2 0 p x ;   c o l o r : v a r ( - - g r a y ) ; ' > N o   p e n d i n g   t i c k e t s . < / t d > < / t r > " ;  
-                 r e t u r n ;  
-         }  
-  
-         t i c k e t s . f o r E a c h ( t   = >   {  
-                 l e t   i m g H t m l   =   t . i m a g e   ?   ` < i m g   s r c = " $ { t . i m a g e } "   s t y l e = " w i d t h : 5 0 p x ;   h e i g h t : 5 0 p x ;   o b j e c t - f i t : c o v e r ;   b o r d e r - r a d i u s : 5 p x ;   c u r s o r : p o i n t e r ;   b o r d e r : 1 p x   s o l i d   # 3 3 4 1 5 5 ; "   o n c l i c k = " o p e n I m a g e M o d a l ( ' $ { t . i m a g e } ' ) " > `   :   ' < s p a n   s t y l e = " c o l o r : v a r ( - - g r a y ) ;   f o n t - s i z e : 1 2 p x ; " > N o   I m g < / s p a n > ' ;  
-  
-                 l i s t . i n n e r H T M L   + =   `  
-                                         < t r >  
-                                                 < t d >  
-                                                         < d i v   s t y l e = " f o n t - w e i g h t : b o l d ;   c o l o r : w h i t e ; " > $ { t . u s e r N a m e   | |   ' U n k n o w n ' } < / d i v >  
-                                                         < d i v   s t y l e = " f o n t - s i z e : 1 2 p x ;   c o l o r : v a r ( - - g r a y ) ; " > $ { t . e m a i l } < / d i v >  
-                                                         < d i v   s t y l e = " f o n t - s i z e : 1 1 p x ;   m a r g i n - t o p : 2 p x ;   f o n t - f a m i l y : m o n o s p a c e ;   b a c k g r o u n d : # 0 f 1 7 2 a ;   d i s p l a y : i n l i n e - b l o c k ;   p a d d i n g : 2 p x   4 p x ;   b o r d e r - r a d i u s : 4 p x ; " > $ { t . u s e r I d   | |   ' N / A ' } < / d i v >  
-                                                 < / t d >  
-                                                 < t d >  
-                                                         < s p a n   s t y l e = " b a c k g r o u n d : r g b a ( 1 0 8 ,   9 2 ,   2 3 1 ,   0 . 1 ) ;   c o l o r : # a 2 9 b f e ;   p a d d i n g : 4 p x   8 p x ;   b o r d e r - r a d i u s : 4 p x ;   f o n t - w e i g h t : b o l d ;   f o n t - s i z e : 1 2 p x ; " > $ { t . s u b j e c t } < / s p a n >  
-                                                         < d i v   s t y l e = " f o n t - s i z e : 1 1 p x ;   c o l o r : v a r ( - - g r a y ) ;   m a r g i n - t o p : 4 p x ; " > $ { t . d a t e } < / d i v >  
-                                                 < / t d >  
-                                                 < t d >  
-                                                         < d i v   s t y l e = " f o n t - s i z e : 1 3 p x ;   c o l o r : # c b d 5 e 1 ;   m a x - w i d t h : 2 5 0 p x ;   w h i t e - s p a c e : p r e - w r a p ; " > $ { t . d e s c } < / d i v >  
-                                                 < / t d >  
-                                                 < t d > $ { i m g H t m l } < / t d >  
-                                                 < t d >  
-                                                         < b u t t o n   o n c l i c k = " r e s o l v e T i c k e t ( $ { t . i d } ) "   c l a s s = " s u c c e s s - b t n "   s t y l e = " m a r g i n - r i g h t : 5 p x ; " > < i   c l a s s = " f a - s o l i d   f a - c h e c k " > < / i >   S o l v e < / b u t t o n >  
-                                                         < b u t t o n   o n c l i c k = " d e l e t e T i c k e t ( $ { t . i d } ) "   c l a s s = " a c t i o n - b t n " > < i   c l a s s = " f a - s o l i d   f a - t r a s h " > < / i > < / b u t t o n >  
-                                                 < / t d >  
-                                         < / t r >  
-                                 ` ;  
-         } ) ;  
- }  
-  
- f u n c t i o n   o p e n I m a g e M o d a l ( s r c )   {  
-         d o c u m e n t . g e t E l e m e n t B y I d ( ' z o o m - i m g ' ) . s r c   =   s r c ;  
-         d o c u m e n t . g e t E l e m e n t B y I d ( ' i m g - m o d a l ' ) . s t y l e . d i s p l a y   =   ' f l e x ' ;  
- }  
-  
- a s y n c   f u n c t i o n   r e s o l v e T i c k e t ( i d )   {  
-         i f   ( ! c o n f i r m ( " M a r k   t h i s   t i c k e t   a s   S o l v e d ?   I t   w i l l   b e   r e m o v e d . " ) )   r e t u r n ;  
-         / /   F o r   n o w ,   s o l v e   =   d e l e t e   ( a s   p e r   M V P ) .   C a n   m o v e   t o   ' s o l v e d '   s t a t u s   i f   n e e d e d   l a t e r .  
-         d e l e t e T i c k e t ( i d ) ;  
- }  
-  
- a s y n c   f u n c t i o n   d e l e t e T i c k e t ( i d )   {  
-         t r y   {  
-                 c o n s t   r e s   =   a w a i t   f e t c h ( ' a p i / t i c k e t s / '   +   i d ,   {   m e t h o d :   ' D E L E T E '   } ) ;  
-                 c o n s t   r e s u l t   =   a w a i t   r e s . j s o n ( ) ;  
-                 i f   ( r e s u l t . s u c c e s s )   {  
-                         l o a d T i c k e t s ( ) ;  
-                 }   e l s e   {  
-                         a l e r t ( " F a i l e d   t o   d e l e t e   t i c k e t . " ) ;  
-                 }  
-         }   c a t c h   ( e )   {  
-                 c o n s o l e . e r r o r ( e ) ;  
-                 a l e r t ( " S e r v e r   E r r o r " ) ;  
-         }  
- }  
- 
