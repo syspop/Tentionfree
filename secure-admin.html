@@ -730,7 +730,7 @@
 
                 // 1. Calculate Stats
                 const validOrders = Array.isArray(orders) ? orders.filter(o => o.status !== 'Cancelled' && o.status !== 'Deleted' && !o.isDeleted) : [];
-                const totalRevenue = validOrders.reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
+                const totalRevenue = validOrders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
                 const totalOrders = validOrders.length;
                 const totalUsers = Array.isArray(users) ? users.length : 0;
 
@@ -775,8 +775,8 @@
 
                 // Sum revenue for this day
                 const dayRevenue = orders
-                    .filter(o => o.date && o.date.startsWith(dateStr))
-                    .reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0);
+                    .filter(o => o.date && o.date.startsWith(dateStr) && o.status !== 'Cancelled' && o.status !== 'Deleted')
+                    .reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
 
                 data.push(dayRevenue);
             }
