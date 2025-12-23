@@ -187,6 +187,36 @@ app.get('/api/customers', (req, res) => {
     res.json(safeCustomers);
 });
 
+// POST Change Password
+app.post('/api/change-password', (req, res) => {
+    const { userId, email, oldPass, newPass } = req.body;
+
+    fs.readFile(CUSTOMERS_FILE, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ success: false, message: "Server Error" });
+
+        // Use full list, including passwords
+        let customers = JSON.parse(data);
+        const index = customers.findIndex(c => c.id === userId && c.email === email);
+
+        if (index === -1) {
+            return res.json({ success: false, message: "User not found" });
+        }
+
+        // Verify Old Pass
+        if (customers[index].password !== oldPass) {
+            return res.json({ success: false, message: "Incorrect current password" });
+        }
+
+        // Update Pass
+        customers[index].password = newPass;
+
+        fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
+            if (e) return res.status(500).json({ success: false, message: "Save Error" });
+            res.json({ success: true });
+        });
+    });
+});
+
 // POST Register
 app.post('/api/register', (req, res) => {
     const { name, email, phone, password } = req.body;
