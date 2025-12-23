@@ -166,6 +166,65 @@
                         Fetching your purchase history...
                     </div>
                 </div>
+
+                <!-- Support Section (Hidden by default) -->
+                <div id="support-section" class="hidden animate-[fadeInUp_0.3s_ease-out]">
+                    <div class="glass-panel p-8 rounded-3xl border border-white/5">
+                        <div class="text-center mb-8">
+                            <div
+                                class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-400 border border-blue-500/20">
+                                <i class="fa-solid fa-life-ring text-3xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white mb-2">Need Help?</h2>
+                            <p class="text-slate-400 text-sm">Submit a ticket and our team will fix it promptly.</p>
+                        </div>
+
+                        <form onsubmit="submitTicket(event)" class="space-y-5 max-w-lg mx-auto">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Subject</label>
+                                <select id="t-subject"
+                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none">
+                                    <option value="Delivery Issue">Order Not Received</option>
+                                    <option value="Login Issue">Account/Login Issue</option>
+                                    <option value="Payment Issue">Payment Problem</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Description</label>
+                                <textarea id="t-desc" rows="4"
+                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none"
+                                    placeholder="Describe your issue..." required></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Screenshot
+                                    (Optional)</label>
+                                <div class="relative">
+                                    <input type="file" id="t-file" accept="image/*" class="hidden"
+                                        onchange="previewImage(this)">
+                                    <label for="t-file"
+                                        class="flex items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 hover:bg-slate-800/50 transition-all group"
+                                        id="drop-zone">
+                                        <div class="text-center" id="upload-prompt">
+                                            <i
+                                                class="fa-solid fa-cloud-upload-alt text-2xl text-slate-500 group-hover:text-brand-400 mb-2"></i>
+                                            <p class="text-xs text-slate-500">Click to upload image</p>
+                                        </div>
+                                        <img id="img-preview"
+                                            class="hidden h-full w-full object-contain rounded-lg p-2">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="submit-btn"
+                                class="w-full bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all">
+                                Submit Ticket
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -361,6 +420,93 @@
         function logoutUser() {
             localStorage.removeItem('user');
             window.location.href = 'index.html';
+        }
+
+        // --- TICKET LOGIC ---
+        function switchTab(tab) {
+            const ordersBtn = document.getElementById('btn-orders');
+            const supportBtn = document.getElementById('btn-support');
+            const ordersSec = document.getElementById('order-list').parentElement; // Main Content H1 Wrapper
+            const supportSec = document.getElementById('support-section');
+            const header = document.querySelector('.lg\\:col-span-3 h1'); // Header Title
+
+            if (tab === 'support') {
+                ordersBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3";
+                supportBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-brand-600 text-white font-bold transition-all flex items-center gap-3 shadow-lg shadow-brand-500/20";
+
+                // Hide Orders, Show Support
+                document.getElementById('order-list').classList.add('hidden');
+                header.parentElement.classList.add('hidden'); // Hide Order Header
+                supportSec.classList.remove('hidden');
+            } else {
+                ordersBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-brand-600 text-white font-bold transition-all flex items-center gap-3 shadow-lg shadow-brand-500/20";
+                supportBtn.className = "w-full text-left px-4 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold hover:bg-slate-700 hover:text-white transition-all flex items-center gap-3";
+
+                document.getElementById('order-list').classList.remove('hidden');
+                header.parentElement.classList.remove('hidden');
+                supportSec.classList.add('hidden');
+            }
+        }
+
+        let base64Image = "";
+
+        function previewImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    base64Image = e.target.result;
+                    const img = document.getElementById('img-preview');
+                    img.src = base64Image;
+                    img.classList.remove('hidden');
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function submitTicket(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Submitting...";
+            btn.disabled = true;
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            const data = {
+                userId: user.id,
+                userName: user.name,
+                email: user.email,
+                subject: document.getElementById('t-subject').value,
+                desc: document.getElementById('t-desc').value,
+                image: base64Image
+            };
+
+            try {
+                const res = await fetch('api/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    alert("Ticket Submitted! We will contact you shortly.");
+                    e.target.reset();
+                    document.getElementById('img-preview').classList.add('hidden');
+                    document.getElementById('upload-prompt').classList.remove('hidden');
+                    base64Image = "";
+                    switchTab('orders'); // Go back
+                } else {
+                    alert("Error submitting ticket.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Server error.");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

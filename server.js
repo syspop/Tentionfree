@@ -11,8 +11,10 @@ const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
 const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 
 // Middleware
+// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(__dirname)); // Serve static files from current directory
 
 // API Routes
@@ -95,6 +97,66 @@ app.put('/api/orders', (req, res) => {
             return res.status(500).json({ success: false, error: 'Failed to update orders' });
         }
         res.json({ success: true, message: 'Orders updated successfully' });
+    });
+});
+
+// --- TICKETS (Support) ---
+const TICKETS_FILE = path.join(__dirname, 'data', 'tickets.json');
+
+// GET Tickets (Admin)
+app.get('/api/tickets', (req, res) => {
+    fs.readFile(TICKETS_FILE, 'utf8', (err, data) => {
+        if (err) {
+            if (err.code === 'ENOENT') return res.json([]);
+            console.error(err);
+            return res.status(500).json({ error: 'Failed to read tickets' });
+        }
+        res.json(JSON.parse(data));
+    });
+});
+
+// POST Ticket (User)
+app.post('/api/tickets', (req, res) => {
+    const { userId, userName, email, subject, desc, image } = req.body;
+
+    if (!userId || !desc) {
+        return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    fs.readFile(TICKETS_FILE, 'utf8', (err, data) => {
+        let tickets = [];
+        if (!err && data) {
+            try { tickets = JSON.parse(data); } catch (e) { }
+        }
+
+        const newTicket = {
+            id: Date.now(),
+            userId, userName, email, subject, desc, image,
+            date: new Date().toLocaleString()
+        };
+
+        tickets.push(newTicket);
+
+        fs.writeFile(TICKETS_FILE, JSON.stringify(tickets, null, 4), 'utf8', (err) => {
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true, message: 'Ticket submitted' });
+        });
+    });
+});
+
+// DELETE Ticket (Solve)
+app.delete('/api/tickets/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    fs.readFile(TICKETS_FILE, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ success: false });
+
+        let tickets = JSON.parse(data);
+        const filtered = tickets.filter(t => t.id !== id);
+
+        fs.writeFile(TICKETS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (err) => {
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true });
+        });
     });
 });
 
