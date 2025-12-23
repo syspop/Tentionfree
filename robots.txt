@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /secure-admin.html
+Disallow: /profile.html
+Disallow: /data/
+
+Sitemap: https://tentionfree.store/sitemap.xml
