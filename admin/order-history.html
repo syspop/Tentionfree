@@ -7,6 +7,7 @@
     <title>Order History - Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -159,7 +160,8 @@
                         <td>৳${o.totalAmount || o.price}</td>
                         <td>${statusBadge}</td>
                         <td>
-                             <button onclick="viewOrder(${o.id})" style="background:#0984e3; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;">View</button>
+                             <button onclick="viewOrder(${o.id})" style="background:#0984e3; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; margin-right:5px;">View</button>
+                             <button onclick="downloadInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" title="Download Invoice"><i class="fa-solid fa-file-arrow-down"></i></button>
                         </td>
                     </tr>
                 `;
@@ -221,6 +223,94 @@
             }
 
             document.getElementById('order-view-modal').style.display = 'flex';
+        }
+
+
+        function downloadInvoice(orderId) {
+            const order = allOrdersCache.find(o => o.id == orderId);
+            if (!order) return;
+
+            const items = order.items || order.cart || [];
+            const itemsHtml = items.length > 0 ? items.map(item => `
+                <tr style="background: #fff; border-bottom: 1px solid #eee;">
+                    <td style="padding:10px; color:#333;">${item.name || 'Item'} <br><small style="color:#666;">${item.variant || ''}</small></td>
+                    <td style="padding:10px; color:#333; text-align:right;">${item.quantity || item.qty || 1}</td>
+                    <td style="padding:10px; color:#333; text-align:right;">৳${item.price || 0}</td>
+                    <td style="padding:10px; color:#333; text-align:right;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                </tr>
+            `).join('') : '';
+
+            // Create a hidden container for the invoice
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+
+            container.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; background: #ffffff; width: 800px; max-width: 800px; margin: 0 auto;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #2563eb;">TentionFree</div>
+                        <div style="text-align:right;">
+                            <h1 style="font-size: 24px; margin: 0; color: #333;">INVOICE</h1>
+                            <p style="margin:5px 0; color:#666;">#${order.id}</p>
+                            <p style="margin:0; color:#666;">${new Date(order.date).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+                        <div style="color: #333;">
+                            <strong>Bill To:</strong><br>
+                            ${order.customer || order.customerName || 'Guest'}<br>
+                            ${order.phone || order.customerPhone || ''}<br>
+                            ${order.email || order.customerEmail || ''}
+                        </div>
+                        <div style="text-align:right; color: #333;">
+                            <strong>Payment Method:</strong><br>
+                            ${order.paymentMethod || 'N/A'}<br>
+                            <span style="color:${order.status === 'Completed' ? 'green' : 'orange'}">${order.status}</span>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; background: #fff;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Item</th>
+                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Qty</th>
+                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Price</th>
+                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; color: #333;">
+                        Total Amount: ৳${order.price || order.totalAmount || 0}
+                    </div>
+
+                    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
+                        Thank you for your business!<br>
+                        TentionFree - Digital Product Shop Bangladesh
+                    </div>
+                </div>
+            `;
+
+            // Append to body momentarily for rendering
+            document.body.appendChild(container);
+
+            // Use html2pdf to generate and save
+            const opt = {
+                margin: 0.5,
+                filename: `Invoice_${order.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, // Force white background
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(container).save().then(() => {
+                document.body.removeChild(container);
+            });
         }
     </script>
 </body>
