@@ -284,7 +284,7 @@
     <!-- Mobile Search Modal -->
     <div id="mobile-search-modal"
         class="fixed inset-0 z-[120] bg-slate-900/95 backdrop-blur-sm hidden flex-col p-4 animate-fade-in">
-        <div class="flex justify-end p-2">
+        <div class="flex justify-end p-2 relative z-10">
             <button onclick="toggleMobileSearch()"
                 class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">
                 <i class="fa-solid fa-xmark text-xl"></i>
@@ -871,7 +871,7 @@
         <script src="assets/script.js"></script>
         <!-- Mobile Bottom Navigation -->
         <div
-            class="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 z-[90] md:hidden safe-area-bottom h-20">
+            class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 z-[999] md:hidden safe-area-bottom h-20 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
             <div class="grid grid-cols-4 h-full">
                 <a href="index.html"
                     class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
