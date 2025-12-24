@@ -534,48 +534,52 @@
 
             const items = order.items || order.cart || [];
             const itemsHtml = items.length > 0 ? items.map(item => `
-                <tr>
-                    <td style="padding:10px; border-bottom:1px solid #eee;">${item.name || 'Item'} <br><small>${item.variant || ''}</small></td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.quantity || item.qty || 1}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price || 0}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                <tr style="background: #fff; border-bottom: 1px solid #eee;">
+                    <td style="padding:10px; color:#333;">${item.name || 'Item'} <br><small style="color:#666;">${item.variant || ''}</small></td>
+                    <td style="padding:10px; color:#333; text-align:right;">${item.quantity || item.qty || 1}</td>
+                    <td style="padding:10px; color:#333; text-align:right;">৳${item.price || 0}</td>
+                    <td style="padding:10px; color:#333; text-align:right;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
                 </tr>
             `).join('') : '';
 
             // Create a hidden container for the invoice
             const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+
             container.innerHTML = `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; background: white; width: 800px;">
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; background: #ffffff; width: 800px; max-width: 800px; margin: 0 auto;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
                         <div style="font-size: 24px; font-weight: bold; color: #2563eb;">TentionFree</div>
                         <div style="text-align:right;">
-                            <h1 style="font-size: 24px; margin: 0;">INVOICE</h1>
+                            <h1 style="font-size: 24px; margin: 0; color: #333;">INVOICE</h1>
                             <p style="margin:5px 0; color:#666;">#${order.id}</p>
                             <p style="margin:0; color:#666;">${new Date(order.date).toLocaleDateString()}</p>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
-                        <div>
+                        <div style="color: #333;">
                             <strong>Bill To:</strong><br>
                             ${order.customer || order.customerName || 'Guest'}<br>
                             ${order.phone || order.customerPhone || ''}<br>
                             ${order.email || order.customerEmail || ''}
                         </div>
-                        <div style="text-align:right;">
+                        <div style="text-align:right; color: #333;">
                             <strong>Payment Method:</strong><br>
                             ${order.paymentMethod || 'N/A'}<br>
                             <span style="color:${order.status === 'Completed' ? 'green' : 'orange'}">${order.status}</span>
                         </div>
                     </div>
 
-                    <table style="width: 100%; border-collapse: collapse;">
+                    <table style="width: 100%; border-collapse: collapse; background: #fff;">
                         <thead>
-                            <tr>
-                                <th style="text-align: left; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Item</th>
-                                <th style="text-align: right; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Qty</th>
-                                <th style="text-align: right; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Price</th>
-                                <th style="text-align: right; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Total</th>
+                            <tr style="background: #f8f9fa;">
+                                <th style="text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Item</th>
+                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Qty</th>
+                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Price</th>
+                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -583,7 +587,7 @@
                         </tbody>
                     </table>
 
-                    <div style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold;">
+                    <div style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; color: #333;">
                         Total Amount: ৳${order.price || order.totalAmount || 0}
                     </div>
 
@@ -594,17 +598,21 @@
                 </div>
             `;
 
+            // Append to body momentarily for rendering
+            document.body.appendChild(container);
+
             // Use html2pdf to generate and save
             const opt = {
                 margin: 0.5,
                 filename: `Invoice_${order.id}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, // Force white background
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            // Temporary append to body to ensure rendering
-            html2pdf().set(opt).from(container).save();
+            html2pdf().set(opt).from(container).save().then(() => {
+                document.body.removeChild(container);
+            });
         }
 
         function logoutUser() {
