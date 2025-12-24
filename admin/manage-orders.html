@@ -373,52 +373,60 @@
 
             const items = order.items || order.cart || [];
             const itemsHtml = items.length > 0 ? items.map(item => `
-                <tr style="background: #fff; border-bottom: 1px solid #eee;">
-                    <td style="padding:10px; color:#333;">${item.name || 'Item'} <br><small style="color:#666;">${item.variant || ''}</small></td>
-                    <td style="padding:10px; color:#333; text-align:right;">${item.quantity || item.qty || 1}</td>
-                    <td style="padding:10px; color:#333; text-align:right;">৳${item.price || 0}</td>
-                    <td style="padding:10px; color:#333; text-align:right;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px 15px; color: #334155;">
+                        <div style="font-weight: 500;">${item.name || 'Item'}</div>
+                        <div style="font-size: 12px; color: #94a3b8;">${item.variant || ''}</div>
+                    </td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b;">${item.quantity || item.qty || 1}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b;">৳${item.price || 0}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #334155; font-weight: 600;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
                 </tr>
             `).join('') : '';
 
             // Create a hidden container for the invoice
             const container = document.createElement('div');
-            container.style.position = 'absolute';
-            container.style.left = '-9999px';
+            // Fix for blank pages: must be "visible" to the renderer
+            container.style.position = 'fixed';
             container.style.top = '0';
+            container.style.left = '0';
+            container.style.zIndex = '-9999';
 
             container.innerHTML = `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; background: #ffffff; width: 800px; max-width: 800px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
-                        <div style="font-size: 24px; font-weight: bold; color: #2563eb;">TentionFree</div>
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 800px; margin: 0 auto; background: #ffffff; padding: 40px; color: #333;">
+                    <!-- Header -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+                         <div style="font-size: 28px; font-weight: bold; color: #2563eb; letter-spacing: -1px;">TentionFree</div>
+                         <div style="text-align:right;">
+                             <div style="font-size: 12px; text-transform:uppercase; color: #64748b; font-weight:bold; letter-spacing: 1px;">Invoice</div>
+                             <div style="font-size: 16px; font-weight:bold; color: #1e293b;">#${order.id}</div>
+                         </div>
+                    </div>
+
+                    <!-- Info Grid -->
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 40px;">
+                        <div>
+                            <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Billed To</div>
+                            <div style="font-weight:bold; color: #1e293b; margin-bottom:3px; font-size:16px;">${order.customer || order.customerName || 'Guest'}</div>
+                            <div style="color: #64748b; font-size: 14px;">${order.email || ''}</div>
+                            <div style="color: #64748b; font-size: 14px;">${order.phone || ''}</div>
+                        </div>
                         <div style="text-align:right;">
-                            <h1 style="font-size: 24px; margin: 0; color: #333;">INVOICE</h1>
-                            <p style="margin:5px 0; color:#666;">#${order.id}</p>
-                            <p style="margin:0; color:#666;">${new Date(order.date).toLocaleDateString()}</p>
+                             <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Details</div>
+                             <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Date: <span style="color: #1e293b; font-weight:600;">${new Date(order.date).toLocaleDateString()}</span></div>
+                             <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Method: <span style="color: #1e293b; font-weight:600;">${order.paymentMethod}</span></div>
+                             <div style="color: #64748b; font-size: 14px;">Status: <span style="color:${order.status === 'Completed' ? '#10b981' : '#f59e0b'}; font-weight:600;">${order.status}</span></div>
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
-                        <div style="color: #333;">
-                            <strong>Bill To:</strong><br>
-                            ${order.customer || order.customerName || 'Guest'}<br>
-                            ${order.phone || order.customerPhone || ''}<br>
-                            ${order.email || order.customerEmail || ''}
-                        </div>
-                        <div style="text-align:right; color: #333;">
-                            <strong>Payment Method:</strong><br>
-                            ${order.paymentMethod || 'N/A'}<br>
-                            <span style="color:${order.status === 'Completed' ? 'green' : 'orange'}">${order.status}</span>
-                        </div>
-                    </div>
-
-                    <table style="width: 100%; border-collapse: collapse; background: #fff;">
+                    <!-- Table -->
+                    <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
                         <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th style="text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Item</th>
-                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Qty</th>
-                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Price</th>
-                                <th style="text-align: right; padding: 10px; border-bottom: 2px solid #eee; color: #333;">Total</th>
+                            <tr style="background: #f8fafc;">
+                                <th style="text-align:left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Item</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Qty</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Price</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -426,13 +434,17 @@
                         </tbody>
                     </table>
 
-                    <div style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; color: #333;">
-                        Total Amount: ৳${order.price || order.totalAmount || 0}
+                    <!-- Total -->
+                    <div style="border-top: 2px solid #f1f5f9; padding-top: 20px; text-align: right;">
+                        <span style="font-size: 14px; color: #64748b; margin-right: 15px;">Total Amount</span>
+                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">৳${order.price || order.totalAmount || 0}</span>
                     </div>
 
-                    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
-                        Thank you for your business!<br>
-                        TentionFree - Digital Product Shop Bangladesh
+                    <!-- Footer -->
+                    <div style="margin-top: 60px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 30px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">TentionFree</div>
+                        <div style="font-size: 12px; color: #94a3b8;">Digital Product Shop Bangladesh</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top:5px;">Thank you for your business!</div>
                     </div>
                 </div>
             `;
@@ -442,10 +454,10 @@
 
             // Use html2pdf to generate and save
             const opt = {
-                margin: 0.5,
+                margin: 0,
                 filename: `Invoice_${order.id}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, // Force white background
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
