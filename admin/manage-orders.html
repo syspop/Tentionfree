@@ -96,6 +96,31 @@
         </div>
     </div>
 
+    <!-- Refund Modal -->
+    <div id="refund-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
+            <h3 style="color:#a855f7; margin-top:0;">↩️ Refund Order</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Optional: Provide refund details/reason.
+                <br>This will be visible to the customer.</p>
+            <textarea id="refund-note-input" class="input-box" rows="4" placeholder="e.g. Refunded via bKash..."
+                autofocus></textarea>
+
+            <div style="margin-top:10px; text-align:left;">
+                <label style="color:var(--gray); font-size:12px; margin-bottom:5px; display:block;">Attach Proof/Image
+                    (Optional):</label>
+                <input type="file" id="refund-file-input" accept="image/*" class="input-box" style="padding:5px;">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <button onclick="closeRefundModal()" class="tab-btn"
+                    style="background:var(--bg-input); border:1px solid var(--border);">Back</button>
+                <button onclick="confirmRefund()" class="action-btn"
+                    style="font-size:14px; padding:10px 25px; background:#a855f7;">Confirm Refund</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div id="delete-modal"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
