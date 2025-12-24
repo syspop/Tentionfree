@@ -193,7 +193,7 @@
             document.getElementById('view-customer').innerText = order.customerName || order.customer || 'Unknown';
             document.getElementById('view-date').innerText = order.date;
             document.getElementById('view-method').innerText = order.paymentMethod;
-            document.getElementById('view-transaction').innerText = order.transactionId || order.trxID || 'N/A';
+            document.getElementById('view-transaction').innerText = order.trx || order.transactionId || 'N/A';
             document.getElementById('view-status').innerHTML = getStatusBadge(order.status);
 
             // Items
