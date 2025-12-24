@@ -301,12 +301,13 @@
             const order = allOrdersCache.find(o => o.id == orderId);
             if (!order) return showAlert("Error", "Order data missing. Please refresh.", "error");
 
-            const itemsHtml = order.items ? order.items.map(item => `
+            const items = order.items || order.cart || [];
+            const itemsHtml = items.length > 0 ? items.map(item => `
                 <tr>
-                    <td style="padding:10px; border-bottom:1px solid #eee;">${item.name} <br><small>${item.variant || ''}</small></td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.quantity}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price * item.quantity}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${item.name || 'Item'} <br><small>${item.variant || ''}</small></td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.quantity || item.qty || 1}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price || 0}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
                 </tr>
             `).join('') : '';
 
@@ -340,13 +341,13 @@
                     <div class="info-grid">
                         <div>
                             <strong>Bill To:</strong><br>
-                            ${order.customer}<br>
-                            ${order.phone}<br>
-                            ${order.email || ''}
+                            ${order.customer || order.customerName || 'Guest'}<br>
+                            ${order.phone || order.customerPhone || ''}<br>
+                            ${order.email || order.customerEmail || ''}
                         </div>
                         <div style="text-align:right;">
                             <strong>Payment Method:</strong><br>
-                            ${order.paymentMethod}<br>
+                            ${order.paymentMethod || 'N/A'}<br>
                             <span style="color:${order.status === 'Completed' ? 'green' : 'orange'}">${order.status}</span>
                         </div>
                     </div>
@@ -366,7 +367,7 @@
                     </table>
 
                     <div class="total">
-                        Total Amount: ৳${order.price}
+                        Total Amount: ৳${order.price || order.totalAmount || 0}
                     </div>
 
                     <div class="footer">
