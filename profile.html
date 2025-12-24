@@ -12,6 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -473,8 +474,8 @@
 
                             <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
                                     <div class="flex items-center gap-3">
-                                        <button onclick="printInvoice(${o.id})" class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center" title="Print Invoice">
-                                            <i class="fa-solid fa-print"></i>
+                                        <button onclick="downloadInvoice(${o.id})" class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center" title="Download Invoice">
+                                            <i class="fa-solid fa-file-arrow-down"></i>
                                         </button>
                                         <div class="text-right mr-2">
                                             <p class="text-[10px] text-slate-500 font-bold uppercase mb-0.5">Total Amount</p>
@@ -527,7 +528,7 @@
         // Cache to store user orders for printing
         let userOrdersCache = [];
 
-        function printInvoice(orderId) {
+        function downloadInvoice(orderId) {
             const order = userOrdersCache.find(o => o.id == orderId);
             if (!order) return showNotification("Order data missing.", "error");
 
@@ -541,34 +542,20 @@
                 </tr>
             `).join('') : '';
 
-            const invoiceWindow = window.open('', 'PRINT', 'height=600,width=800');
-            invoiceWindow.document.write(`
-                <html>
-                <head>
-                    <title>Invoice #${order.id}</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
-                        .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
-                        .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
-                        h1 { font-size: 24px; margin: 0; }
-                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th { text-align: left; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee; }
-                        .total { text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; }
-                        .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="logo">TentionFree</div>
+            // Create a hidden container for the invoice
+            const container = document.createElement('div');
+            container.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; background: white; width: 800px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #2563eb;">TentionFree</div>
                         <div style="text-align:right;">
-                            <h1>INVOICE</h1>
+                            <h1 style="font-size: 24px; margin: 0;">INVOICE</h1>
                             <p style="margin:5px 0; color:#666;">#${order.id}</p>
                             <p style="margin:0; color:#666;">${new Date(order.date).toLocaleDateString()}</p>
                         </div>
                     </div>
 
-                    <div class="info-grid">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
                         <div>
                             <strong>Bill To:</strong><br>
                             ${order.customer || order.customerName || 'Guest'}<br>
@@ -582,13 +569,13 @@
                         </div>
                     </div>
 
-                    <table>
+                    <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th>Item</th>
-                                <th style="text-align:right;">Qty</th>
-                                <th style="text-align:right;">Price</th>
-                                <th style="text-align:right;">Total</th>
+                                <th style="text-align: left; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Item</th>
+                                <th style="text-align: right; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Qty</th>
+                                <th style="text-align: right; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Price</th>
+                                <th style="text-align: right; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -596,20 +583,28 @@
                         </tbody>
                     </table>
 
-                    <div class="total">
+                    <div style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold;">
                         Total Amount: ৳${order.price || order.totalAmount || 0}
                     </div>
 
-                    <div class="footer">
+                    <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
                         Thank you for your business!<br>
                         TentionFree - Digital Product Shop Bangladesh
                     </div>
-                </body>
-                </html>
-            `);
-            invoiceWindow.document.close();
-            invoiceWindow.focus();
-            setTimeout(() => { invoiceWindow.print(); invoiceWindow.close(); }, 500);
+                </div>
+            `;
+
+            // Use html2pdf to generate and save
+            const opt = {
+                margin: 0.5,
+                filename: `Invoice_${order.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Temporary append to body to ensure rendering
+            html2pdf().set(opt).from(container).save();
         }
 
         function logoutUser() {
