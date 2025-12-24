@@ -79,6 +79,12 @@
                 </div>
                 <div>
                     <small
+                        style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Transaction
+                        ID</small>
+                    <div id="view-transaction" style="color:#cbd5e1; font-family:monospace;"></div>
+                </div>
+                <div>
+                    <small
                         style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Status</small>
                     <div id="view-status"></div>
                 </div>
@@ -187,6 +193,7 @@
             document.getElementById('view-customer').innerText = order.customerName || order.customer || 'Unknown';
             document.getElementById('view-date').innerText = order.date;
             document.getElementById('view-method').innerText = order.paymentMethod;
+            document.getElementById('view-transaction').innerText = order.transactionId || order.trxID || 'N/A';
             document.getElementById('view-status').innerHTML = getStatusBadge(order.status);
 
             // Items
