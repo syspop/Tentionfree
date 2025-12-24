@@ -2000,7 +2000,7 @@
             list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Tickets...</td></tr>";
 
             try {
-                const res = await fetch('api/tickets');
+                const res = await fetch('api/tickets?t=' + Date.now());
                 const tickets = await res.json();
 
                 if (Array.isArray(tickets)) {
