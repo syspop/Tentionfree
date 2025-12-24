@@ -301,12 +301,12 @@
             const order = allOrdersCache.find(o => o.id == orderId);
             if (!order) return showAlert("Error", "Order data missing. Please refresh.", "error");
 
-            const itemsHtml = order.cart ? order.cart.map(item => `
+            const itemsHtml = order.items ? order.items.map(item => `
                 <tr>
                     <td style="padding:10px; border-bottom:1px solid #eee;">${item.name} <br><small>${item.variant || ''}</small></td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.qty}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.quantity}</td>
                     <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price}</td>
-                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price * item.qty}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price * item.quantity}</td>
                 </tr>
             `).join('') : '';
 
@@ -340,9 +340,9 @@
                     <div class="info-grid">
                         <div>
                             <strong>Bill To:</strong><br>
-                            ${order.customerName}<br>
-                            ${order.customerPhone}<br>
-                            ${order.customerEmail || ''}
+                            ${order.customer}<br>
+                            ${order.phone}<br>
+                            ${order.email || ''}
                         </div>
                         <div style="text-align:right;">
                             <strong>Payment Method:</strong><br>
@@ -366,7 +366,7 @@
                     </table>
 
                     <div class="total">
-                        Total Amount: ৳${order.totalAmount}
+                        Total Amount: ৳${order.price}
                     </div>
 
                     <div class="footer">
