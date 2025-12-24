@@ -356,6 +356,27 @@
         </div>
     </div>
 
+    <!-- Mobile Search Modal -->
+    <div id="mobile-search-modal"
+        class="fixed inset-0 z-[120] bg-slate-900/95 backdrop-blur-sm hidden flex-col p-4 animate-fade-in">
+        <div class="flex justify-end p-2">
+            <button onclick="toggleMobileSearch()"
+                class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 flex flex-col items-center justify-center -mt-20">
+            <h3 class="text-2xl font-bold text-white mb-6">Search Product</h3>
+            <div class="w-full max-w-md relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-slate-400 text-lg"></i>
+                <input type="search" id="mobile-search-overlay-input" placeholder="Search Netflix, Pubg, etc..."
+                    class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-lg text-white focus:outline-none focus:border-brand-500 focus:shadow-lg focus:shadow-brand-500/20 transition-all placeholder-slate-500"
+                    onkeypress="handleMobileSearch(event)">
+            </div>
+            <p class="text-slate-500 mt-4 text-sm">Press Enter to search</p>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const userStr = localStorage.getItem('user');

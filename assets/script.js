@@ -586,8 +586,11 @@ function initSearch() {
     // Desktop Search
     setupSearchInput('search-input', q);
 
-    // Mobile Search
+    // Mobile Search (Sidebar)
     setupSearchInput('mobile-search-input', q);
+
+    // Mobile Search Overlay (New)
+    setupSearchInput('mobile-search-overlay-input', q);
 
     // Large Home Search
     const homeInput = document.querySelector('.search-input-lg');
@@ -602,8 +605,11 @@ function initGlobalSearch() {
     // Desktop Search
     setupSearchInput('search-input');
 
-    // Mobile Search
+    // Mobile Search (Sidebar)
     setupSearchInput('mobile-search-input');
+
+    // Mobile Search Overlay (New)
+    setupSearchInput('mobile-search-overlay-input');
 
     // Home search
     const homeInput = document.querySelector('.search-input-lg');
@@ -1627,3 +1633,56 @@ function prefillCheckout() {
 }
 
 
+
+// --- Mobile Search Overlay ---
+function toggleMobileSearch() {
+    const modal = document.getElementById('mobile-search-modal');
+    if (!modal) return;
+
+    const isHidden = modal.classList.contains('hidden');
+    if (isHidden) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        // Auto focus input
+        setTimeout(() => {
+            const input = document.getElementById('mobile-search-overlay-input');
+            if (input) input.focus();
+        }, 100);
+    } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function handleMobileSearch(event) {
+    if (event.key === 'Enter') {
+        const query = event.target.value.trim();
+        if (query) {
+            // Check if we are on products.html
+            if (window.location.pathname.includes('products.html')) {
+                // If on products page, just update search query and filter
+                searchQuery = query;
+                // Update other inputs
+                document.querySelectorAll('.search-input, .search-input-lg, #search-input, #mobile-search-input').forEach(i => i.value = query);
+
+                toggleMobileSearch(); // Close modal
+
+                // Trigger search/filter
+                if (typeof renderProducts === 'function') {
+                    // Update filter buttons if needed (reset to All)
+                    if (currentFilter !== 'all') {
+                        currentFilter = 'all';
+                        document.querySelectorAll('.filter-btn').forEach(btn => {
+                            if (btn.innerText === 'All') btn.classList.add('active', 'bg-brand-500', 'text-white');
+                            else btn.classList.remove('active', 'bg-brand-500', 'text-white');
+                        });
+                    }
+                    renderProducts();
+                }
+            } else {
+                // Redirect to products.html
+                window.location.href = `products.html?q=${encodeURIComponent(query)}`;
+            }
+        }
+    }
+}
