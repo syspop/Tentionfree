@@ -232,7 +232,7 @@
 
                     await saveOrders(orders);
                 }
-            } catch (e) { alert("Update failed"); }
+            } catch (e) { showAlert("Error", "Update failed", "error"); }
         }
 
         async function saveOrders(orders) {
@@ -251,7 +251,7 @@
 
         function confirmCancellation() {
             const reason = document.getElementById('cancel-reason-input').value.trim();
-            if (!reason) return alert("Please enter a reason!");
+            if (!reason) return showAlert("Input Required", "Please enter a reason!", "error");
             processStatusUpdate(pendingCancelId, 'Cancelled', reason);
             closeCancelModal();
         }
@@ -292,14 +292,14 @@
                     orders[index].isArchived = true;
                     await saveOrders(orders);
                 }
-            } catch (e) { alert("Delete failed"); }
+            } catch (e) { showAlert("Error", "Delete failed", "error"); }
 
             closeDeleteModal();
         }
 
         function printInvoice(orderId) {
             const order = allOrdersCache.find(o => o.id == orderId);
-            if (!order) return alert("Order data missing. Please refresh.");
+            if (!order) return showAlert("Error", "Order data missing. Please refresh.", "error");
 
             const itemsHtml = order.cart ? order.cart.map(item => `
                 <tr>

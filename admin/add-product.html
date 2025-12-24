@@ -128,7 +128,7 @@
                 const products = await res.json();
                 const p = products.find(prod => prod.id == id); // loose equality for string/num match
 
-                if (!p) return alert("Product not found!");
+                if (!p) return showAlert("Error", "Product not found!", "error");
 
                 currentEditingId = p.id;
                 document.getElementById('p-name').value = p.name;
@@ -180,7 +180,7 @@
             });
 
             if (!name || !img || variants.length === 0) {
-                return alert("Please fill required fields (Name, Image, at least 1 variant)");
+                return showAlert("Missing Info", "Please fill required fields (Name, Image, at least 1 variant)", "error");
             }
 
             try {
@@ -223,7 +223,7 @@
 
             } catch (err) {
                 console.error(err);
-                alert("Error saving to server.");
+                showAlert("Error", "Error saving to server.", "error");
             }
         }
 
