@@ -257,6 +257,12 @@
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     `;
+                    // Refund Button
+                    btnHtml += `
+                        <button onclick="updateOrderStatus(${o.id}, 'Refunded')" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(168, 85, 247, 0.15); color:#a855f7; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#a855f7'; this.style.color='white'" onmouseout="this.style.background='rgba(168, 85, 247, 0.15)'; this.style.color='#a855f7'" title="Refund Order">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    `;
                     // Download Invoice
                     btnHtml += `
                         <button onclick="downloadInvoice(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(59, 130, 246, 0.15); color:#3b82f6; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='white'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.color='#3b82f6'" title="Download Invoice">
@@ -311,6 +317,7 @@
         function getStatusBadge(status) {
             if (status === 'Completed') return '<span class="badge bg-success">Completed</span>';
             if (status === 'Cancelled') return '<span class="badge" style="background:var(--red)">Cancelled</span>';
+            if (status === 'Refunded') return '<span class="badge" style="background:#a855f7">Refunded</span>';
             return '<span class="badge bg-pending">Pending</span>';
         }
 
@@ -337,6 +344,14 @@
                 document.getElementById('delivery-file-input').value = ""; // Reset file input
                 document.getElementById('delivery-modal').style.display = 'flex';
                 document.getElementById('delivery-info-input').focus();
+                return;
+            }
+            if (status === 'Refunded') {
+                pendingRefundId = id;
+                document.getElementById('refund-note-input').value = "";
+                document.getElementById('refund-file-input').value = "";
+                document.getElementById('refund-modal').style.display = 'flex';
+                document.getElementById('refund-note-input').focus();
                 return;
             }
             // For other statuses
@@ -402,6 +417,34 @@
         function closeDeliveryModal() {
             document.getElementById('delivery-modal').style.display = 'none';
             pendingCompleteId = null;
+        }
+
+        // --- REFUND LOGIC ---
+        let pendingRefundId = null;
+
+        function closeRefundModal() {
+            document.getElementById('refund-modal').style.display = 'none';
+            pendingRefundId = null;
+        }
+
+        async function confirmRefund() {
+            const note = document.getElementById('refund-note-input').value.trim();
+            const fileInput = document.getElementById('refund-file-input');
+
+            // Note is optional as per request "optional hisabe rakho" but usually good to have. 
+            // It says "refunded option add koro sathe note", implying note exists.
+
+            let imageBase64 = null;
+            if (fileInput.files.length > 0) {
+                try {
+                    imageBase64 = await readFileAsBase64(fileInput.files[0]);
+                } catch (e) {
+                    return showAlert("Error", "Failed to process image", "error");
+                }
+            }
+
+            processStatusUpdate(pendingRefundId, 'Refunded', note, null, imageBase64);
+            closeRefundModal();
         }
 
         async function confirmCompletion() {
@@ -614,6 +657,24 @@
                 document.getElementById('view-cancel').innerText = order.cancelReason;
             } else {
                 document.getElementById('view-cancel-container').style.display = 'none';
+            }
+
+            // Refund Info (Reuse cancel container structure or create new, let's reuse/adapt simply by overwriting dynamic UI if needed, but better to add a separate block or clear separation)
+            // For now, let's add logic to show Refund info if status is Refunded
+            if (order.status === 'Refunded' && order.refundNote) {
+                // Create a temporary view for refund similar to cancel
+                document.getElementById('view-cancel-container').style.display = 'block';
+                document.getElementById('view-cancel-container').style.background = 'rgba(168, 85, 247, 0.1)';
+                document.getElementById('view-cancel-container').style.borderColor = 'rgba(168, 85, 247, 0.2)';
+                document.querySelector('#view-cancel-container small').innerText = 'REFUND DETAILS';
+                document.querySelector('#view-cancel-container small').style.color = '#a855f7';
+                document.getElementById('view-cancel').innerText = order.refundNote;
+            } else if (order.status !== 'Refunded') {
+                // Reset styles if not refunded (back to cancel red)
+                document.getElementById('view-cancel-container').style.background = 'rgba(239,68,68,0.1)';
+                document.getElementById('view-cancel-container').style.borderColor = 'rgba(239,68,68,0.2)';
+                document.querySelector('#view-cancel-container small').innerText = 'CANCELLATION REASON';
+                document.querySelector('#view-cancel-container small').style.color = '#ef4444';
             }
 
             document.getElementById('order-view-modal').style.display = 'flex';
