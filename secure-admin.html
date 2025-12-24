@@ -636,9 +636,10 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <h3>🎫 Support Tickets <span id="ticket-debug-msg"
                             style="color:yellow; font-size:12px; margin-left:10px;"></span></h3>
-                    <button onclick="loadTickets()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
-                        Refresh</button>
+                    <button onclick="loadTickets()" class="action-btn"
+                        style="background:var(--blue); display:flex; align-items:center; gap:5px;">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
                 </div>
 
                 <div style="overflow-x:auto;">
@@ -2002,6 +2003,7 @@
             try {
                 const res = await fetch('api/tickets?t=' + Date.now());
                 const tickets = await res.json();
+                console.log("DEBUG: Fetched Tickets:", tickets);
 
                 if (Array.isArray(tickets)) {
                     document.getElementById('ticket-debug-msg').innerText = `(Debug: Found ${tickets.length} tickets)`;
