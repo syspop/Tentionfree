@@ -571,18 +571,19 @@
                     </div>
 
                     <!-- Info Grid -->
-                    <div style="display:flex; justify-content:space-between; margin-bottom: 40px;">
                         <div>
                             <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Billed To</div>
                             <div style="font-weight:bold; color: #1e293b; margin-bottom:3px; font-size:16px;">${order.customer || order.customerName || 'Guest'}</div>
                             <div style="color: #64748b; font-size: 14px;">${order.email || ''}</div>
                             <div style="color: #64748b; font-size: 14px;">${order.phone || ''}</div>
+                            ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="color: #64748b; font-size: 14px; margin-top: 5px;">Player/Account ID: <span style="color: #334155; font-weight:500;">${order.gameUid}</span></div>` : ''}
                         </div>
                         <div style="text-align:right;">
                              <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Details</div>
                              <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Date: <span style="color: #1e293b; font-weight:600;">${new Date(order.date).toLocaleDateString()}</span></div>
                              <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Method: <span style="color: #1e293b; font-weight:600;">${order.paymentMethod}</span></div>
                              <div style="color: #64748b; font-size: 14px;">Status: <span style="color:${order.status === 'Completed' ? '#10b981' : '#f59e0b'}; font-weight:600;">${order.status}</span></div>
+                             ${order.trx ? `<div style="color: #64748b; font-size: 14px; margin-top: 3px;">TrxID: <span style="color: #334155; font-weight:600;">${order.trx}</span></div>` : ''}
                         </div>
                     </div>
 
