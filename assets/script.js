@@ -470,7 +470,7 @@ function renderProducts() {
         }
 
         card.innerHTML = `
-            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group">
+            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer" onclick="openDetails(${product.id})">
                 <img src="${product.image}" alt="${product.name}" loading="lazy" width="200" height="200"
                     class="h-full max-w-full object-contain drop-shadow-2xl transform group-hover:scale-110 transition duration-500 aspect-square"
                     onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
@@ -478,10 +478,17 @@ function renderProducts() {
                     ${product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}
                 </span>
                 
-                <!-- View Details Button on Image -->
+                <!-- Desktop View Details Button (Hover) -->
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center hidden md:flex">
-                    <button onclick="openDetails(${product.id})" class="text-xs font-bold text-white bg-white/20 hover:bg-brand-500 backdrop-blur-sm px-4 py-2 rounded-full flex items-center transition">
+                    <button onclick="event.stopPropagation(); openDetails(${product.id})" class="text-xs font-bold text-white bg-white/20 hover:bg-brand-500 backdrop-blur-sm px-4 py-2 rounded-full flex items-center transition">
                         <i class="fa-regular fa-eye mr-2"></i> View Details
+                    </button>
+                </div>
+
+                <!-- Mobile View Button (Always Visible) -->
+                <div class="absolute bottom-1 left-1 md:hidden z-10">
+                    <button onclick="event.stopPropagation(); openDetails(${product.id})" class="bg-black/60 text-white text-[9px] px-2 py-1 rounded backdrop-blur-md border border-white/10 flex items-center shadow-lg">
+                        <i class="fa-regular fa-eye mr-1"></i> View
                     </button>
                 </div>
             </div>
@@ -932,16 +939,28 @@ function updateQuantity(cartId, change) {
 function updateCartCount() {
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
     const badge = document.getElementById('cart-count');
-    if (!badge) return;
+    const mobileBadge = document.getElementById('mobile-cart-count');
 
-    badge.innerText = count;
+    if (badge) {
+        badge.innerText = count;
+        if (count > 0) {
+            badge.classList.remove('scale-0');
+            badge.classList.add('scale-100');
+        } else {
+            badge.classList.remove('scale-100');
+            badge.classList.add('scale-0');
+        }
+    }
 
-    if (count > 0) {
-        badge.classList.remove('scale-0');
-        badge.classList.add('scale-100');
-    } else {
-        badge.classList.remove('scale-100');
-        badge.classList.add('scale-0');
+    if (mobileBadge) {
+        mobileBadge.innerText = count;
+        if (count > 0) {
+            mobileBadge.classList.remove('scale-0');
+            mobileBadge.classList.add('scale-100');
+        } else {
+            mobileBadge.classList.remove('scale-100');
+            mobileBadge.classList.add('scale-0');
+        }
     }
 }
 

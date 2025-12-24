@@ -83,7 +83,8 @@
     <script src="assets/script.js" defer></script>
 </head>
 
-<body class="antialiased min-h-screen flex flex-col relative text-slate-100 bg-slate-950">
+<body
+    class="antialiased min-h-screen flex flex-col relative text-slate-100 bg-slate-950 pb-24 md:pb-0 safe-area-bottom">
 
     <!-- Loading Screen -->
     <div id="loader">
@@ -161,8 +162,8 @@
                         <span id="cart-count"
                             class="absolute top-1 right-1 bg-brand-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center transform scale-0 transition-transform duration-300 shadow-lg shadow-brand-500/40">0</span>
                     </button>
-                    <button class="md:hidden p-2 text-slate-300 hover:text-slate-100" onclick="toggleMobileMenu()"
-                        aria-label="Open Menu">
+                    <button class="hidden md:hidden p-2 text-slate-300 hover:text-slate-100"
+                        onclick="toggleMobileMenu()" aria-label="Open Menu">
                         <i class="fa-solid fa-bars-staggered text-2xl"></i>
                     </button>
 
@@ -744,6 +745,36 @@
         </div>
     </div>
     <script src="assets/script.js"></script>
+    <!-- Mobile Bottom Navigation -->
+    <div
+        class="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 z-[90] md:hidden safe-area-bottom h-20">
+        <div class="grid grid-cols-4 h-full">
+            <a href="index.html"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
+                <i class="fa-solid fa-house mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </a>
+            <a href="products.html"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
+                <i class="fa-solid fa-store mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Shop</span>
+            </a>
+            <button onclick="toggleCart()"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group relative">
+                <div class="relative">
+                    <i class="fa-solid fa-bag-shopping mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span id="mobile-cart-count"
+                        class="absolute -top-1 -right-2 bg-brand-500 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center transform scale-0 transition-transform duration-300">0</span>
+                </div>
+                <span class="text-[10px] font-medium">Cart</span>
+            </button>
+            <a href="profile.html"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
+                <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Profile</span>
+            </a>
+        </div>
+    </div>
 </body>
 
 </html>

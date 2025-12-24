@@ -144,6 +144,14 @@ body {
     animation: float 3s ease-in-out infinite;
 }
 
+@media (max-width: 768px) {
+    .whatsapp-float {
+        bottom: 100px;
+        /* Clear the bottom nav */
+        right: 20px;
+    }
+}
+
 /* Toast Notification */
 #toast {
     visibility: hidden;
