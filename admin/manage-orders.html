@@ -425,16 +425,23 @@
                 </tr>
             `).join('') : '';
 
-            // Create a hidden container for the invoice
+            // Create a VISIBLE full-screen overlay for the invoice
+            // This ensures html2pdf captures it correctly.
             const container = document.createElement('div');
-            // Fix for blank pages: must be "visible" to the renderer
             container.style.position = 'fixed';
             container.style.top = '0';
             container.style.left = '0';
-            container.style.zIndex = '-9999';
+            container.style.width = '100vw';
+            container.style.height = '100vh';
+            container.style.zIndex = '10000'; // High z-index to stay on top
+            container.style.backgroundColor = '#ffffff'; // White background
+            container.style.overflowY = 'auto';
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.paddingTop = '20px';
 
             container.innerHTML = `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 800px; margin: 0 auto; background: #ffffff; padding: 40px; color: #333;">
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; max-width: 90%; background: #ffffff; padding: 40px; color: #333; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
                     <!-- Header -->
                     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
                          <div style="font-size: 28px; font-weight: bold; color: #2563eb; letter-spacing: -1px;">TentionFree</div>
@@ -494,6 +501,11 @@
             document.body.appendChild(container);
 
             // Use html2pdf to generate and save
+            // We select the first child (the actual invoice div) to avoid printing the full screen container's extra white space if possible, 
+            // OR we print the container but ensure margins are 0.
+            // Let's print the first child: container.children[0]
+            const elementToPrint = container.children[0];
+
             const opt = {
                 margin: 0,
                 filename: `Invoice_${order.id}.pdf`,
@@ -502,7 +514,7 @@
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            html2pdf().set(opt).from(container).save().then(() => {
+            html2pdf().set(opt).from(elementToPrint).save().then(() => {
                 document.body.removeChild(container);
             });
         }
