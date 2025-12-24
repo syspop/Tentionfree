@@ -266,6 +266,15 @@
 
             const confirmPass = document.getElementById('reg-confirm-pass').value;
 
+            // Strong Password Validation
+            const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!strongRegex.test(data.password)) {
+                alert("Please create a Strong Password!\n\nMust contain:\n- At least 8 characters\n- One Uppercase Letter (A-Z)\n- One Lowercase Letter (a-z)\n- One Number (0-9)\n- One Special Character (@$!%*?&)");
+                btn.innerText = original;
+                btn.disabled = false;
+                return;
+            }
+
             if (data.password !== confirmPass) {
                 alert("Passwords do not match!");
                 btn.innerText = original;
