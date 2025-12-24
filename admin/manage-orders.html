@@ -493,12 +493,26 @@
             pendingRefundId = null;
         }
 
+        function selectRefundMethod(btn, method) {
+            document.getElementById('refund-method-input').value = method;
+            document.querySelectorAll('.refund-method-btn').forEach(b => {
+                b.style.background = 'var(--bg-input)';
+                b.style.color = 'var(--gray)';
+                b.style.borderColor = 'var(--border)';
+            });
+            btn.style.background = '#a855f7';
+            btn.style.color = 'white';
+            btn.style.borderColor = '#a855f7';
+        }
+
         async function confirmRefund() {
             const note = document.getElementById('refund-note-input').value.trim();
+            const method = document.getElementById('refund-method-input').value;
+            const trx = document.getElementById('refund-trx-input').value.trim();
             const fileInput = document.getElementById('refund-file-input');
 
-            // Note is optional as per request "optional hisabe rakho" but usually good to have. 
-            // It says "refunded option add koro sathe note", implying note exists.
+            if (!method) return showAlert("Required", "Please select a Refund Method!", "error");
+            if (!trx) return showAlert("Required", "Please enter Transaction ID!", "error");
 
             let imageBase64 = null;
             if (fileInput.files.length > 0) {
@@ -509,7 +523,7 @@
                 }
             }
 
-            processStatusUpdate(pendingRefundId, 'Refunded', note, null, imageBase64);
+            processStatusUpdate(pendingRefundId, 'Refunded', note, null, imageBase64, method, trx);
             closeRefundModal();
         }
 
@@ -727,14 +741,22 @@
 
             // Refund Info (Reuse cancel container structure or create new, let's reuse/adapt simply by overwriting dynamic UI if needed, but better to add a separate block or clear separation)
             // For now, let's add logic to show Refund info if status is Refunded
-            if (order.status === 'Refunded' && order.refundNote) {
+            // Refund Info
+            if (order.status === 'Refunded') {
                 // Create a temporary view for refund similar to cancel
                 document.getElementById('view-cancel-container').style.display = 'block';
                 document.getElementById('view-cancel-container').style.background = 'rgba(168, 85, 247, 0.1)';
                 document.getElementById('view-cancel-container').style.borderColor = 'rgba(168, 85, 247, 0.2)';
                 document.querySelector('#view-cancel-container small').innerText = 'REFUND DETAILS';
                 document.querySelector('#view-cancel-container small').style.color = '#a855f7';
-                document.getElementById('view-cancel').innerText = order.refundNote;
+
+                let refundHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">Method</small><span style="color:white; font-weight:bold;">${order.refundMethod || 'N/A'}</span></div>
+                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">TrxID</small><span style="color:white; font-family:monospace;">${order.refundTrx || 'N/A'}</span></div>
+                 </div>`;
+                if (order.refundNote) refundHtml += `<div style="margin-top:5px; border-top:1px solid rgba(168, 85, 247, 0.2); padding-top:5px;"><small style="color:#a855f7; font-size:10px;">Note</small><div style="color:#cbd5e1;">${order.refundNote}</div></div>`;
+
+                document.getElementById('view-cancel').innerHTML = refundHtml;
             } else if (order.status !== 'Refunded') {
                 // Reset styles if not refunded (back to cancel red)
                 document.getElementById('view-cancel-container').style.background = 'rgba(239,68,68,0.1)';
