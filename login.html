@@ -208,6 +208,32 @@
         </div>
     </div>
 
+    </div>
+    </div>
+
+    <!-- CUSTOM ALERT MODAL -->
+    <div id="custom-alert"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-card w-[400px] max-w-[90%] p-6 rounded-2xl shadow-2xl transform scale-95 transition-transform duration-300"
+            id="custom-alert-box">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                    id="alert-icon-bg">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl text-red-500" id="alert-icon"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2" id="alert-title">Attention</h3>
+                <div class="text-slate-300 text-sm leading-relaxed mb-6" id="alert-msg">
+                    Something needs your attention.
+                </div>
+                <button onclick="closeCustomAlert()"
+                    class="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 rounded-xl transition-all transform hover:scale-[1.02]"
+                    id="alert-btn">
+                    Understood
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function switchTab(tab) {
             const loginForm = document.getElementById('login-form');
@@ -269,15 +295,28 @@
             // Strong Password Validation
             const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
             if (!strongRegex.test(data.password)) {
-                alert("Please create a Strong Password!\n\nMust contain:\n- At least 8 characters\n- One Uppercase Letter (A-Z)\n- One Lowercase Letter (a-z)\n- One Number (0-9)\n- One Special Character (@$!%*?&)");
-                btn.innerText = original;
+                showCustomAlert(
+                    "Weak Password",
+                    `<div class="text-left bg-slate-900/50 p-4 rounded-lg border border-white/5">
+                        <p class="mb-2 font-bold text-red-400">Password must match these rules:</p>
+                        <ul class="list-disc pl-4 space-y-1 text-xs text-slate-300">
+                            <li>At least 8 characters long</li>
+                            <li>One Uppercase Letter (A-Z)</li>
+                            <li>One Lowercase Letter (a-z)</li>
+                            <li>One Number (0-9)</li>
+                            <li>One Special Character (@$!%*?&)</li>
+                        </ul>
+                    </div>`,
+                    "error"
+                );
+                btn.innerHTML = original; // Fix: use innerHTML to restore text properly if needed, but original was innerText.
                 btn.disabled = false;
                 return;
             }
 
             if (data.password !== confirmPass) {
-                alert("Passwords do not match!");
-                btn.innerText = original;
+                showCustomAlert("Mismatch", "Passwords do not match! Please try again.", "error");
+                btn.innerHTML = original;
                 btn.disabled = false;
                 return;
             }
@@ -294,13 +333,13 @@
                     localStorage.setItem('user', JSON.stringify(result.user));
                     window.location.href = 'profile.html';
                 } else {
-                    alert(result.message || "Registration Failed");
+                    showCustomAlert("Registration Failed", result.message || "Something went wrong.", "error");
                 }
             } catch (err) {
                 console.error(err);
-                alert("Server Error. Check console.");
+                showCustomAlert("Server Error", "Could not connect to server. Please check your internet.", "error");
             } finally {
-                btn.innerText = original;
+                btn.innerHTML = original;
                 btn.disabled = false;
             }
         }
@@ -329,15 +368,58 @@
                     localStorage.setItem('user', JSON.stringify(result.user));
                     window.location.href = 'profile.html';
                 } else {
-                    alert(result.message || "Login Failed");
+                    showCustomAlert("Login Failed", result.message || "Invalid credentials.", "error");
                 }
             } catch (err) {
                 console.error(err);
-                alert("Server Error. Check console.");
+                showCustomAlert("Server Error", "Could not connect to server. Please check your internet.", "error");
             } finally {
-                btn.innerText = original;
+                btn.innerHTML = original;
                 btn.disabled = false;
             }
+        }
+
+        // --- CUSTOM ALERT LOGIC ---
+        function showCustomAlert(title, msg, type) {
+            const modal = document.getElementById('custom-alert');
+            const box = document.getElementById('custom-alert-box');
+            const titleEl = document.getElementById('alert-title');
+            const msgEl = document.getElementById('alert-msg');
+            const icon = document.getElementById('alert-icon');
+            const iconBg = document.getElementById('alert-icon-bg');
+            const btn = document.getElementById('alert-btn');
+
+            titleEl.innerText = title;
+            msgEl.innerHTML = msg; // Allows HTML content
+
+            // Type Styles
+            if (type === 'error') {
+                icon.className = "fa-solid fa-circle-exclamation text-2xl text-red-500";
+                iconBg.className = "w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
+                btn.className = "w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-red-500/25";
+            } else if (type === 'success') {
+                icon.className = "fa-solid fa-circle-check text-2xl text-emerald-500";
+                iconBg.className = "w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
+                btn.className = "w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25";
+            } else {
+                // Warning/Info
+                icon.className = "fa-solid fa-triangle-exclamation text-2xl text-amber-500";
+                iconBg.className = "w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
+                btn.className = "w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg shadow-amber-500/25";
+            }
+
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto'; // Enable clicks
+            box.style.transform = 'scale(1)';
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById('custom-alert');
+            const box = document.getElementById('custom-alert-box');
+
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            box.style.transform = 'scale(0.95)';
         }
     </script>
 </body>
