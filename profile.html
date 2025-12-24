@@ -543,7 +543,7 @@
                                 </div>
                             </details>` : ''}
 
-                            ${o.status === 'Refunded' && o.refundNote ? `
+                            ${o.status === 'Refunded' ? `
                             <details class="bg-purple-500/5 border-t border-purple-500/10 group">
                                 <summary class="p-4 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                                     <div class="flex items-center gap-3">
@@ -553,7 +553,17 @@
                                     <i class="fa-solid fa-chevron-down text-purple-400 text-xs transition-transform group-open:rotate-180"></i>
                                 </summary>
                                 <div class="px-4 pb-4 pl-10">
-                                    <p class="text-sm text-slate-300 leading-relaxed">${o.refundNote}</p>
+                                    <div class="grid grid-cols-2 gap-4 mb-3 border-b border-white/5 pb-3">
+                                        <div>
+                                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Method</p>
+                                            <p class="text-xs text-white font-medium">${o.refundMethod || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">TrxID</p>
+                                            <p class="text-xs text-white font-mono bg-white/5 px-2 py-1 rounded inline-block">${o.refundTrx || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    ${o.refundNote ? `<p class="text-sm text-slate-300 leading-relaxed mb-3"><span class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Note</span>${o.refundNote}</p>` : ''}
                                     ${o.refundImage ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Attached Proof</p><img src="${o.refundImage}" class="max-w-[150px] rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${o.refundImage}', '_blank')"></div>` : ''}
                                 </div>
                             </details>` : ''}

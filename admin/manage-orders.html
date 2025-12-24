@@ -102,10 +102,36 @@
         <div
             style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
             <h3 style="color:#a855f7; margin-top:0;">↩️ Refund Order</h3>
-            <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Optional: Provide refund details/reason.
-                <br>This will be visible to the customer.</p>
-            <textarea id="refund-note-input" class="input-box" rows="4" placeholder="e.g. Refunded via bKash..."
-                autofocus></textarea>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:15px;">Please provide refund details
+                below.<br>These will be visible to the customer.</p>
+
+            <!-- Payment Method Selector -->
+            <div style="text-align:left; margin-bottom:15px;">
+                <label style="color:var(--gray); font-size:12px; margin-bottom:5px; display:block;">Refund Method <span
+                        style="color:var(--red)">*</span></label>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;">
+                    <button type="button" class="refund-method-btn" onclick="selectRefundMethod(this, 'bKash')"
+                        style="padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--gray); cursor:pointer; transition:all 0.2s; font-size:12px;">bKash</button>
+                    <button type="button" class="refund-method-btn" onclick="selectRefundMethod(this, 'Nagad')"
+                        style="padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--gray); cursor:pointer; transition:all 0.2s; font-size:12px;">Nagad</button>
+                    <button type="button" class="refund-method-btn" onclick="selectRefundMethod(this, 'Rocket')"
+                        style="padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--gray); cursor:pointer; transition:all 0.2s; font-size:12px;">Rocket</button>
+                    <button type="button" class="refund-method-btn" onclick="selectRefundMethod(this, 'Binance')"
+                        style="padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--gray); cursor:pointer; transition:all 0.2s; font-size:12px;">Binance</button>
+                </div>
+                <input type="hidden" id="refund-method-input">
+            </div>
+
+            <!-- Transaction ID -->
+            <div style="text-align:left; margin-bottom:15px;">
+                <label style="color:var(--gray); font-size:12px; margin-bottom:5px; display:block;">Transaction ID <span
+                        style="color:var(--red)">*</span></label>
+                <input type="text" id="refund-trx-input" class="input-box" placeholder="e.g. TRX12345678"
+                    style="padding:10px;">
+            </div>
+
+            <textarea id="refund-note-input" class="input-box" rows="3"
+                placeholder="Additional Note (Optional)..."></textarea>
 
             <div style="margin-top:10px; text-align:left;">
                 <label style="color:var(--gray); font-size:12px; margin-bottom:5px; display:block;">Attach Proof/Image
@@ -375,15 +401,24 @@
                 pendingRefundId = id;
                 document.getElementById('refund-note-input').value = "";
                 document.getElementById('refund-file-input').value = "";
+                document.getElementById('refund-trx-input').value = "";
+                document.getElementById('refund-method-input').value = "";
+                // Reset method buttons
+                document.querySelectorAll('.refund-method-btn').forEach(b => {
+                    b.style.background = 'var(--bg-input)';
+                    b.style.color = 'var(--gray)';
+                    b.style.borderColor = 'var(--border)';
+                });
+
                 document.getElementById('refund-modal').style.display = 'flex';
-                document.getElementById('refund-note-input').focus();
+                // document.getElementById('refund-note-input').focus();
                 return;
             }
             // For other statuses
             processStatusUpdate(id, status);
         }
 
-        async function processStatusUpdate(id, status, reason = null, deliveryInfo = null, image = null) {
+        async function processStatusUpdate(id, status, reason = null, deliveryInfo = null, image = null, refundMethod = null, refundTrx = null) {
             try {
                 // Fetch latest
                 const res = await fetch('../api/orders?t=' + Date.now());
@@ -399,6 +434,12 @@
                     if (status === 'Completed' && deliveryInfo) {
                         orders[index].deliveryInfo = deliveryInfo;
                         if (image) orders[index].deliveryImage = image;
+                    }
+                    if (status === 'Refunded') {
+                        if (reason) orders[index].refundNote = reason;
+                        if (image) orders[index].refundImage = image;
+                        if (refundMethod) orders[index].refundMethod = refundMethod;
+                        if (refundTrx) orders[index].refundTrx = refundTrx;
                     }
 
                     await saveOrders(orders);
