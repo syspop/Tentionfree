@@ -221,28 +221,69 @@
                 let btnHtml = '';
 
                 // Actions based on status
+                // Action container
+                btnHtml = `<div style="display:flex; gap:6px; justify-content:center;">`;
+
+                // View Button (Always visible)
+                btnHtml += `
+                    <button onclick="viewOrder(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(139, 92, 246, 0.15); color:#8b5cf6; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#8b5cf6'; this.style.color='white'" onmouseout="this.style.background='rgba(139, 92, 246, 0.15)'; this.style.color='#8b5cf6'" title="View Details">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                `;
+
+                // Actions for Pending/Processing
                 if (o.status !== 'Completed' && o.status !== 'Cancelled') {
-                    btnHtml = `
-                        <button onclick="viewOrder(${o.id})" style="background:#6c5ce7; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;" title="View Order"><i class="fa-solid fa-eye"></i></button>
-                        <button class="success-btn" onclick="updateOrderStatus(${o.id}, 'Completed')" style="margin-right:5px;">Complete</button>
-                        <button class="action-btn" onclick="updateOrderStatus(${o.id}, 'Cancelled')" style="margin-right:5px;">Cancel</button>
-                        <button onclick="downloadInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;" title="Download Invoice"><i class="fa-solid fa-file-arrow-down"></i></button>
+                    // Complete Button
+                    btnHtml += `
+                        <button onclick="updateOrderStatus(${o.id}, 'Completed')" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(16, 185, 129, 0.15); color:#10b981; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#10b981'; this.style.color='white'" onmouseout="this.style.background='rgba(16, 185, 129, 0.15)'; this.style.color='#10b981'" title="Mark Completed">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
                     `;
-                } else if (o.status === 'Completed') {
-                    // Can still print invoice or archive
-                    btnHtml = `
-                        <button onclick="viewOrder(${o.id})" style="background:#6c5ce7; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;" title="View Order"><i class="fa-solid fa-eye"></i></button>
-                        <button onclick="downloadInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;" title="Download Invoice"><i class="fa-solid fa-file-arrow-down"></i></button>
-                        <button class="action-btn" onclick="deleteOrder(${o.id})" style="background:var(--gray)">Archive</button>
-                     `;
-                } else {
-                    // Cancelled
-                    btnHtml = `
-                        <button onclick="viewOrder(${o.id})" style="background:#6c5ce7; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;" title="View Order"><i class="fa-solid fa-eye"></i></button>
-                        <button onclick="downloadInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;" title="Download Invoice"><i class="fa-solid fa-file-arrow-down"></i></button>
-                        <button class="action-btn" onclick="deleteOrder(${o.id})" style="background:var(--red)">Archive</button>
-                     `;
+                    // Cancel Button
+                    btnHtml += `
+                        <button onclick="updateOrderStatus(${o.id}, 'Cancelled')" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(239, 68, 68, 0.15); color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'" title="Cancel Order">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    `;
+                    // Download Invoice
+                    btnHtml += `
+                        <button onclick="downloadInvoice(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(59, 130, 246, 0.15); color:#3b82f6; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='white'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.color='#3b82f6'" title="Download Invoice">
+                            <i class="fa-solid fa-file-arrow-down"></i>
+                        </button>
+                    `;
                 }
+                // Actions for Completed
+                else if (o.status === 'Completed') {
+                    // Download Invoice
+                    btnHtml += `
+                        <button onclick="downloadInvoice(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(59, 130, 246, 0.15); color:#3b82f6; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='white'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.color='#3b82f6'" title="Download Invoice">
+                            <i class="fa-solid fa-file-arrow-down"></i>
+                        </button>
+                    `;
+                    // Archive Button
+                    btnHtml += `
+                        <button onclick="deleteOrder(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(100, 116, 139, 0.15); color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#64748b'; this.style.color='white'" onmouseout="this.style.background='rgba(100, 116, 139, 0.15)'; this.style.color='#64748b'" title="Archive Order">
+                            <i class="fa-solid fa-box-archive"></i>
+                        </button>
+                    `;
+                }
+                // Actions for Cancelled
+                else {
+                    // Download Invoice
+                    btnHtml += `
+                        <button onclick="downloadInvoice(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(59, 130, 246, 0.15); color:#3b82f6; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='white'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.color='#3b82f6'" title="Download Invoice">
+                            <i class="fa-solid fa-file-arrow-down"></i>
+                        </button>
+                    `;
+                    // Archive Button (Red for cancelled logic in original, but let's keep it gray/standard or red)
+                    btnHtml += `
+                        <button onclick="deleteOrder(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(239, 68, 68, 0.15); color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'" title="Archive">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    `;
+                }
+
+                btnHtml += `</div>`;
 
                 list.innerHTML += `
                     <tr>
