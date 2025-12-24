@@ -413,6 +413,7 @@
                 container.innerHTML = '';
                 // Sort by date desc
                 const validOrders = orders;
+                userOrdersCache = validOrders; // Update Cache
 
                 if (validOrders.length === 0) {
                     container.innerHTML = `
@@ -470,10 +471,15 @@
                                     </div>
                                 </div>
 
-                                <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-                                    <div class="text-right mr-4">
-                                        <p class="text-[10px] text-slate-500 font-bold uppercase mb-0.5">Total Amount</p>
-                                        <p class="text-xl font-bold text-white">৳${o.price}</p>
+                            <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="printInvoice(${o.id})" class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center" title="Print Invoice">
+                                            <i class="fa-solid fa-print"></i>
+                                        </button>
+                                        <div class="text-right mr-2">
+                                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-0.5">Total Amount</p>
+                                            <p class="text-xl font-bold text-white">৳${o.price}</p>
+                                        </div>
                                     </div>
                                     <div class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${statusClass}">
                                         <i class="fa-solid ${icon}"></i> ${statusText}
@@ -516,6 +522,94 @@
                 console.error(e);
                 container.innerHTML = "Failed to load history.";
             }
+        }
+
+        // Cache to store user orders for printing
+        let userOrdersCache = [];
+
+        function printInvoice(orderId) {
+            const order = userOrdersCache.find(o => o.id == orderId);
+            if (!order) return showNotification("Order data missing.", "error");
+
+            const items = order.items || order.cart || [];
+            const itemsHtml = items.length > 0 ? items.map(item => `
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${item.name || 'Item'} <br><small>${item.variant || ''}</small></td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.quantity || item.qty || 1}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price || 0}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                </tr>
+            `).join('') : '';
+
+            const invoiceWindow = window.open('', 'PRINT', 'height=600,width=800');
+            invoiceWindow.document.write(`
+                <html>
+                <head>
+                    <title>Invoice #${order.id}</title>
+                    <style>
+                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+                        .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+                        .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+                        h1 { font-size: 24px; margin: 0; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th { text-align: left; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee; }
+                        .total { text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; }
+                        .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">TentionFree</div>
+                        <div style="text-align:right;">
+                            <h1>INVOICE</h1>
+                            <p style="margin:5px 0; color:#666;">#${order.id}</p>
+                            <p style="margin:0; color:#666;">${new Date(order.date).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div>
+                            <strong>Bill To:</strong><br>
+                            ${order.customer || order.customerName || 'Guest'}<br>
+                            ${order.phone || order.customerPhone || ''}<br>
+                            ${order.email || order.customerEmail || ''}
+                        </div>
+                        <div style="text-align:right;">
+                            <strong>Payment Method:</strong><br>
+                            ${order.paymentMethod || 'N/A'}<br>
+                            <span style="color:${order.status === 'Completed' ? 'green' : 'orange'}">${order.status}</span>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th style="text-align:right;">Qty</th>
+                                <th style="text-align:right;">Price</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="total">
+                        Total Amount: ৳${order.price || order.totalAmount || 0}
+                    </div>
+
+                    <div class="footer">
+                        Thank you for your business!<br>
+                        TentionFree - Digital Product Shop Bangladesh
+                    </div>
+                </body>
+                </html>
+            `);
+            invoiceWindow.document.close();
+            invoiceWindow.focus();
+            setTimeout(() => { invoiceWindow.print(); invoiceWindow.close(); }, 500);
         }
 
         function logoutUser() {
