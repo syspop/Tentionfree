@@ -414,14 +414,14 @@
 
             const items = order.items || order.cart || [];
             const itemsHtml = items.length > 0 ? items.map(item => `
-                <tr style="border-bottom: 1px solid #e2e8f0; background-color: #ffffff;">
-                    <td style="padding: 12px 15px; color: #334155;">
-                        <div style="font-weight: 500;">${item.name || 'Item'}</div>
-                        <div style="font-size: 12px; color: #94a3b8;">${item.variant || ''}</div>
+                <tr style="border-bottom: 1px solid #e2e8f0; background-color: #ffffff !important; color: #334155 !important;">
+                    <td style="padding: 12px 15px; color: #334155 !important; background-color: #ffffff !important;">
+                        <div style="font-weight: 500; color: #334155 !important;">${item.name || 'Item'}</div>
+                        <div style="font-size: 12px; color: #94a3b8 !important;">${item.variant || ''}</div>
                     </td>
-                    <td style="text-align:right; padding: 12px 15px; color: #64748b;">${item.quantity || item.qty || 1}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #64748b;">৳${item.price || 0}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #334155; font-weight: 600;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${item.quantity || item.qty || 1}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">৳${item.price || 0}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
                 </tr>
             `).join('') : '';
 
