@@ -56,6 +56,12 @@
                 This will be visible to the customer.</p>
             <input type="text" id="cancel-reason-input" class="input-box"
                 placeholder="e.g. Out of Stock, Invalid Payment..." autofocus>
+
+            <div style="margin-top:10px; text-align:left;">
+                <label style="color:var(--gray); font-size:12px; margin-bottom:5px; display:block;">Attach Proof/Image
+                    (Optional):</label>
+                <input type="file" id="cancel-file-input" accept="image/*" class="input-box" style="padding:5px;">
+            </div>
             <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
                 <button onclick="closeCancelModal()" class="tab-btn"
                     style="background:var(--bg-input); border:1px solid var(--border);">Back</button>
@@ -75,6 +81,12 @@
                 credentials, codes). <br>This will be visible to the customer.</p>
             <textarea id="delivery-info-input" class="input-box" rows="4"
                 placeholder="e.g. User: ... Pass: ... (Optional)" autofocus></textarea>
+
+            <div style="margin-top:10px; text-align:left;">
+                <label style="color:var(--gray); font-size:12px; margin-bottom:5px; display:block;">Attach Image
+                    (Optional):</label>
+                <input type="file" id="delivery-file-input" accept="image/*" class="input-box" style="padding:5px;">
+            </div>
             <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
                 <button onclick="closeDeliveryModal()" class="tab-btn"
                     style="background:var(--bg-input); border:1px solid var(--border);">Back</button>
@@ -314,6 +326,7 @@
             if (status === 'Cancelled') {
                 pendingCancelId = id;
                 document.getElementById('cancel-reason-input').value = "";
+                document.getElementById('cancel-file-input').value = ""; // Reset
                 document.getElementById('cancel-modal').style.display = 'flex';
                 document.getElementById('cancel-reason-input').focus();
                 return;
@@ -321,6 +334,7 @@
             if (status === 'Completed') {
                 pendingCompleteId = id;
                 document.getElementById('delivery-info-input').value = "";
+                document.getElementById('delivery-file-input').value = ""; // Reset file input
                 document.getElementById('delivery-modal').style.display = 'flex';
                 document.getElementById('delivery-info-input').focus();
                 return;
@@ -329,7 +343,7 @@
             processStatusUpdate(id, status);
         }
 
-        async function processStatusUpdate(id, status, reason = null, deliveryInfo = null) {
+        async function processStatusUpdate(id, status, reason = null, deliveryInfo = null, image = null) {
             try {
                 // Fetch latest
                 const res = await fetch('../api/orders?t=' + Date.now());
@@ -338,8 +352,14 @@
 
                 if (index !== -1) {
                     orders[index].status = status;
-                    if (status === 'Cancelled' && reason) orders[index].cancelReason = reason;
-                    if (status === 'Completed' && deliveryInfo) orders[index].deliveryInfo = deliveryInfo;
+                    if (status === 'Cancelled' && reason) {
+                        orders[index].cancelReason = reason;
+                        if (image) orders[index].cancelImage = image;
+                    }
+                    if (status === 'Completed' && deliveryInfo) {
+                        orders[index].deliveryInfo = deliveryInfo;
+                        if (image) orders[index].deliveryImage = image;
+                    }
 
                     await saveOrders(orders);
                 }
@@ -360,10 +380,22 @@
             pendingCancelId = null;
         }
 
-        function confirmCancellation() {
+        async function confirmCancellation() {
             const reason = document.getElementById('cancel-reason-input').value.trim();
+            const fileInput = document.getElementById('cancel-file-input');
+
             if (!reason) return showAlert("Input Required", "Please enter a reason!", "error");
-            processStatusUpdate(pendingCancelId, 'Cancelled', reason);
+
+            let imageBase64 = null;
+            if (fileInput.files.length > 0) {
+                try {
+                    imageBase64 = await readFileAsBase64(fileInput.files[0]);
+                } catch (e) {
+                    return showAlert("Error", "Failed to process image", "error");
+                }
+            }
+
+            processStatusUpdate(pendingCancelId, 'Cancelled', reason, null, imageBase64);
             closeCancelModal();
         }
 
@@ -372,10 +404,30 @@
             pendingCompleteId = null;
         }
 
-        function confirmCompletion() {
+        async function confirmCompletion() {
             const info = document.getElementById('delivery-info-input').value.trim();
-            processStatusUpdate(pendingCompleteId, 'Completed', null, info);
+            const fileInput = document.getElementById('delivery-file-input');
+
+            let imageBase64 = null;
+            if (fileInput.files.length > 0) {
+                try {
+                    imageBase64 = await readFileAsBase64(fileInput.files[0]);
+                } catch (e) {
+                    return showAlert("Error", "Failed to process image", "error");
+                }
+            }
+
+            processStatusUpdate(pendingCompleteId, 'Completed', null, info, imageBase64);
             closeDeliveryModal();
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         }
 
         // --- DELETE/ARCHIVE LOGIC ---
