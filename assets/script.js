@@ -470,22 +470,22 @@ function renderProducts() {
         }
 
         card.innerHTML = `
-            <div class="h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-8 group">
+            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group">
                 <img src="${product.image}" alt="${product.name}" loading="lazy" width="200" height="200"
                     class="h-full max-w-full object-contain drop-shadow-2xl transform group-hover:scale-110 transition duration-500 aspect-square"
                     onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
-                <span id="badge-${product.id}" class="absolute top-3 right-3 bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg">
+                <span id="badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg">
                     ${product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}
                 </span>
                 
                 <!-- View Details Button on Image -->
-                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center">
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center hidden md:flex">
                     <button onclick="openDetails(${product.id})" class="text-xs font-bold text-white bg-white/20 hover:bg-brand-500 backdrop-blur-sm px-4 py-2 rounded-full flex items-center transition">
                         <i class="fa-regular fa-eye mr-2"></i> View Details
                     </button>
                 </div>
             </div>
-            <div class="p-5 flex-1 flex flex-col relative">
+            <div class="p-3 md:p-5 flex-1 flex flex-col relative">
                 <script type="application/ld+json">
                 {
                   "@context": "https://schema.org/",
@@ -514,22 +514,22 @@ function renderProducts() {
                   }
                 }
                 </script>
-                <div class="absolute top-4 right-4 bg-dark-bg/90 backdrop-blur border border-white/10 w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-brand-500 hover:text-white transition-all z-10" onclick="addToCart(${product.id})" aria-label="Add to Cart">
-                    <i class="fa-solid fa-plus"></i>
+                <div class="absolute top-2 right-2 md:top-4 md:right-4 bg-dark-bg/90 backdrop-blur border border-white/10 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-brand-500 hover:text-white transition-all z-10" onclick="addToCart(${product.id})" aria-label="Add to Cart">
+                    <i class="fa-solid fa-plus text-xs md:text-base"></i>
                 </div>
                 
-                <div class="text-[10px] text-brand-400 font-bold uppercase tracking-widest mb-2 mt-1">${product.category}</div>
-                <h3 class="text-lg font-bold text-white mb-1 leading-tight pr-12 cursor-pointer hover:text-brand-400 transition" onclick="openDetails(${product.id})">${product.name}</h3>
-                <p class="text-gray-400 text-xs mb-3 flex-1">${product.desc}</p>
+                <div class="text-[9px] md:text-[10px] text-brand-400 font-bold uppercase tracking-widest mb-1 md:mb-2 mt-0.5">${product.category}</div>
+                <h3 class="text-sm md:text-lg font-bold text-white mb-1 leading-tight pr-8 md:pr-12 cursor-pointer hover:text-brand-400 transition" onclick="openDetails(${product.id})">${product.name}</h3>
+                <p class="text-gray-400 text-[10px] md:text-xs mb-2 md:mb-3 flex-1 line-clamp-2">${product.desc}</p>
                 
                 ${variantSelectorHtml}
 
-                <div class="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                <div class="flex items-center justify-between mt-auto pt-3 md:pt-4 border-t border-white/5">
                     <div class="flex flex-col">
-                        <span id="price-original-${product.id}" class="text-xs text-gray-500 line-through">৳${product.originalPrice}</span>
-                        <span id="price-current-${product.id}" class="text-xl font-bold text-white">৳${product.price}</span>
+                        <span id="price-original-${product.id}" class="text-[10px] md:text-xs text-gray-500 line-through">৳${product.originalPrice}</span>
+                        <span id="price-current-${product.id}" class="text-base md:text-xl font-bold text-white">৳${product.price}</span>
                     </div>
-                    <button onclick="buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all border border-white/10 hover:border-brand-400">
+                    <button onclick="buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all border border-white/10 hover:border-brand-400">
                         Buy Now
                     </button>
                 </div>
