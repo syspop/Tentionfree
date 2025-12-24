@@ -14,62 +14,186 @@ body {
     font-family: 'Poppins', sans-serif;
     background: var(--bg-body);
     margin: 0;
-    padding: 20px;
+    padding: 0;
+    /* Remove default padding for full screen */
     color: var(--dark);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --- SIDEBAR LAYOUT --- */
+.admin-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+.admin-sidebar {
+    width: 260px;
+    background: #0f172a;
+    /* Darker slate */
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+.admin-logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 12px;
+    color: var(--gray);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: white;
+    transform: translateX(5px);
+}
+
+.nav-link.active {
+    background: var(--blue);
+    color: white;
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+}
+
+.nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ef4444;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px;
+    width: 100%;
+    text-align: left;
+    transition: 0.2s;
+    border-radius: 8px;
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* --- MAIN CONTENT --- */
+.admin-main {
+    flex-grow: 1;
+    margin-left: 260px;
+    /* Offset for fixed sidebar */
+    padding: 30px;
+    width: calc(100% - 260px);
+    box-sizing: border-box;
 }
 
 .admin-box {
-    max-width: 1000px;
-    margin: auto;
-    background: var(--bg-card);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    /* Resetting generic card styles to fit new layout if needed,
+       but we essentially just treat admin-main as the container now.
+       We might need to keep responsive admin-box behavior?
+       Let's redefine it to be transparent/fluid or just remove its constraint. */
+    max-width: 1200px;
+    margin: 0 auto;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
     animation: fadeIn 0.5s ease-out;
 }
 
+/* Mobile Toggle */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1100;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .admin-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .admin-main {
+        margin-left: 0;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+}
+
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 h2 {
     text-align: center;
     color: var(--blue);
     margin-bottom: 30px;
-}
-
-.tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 30px;
-    border-bottom: 2px solid #f1f2f6;
-    padding-bottom: 15px;
-    justify-content: center;
-    flex-wrap: wrap; /* Ensure responsiveness */
-}
-
-.tab-btn {
-    padding: 10px 25px;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    font-weight: 600;
-    background: #f1f2f6;
-    color: var(--gray);
-    transition: 0.3s;
-    text-decoration: none; /* Added for <a> links */
-    display: inline-block;
-}
-
-.tab-btn:hover {
-    background: #e2e6ea;
-}
-
-.tab-btn.active {
-    background: var(--blue);
-    color: white;
-    box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
 }
 
 .input-box {
@@ -142,7 +266,8 @@ th {
 }
 
 td {
-    background: var(--bg-card); /* Fallback */
+    background: var(--bg-card);
+    /* Fallback */
     background: #1e293b;
     padding: 15px;
     font-size: 14px;
@@ -160,7 +285,8 @@ tbody tr:hover {
 }
 
 td:first-child {
-    border-left: 1px solid #f1f2f6; /* Keep subtle border if desired, or remove */
+    border-left: 1px solid #f1f2f6;
+    /* Keep subtle border if desired, or remove */
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
 }
@@ -200,8 +326,14 @@ td:last-child {
     font-weight: bold;
 }
 
-.bg-pending { background: #fdcb6e; color: #2d3436; }
-.bg-success { background: var(--green); }
+.bg-pending {
+    background: #fdcb6e;
+    color: #2d3436;
+}
+
+.bg-success {
+    background: var(--green);
+}
 
 .empty-state {
     text-align: center;
@@ -235,7 +367,10 @@ td:last-child {
 .stat-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.03));
     pointer-events: none;
 }
@@ -278,7 +413,8 @@ td:last-child {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.8); /* Dark Slate backdrop */
+    background: rgba(15, 23, 42, 0.8);
+    /* Dark Slate backdrop */
     backdrop-filter: blur(8px);
     z-index: 9999;
     display: none;
@@ -289,19 +425,22 @@ td:last-child {
 
 .custom-modal-card {
     background: #1e293b;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     width: 400px;
     max-width: 90%;
     border-radius: 20px;
     padding: 30px;
     text-align: center;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
     transform: scale(0.9);
     animation: scaleUp 0.3s ease-out forwards;
 }
 
 @keyframes scaleUp {
-    to { transform: scale(1); opacity: 1; }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .modal-icon {
@@ -313,7 +452,7 @@ td:last-child {
     justify-content: center;
     font-size: 30px;
     margin-bottom: 20px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .modal-title {
@@ -324,7 +463,8 @@ td:last-child {
 }
 
 .modal-msg {
-    color: #94a3b8; /* var(--gray) */
+    color: #94a3b8;
+    /* var(--gray) */
     font-size: 15px;
     line-height: 1.6;
     margin-bottom: 30px;
@@ -354,12 +494,13 @@ td:last-child {
 }
 
 .modal-btn.cancel:hover {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     color: white;
 }
 
 .modal-btn.confirm-danger {
-    background: #ef4444; /* red */
+    background: #ef4444;
+    /* red */
     color: white;
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
@@ -370,8 +511,8 @@ td:last-child {
 }
 
 .modal-btn.confirm-success {
-    background: #10b981; /* green */
+    background: #10b981;
+    /* green */
     color: white;
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
-
