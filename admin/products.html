@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://kit.fontawesome.com/1c5c77609a.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="admin-box">
+        <nav id="admin-nav"></nav>
+
+        <!-- Manage Products Content -->
+        <div class="section active" style="display:block;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>📋 Product List</h3>
+                <div>
+                    <button id="btn-reorder" onclick="toggleReorder()" class="action-btn"
+                        style="background:#e67e22; margin-right:5px;">Enable Reorder</button>
+                    <button id="btn-save-order" onclick="saveNewOrder()" class="success-btn" style="display:none;">Save
+                        Order</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50" class="drag-col" style="display:none;">Sort</th>
+                        <th>Img</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="p-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Product Delete Confirmation Modal -->
+    <div id="product-delete-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
+            <div
+                style="margin:0 auto 20px auto; width:60px; height:60px; background:rgba(239,68,68,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-trash-can" style="color:#ef4444; font-size:24px;"></i>
+            </div>
+            <h3 style="color:white; margin-top:0; font-size:20px;">Delete Product?</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:25px; line-height:1.5;">
+                Are you sure you want to permanently delete this product? This action cannot be undone.
+            </p>
+
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="closeProductDeleteModal()"
+                    style="background:var(--bg-input); border:1px solid var(--border); padding:10px 20px; color:white; cursor:pointer; border-radius:6px;">Cancel</button>
+                <button onclick="confirmProductDelete()" class="action-btn"
+                    style="background:var(--red); padding:10px 25px;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadProducts);
+
+        // --- LOAD PRODUCTS LIST (Node API) ---
+        async function loadProducts() {
+            const list = document.getElementById('p-list');
+            list.innerHTML = "<tr><td colspan='5' style='text-align:center'>Loading...</td></tr>";
+
+            try {
+                const res = await fetch('../api/products?t=' + Date.now());
+                let products = await res.json();
+                if (!Array.isArray(products)) products = [];
+
+                list.innerHTML = "";
+
+                if (products.length === 0) {
+                    list.innerHTML = "<tr><td colspan='5' style='text-align:center'>No products found. Add one!</td></tr>";
+                    return;
+                }
+
+                products.forEach((p) => {
+                    list.innerHTML += `
+                <tr data-id="${p.id}">
+                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
+                    <td><img src="${p.image}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
+                    <td>
+                        <b>${p.name}</b><br>
+                        <small style="color:var(--gray)">${p.variants?.length || 0} variants</small>
+                    </td>
+                    <td><span class="badge" style="background:var(--blue)">${p.category}</span></td>
+                    <td>
+                        <button class="success-btn" onclick="editProduct(${p.id})" style="margin-right:5px; background:var(--blue)">Edit</button>
+                        <button class="action-btn" onclick="deleteProduct(${p.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+                });
+
+                // Re-apply reorder state if active
+                if (document.getElementById('btn-save-order').style.display !== 'none') {
+                    document.querySelectorAll('.drag-col').forEach(col => col.style.display = 'table-cell');
+                }
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading products.</td></tr>";
+            }
+        }
+
+        function editProduct(id) {
+            window.location.href = `add-product.html?edit=${id}`;
+        }
+
+        // --- REORDER LOGIC ---
+        let sortableInstance = null;
+
+        function toggleReorder() {
+            const isReordering = document.getElementById('btn-save-order').style.display !== 'none';
+            const dragCols = document.querySelectorAll('.drag-col');
+            const btnReorder = document.getElementById('btn-reorder');
+            const list = document.getElementById('p-list');
+
+            if (!isReordering) {
+                // Enable Reordering
+                btnReorder.innerText = "Cancel";
+                btnReorder.style.background = "var(--gray)";
+                document.getElementById('btn-save-order').style.display = 'inline-block';
+                dragCols.forEach(col => col.style.display = 'table-cell');
+
+                // Init Sortable
+                sortableInstance = new Sortable(list, {
+                    animation: 150,
+                    handle: '.drag-col',
+                    ghostClass: 'sortable-ghost'
+                });
+            } else {
+                // Cancel Reordering
+                if (sortableInstance) sortableInstance.destroy();
+                btnReorder.innerText = "Enable Reorder";
+                btnReorder.style.background = "#e67e22";
+                document.getElementById('btn-save-order').style.display = 'none';
+                dragCols.forEach(col => col.style.display = 'none');
+
+                loadProducts(); // Reload to reset position if cancelled
+            }
+        }
+
+        async function saveNewOrder() {
+            const rows = document.querySelectorAll('#p-list tr');
+            const newOrderIds = Array.from(rows).map(row => parseInt(row.getAttribute('data-id')));
+
+            try {
+                const res = await fetch('../api/products?t=' + Date.now());
+                const currentProducts = await res.json();
+                const productMap = new Map(currentProducts.map(p => [p.id, p]));
+                const sortedProducts = newOrderIds.map(id => productMap.get(id)).filter(p => p);
+
+                await fetch('../api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sortedProducts)
+                });
+
+                alert("Order Saved!");
+                toggleReorder(); // Exit reorder mode
+            } catch (e) {
+                console.error(e);
+                alert("Failed to save order.");
+            }
+        }
+
+        let pendingProductId = null;
+
+        function deleteProduct(id) {
+            pendingProductId = id;
+            document.getElementById('product-delete-modal').style.display = 'flex';
+        }
+
+        function closeProductDeleteModal() {
+            document.getElementById('product-delete-modal').style.display = 'none';
+            pendingProductId = null;
+        }
+
+        async function confirmProductDelete() {
+            if (!pendingProductId) return;
+
+            try {
+                const res = await fetch('../api/products?t=' + Date.now());
+                let products = await res.json();
+                products = products.filter(p => p.id !== pendingProductId);
+
+                await fetch('../api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(products)
+                });
+
+                loadProducts();
+            } catch (e) { alert("Delete failed"); }
+
+            closeProductDeleteModal();
+        }
+    </script>
+</body>
+
+</html>

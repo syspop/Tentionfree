@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Tickets - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/1c5c77609a.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="admin-box">
+        <nav id="admin-nav"></nav>
+
+        <!-- Tickets Content -->
+        <div class="section active" style="display:block;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>🎫 Support Tickets <span id="ticket-debug-msg"
+                        style="color:yellow; font-size:12px; margin-left:10px;"></span></h3>
+                <button onclick="loadTickets()" class="action-btn"
+                    style="background:var(--blue); display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-rotate"></i> Refresh
+                </button>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table id="ticket-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Subject</th>
+                            <th>Description</th>
+                            <th>Image</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticket-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="img-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center;"
+        onclick="this.style.display='none'">
+        <img id="zoom-img" src=""
+            style="max-width:90%; max-height:90%; border-radius:10px; box-shadow:0 0 50px rgba(0,0,0,0.5);">
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadTickets);
+
+        // --- TICKET LOGIC ---
+        async function loadTickets() {
+            const list = document.getElementById('ticket-list');
+            if (!list) return;
+            list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Tickets...</td></tr>";
+
+            try {
+                // Adjusted path to ../api/tickets
+                const res = await fetch('../api/tickets?t=' + Date.now());
+                const tickets = await res.json();
+                console.log("DEBUG: Fetched Tickets:", tickets);
+
+                if (Array.isArray(tickets)) {
+                    document.getElementById('ticket-debug-msg').innerText = `(Debug: Found ${tickets.length} tickets)`;
+                    renderTickets(tickets.reverse());
+                } else {
+                    document.getElementById('ticket-debug-msg').innerText = `(Debug: Invalid Data)`;
+                    list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No tickets found.</td></tr>";
+                }
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading tickets.</td></tr>";
+            }
+        }
+
+        function renderTickets(tickets) {
+            const list = document.getElementById('ticket-list');
+            list.innerHTML = "";
+
+            if (tickets.length === 0) {
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:20px; color:var(--gray);'>No pending tickets.</td></tr>";
+                return;
+            }
+
+            tickets.forEach(t => {
+                let imgHtml = t.image ? `<img src="${t.image}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; cursor:pointer; border:1px solid #334155;" onclick="openImageModal('${t.image}')">` : '<span style="color:var(--gray); font-size:12px;">No Img</span>';
+
+                list.innerHTML += `
+                    <tr>
+                        <td>
+                            <div style="font-weight:bold; color:white;">${t.userName || 'Unknown'}</div>
+                            <div style="font-size:12px; color:var(--gray);">${t.email}</div>
+                            <div style="font-size:11px; margin-top:2px; font-family:monospace; background:#0f172a; display:inline-block; padding:2px 4px; border-radius:4px;">${t.userId || 'N/A'}</div>
+                        </td>
+                        <td>
+                            <span style="background:rgba(108, 92, 231, 0.1); color:#a29bfe; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px;">${t.subject}</span>
+                            <div style="font-size:11px; color:var(--gray); margin-top:4px;">${t.date}</div>
+                        </td>
+                        <td>
+                            <div style="font-size:13px; color:#cbd5e1; max-width:250px; white-space:pre-wrap;">${t.desc}</div>
+                        </td>
+                        <td>${imgHtml}</td>
+                        <td>
+                            <button onclick="resolveTicket(${t.id})" class="success-btn" style="margin-right:5px;"><i class="fa-solid fa-check"></i> Solve</button>
+                            <button onclick="deleteTicket(${t.id})" class="action-btn"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openImageModal(src) {
+            document.getElementById('zoom-img').src = src;
+            document.getElementById('img-modal').style.display = 'flex';
+        }
+
+        async function resolveTicket(id) {
+            if (!confirm("Mark this ticket as Solved? It will be removed.")) return;
+            deleteTicket(id);
+        }
+
+        async function deleteTicket(id) {
+            try {
+                // Adjusted path to ../api/tickets
+                const res = await fetch('../api/tickets/' + id, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    loadTickets();
+                } else {
+                    alert("Failed to delete ticket.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Server Error");
+            }
+        }
+    </script>
+</body>
+
+</html>

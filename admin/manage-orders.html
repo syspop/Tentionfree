@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Orders - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/1c5c77609a.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="admin-box">
+        <nav id="admin-nav"></nav>
+
+        <!-- Manage Orders Content -->
+        <div class="section active" style="display:block;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                <h3>🛡️ Manage Orders</h3>
+
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="order-search" class="input-box" placeholder="Search Order ID..."
+                        style="margin:0; width:200px; padding:8px;" onkeyup="filterOrders()">
+                    <button onclick="loadOrders()"
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
+                        Refresh</button>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table id="manage-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Payment Method</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manage-order-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Modal -->
+    <div id="cancel-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
+            <h3 style="color:var(--red); margin-top:0;">⚠️ Cancel Order</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Please provide a reason for cancellation.
+                This will be visible to the customer.</p>
+            <input type="text" id="cancel-reason-input" class="input-box"
+                placeholder="e.g. Out of Stock, Invalid Payment..." autofocus>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <button onclick="closeCancelModal()" class="tab-btn"
+                    style="background:var(--bg-input); border:1px solid var(--border);">Back</button>
+                <button onclick="confirmCancellation()" class="action-btn"
+                    style="font-size:14px; padding:10px 25px;">Confirm Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery/Completion Modal -->
+    <div id="delivery-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
+            <h3 style="color:var(--green); margin-top:0;">✅ Complete Order</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Optional: Provide delivery details (e.g.
+                credentials, codes). <br>This will be visible to the customer.</p>
+            <textarea id="delivery-info-input" class="input-box" rows="4"
+                placeholder="e.g. User: ... Pass: ... (Optional)" autofocus></textarea>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                <button onclick="closeDeliveryModal()" class="tab-btn"
+                    style="background:var(--bg-input); border:1px solid var(--border);">Back</button>
+                <button onclick="confirmCompletion()" class="success-btn"
+                    style="font-size:14px; padding:10px 25px;">Complete & Deliver</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
+            <div
+                style="margin:0 auto 20px auto; width:60px; height:60px; background:rgba(239,68,68,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-trash-can" style="color:#ef4444; font-size:24px;"></i>
+            </div>
+            <h3 style="color:white; margin-top:0; font-size:20px;">Archive Order?</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:25px; line-height:1.5;">
+                This will remove the order from this list but keep it in <b>History</b>.
+            </p>
+
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="closeDeleteModal()" class="tab-btn"
+                    style="background:var(--bg-input); border:1px solid var(--border); padding:10px 20px;">Cancel</button>
+                <button onclick="confirmDelete()" class="action-btn"
+                    style="background:var(--red); padding:10px 25px;">Yes, Archive</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadOrders);
+
+        let allOrdersCache = [];
+
+        async function loadOrders() {
+            const list = document.getElementById('manage-order-list');
+            list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Loading...</td></tr>";
+
+            try {
+                const res = await fetch('../api/orders?t=' + Date.now());
+                const orders = await res.json();
+
+                if (!Array.isArray(orders)) throw new Error("Invalid format");
+                allOrdersCache = orders.reverse();
+
+                renderManageOrders(allOrdersCache);
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ Error loading orders.</div></td></tr>";
+            }
+        }
+
+        function renderManageOrders(orders) {
+            const list = document.getElementById('manage-order-list');
+            list.innerHTML = "";
+
+            // Filter out archived, deleted, or cancelled (if you want to hide cancelled from active management, but often we want to see them to delete them)
+            // Let's hide isArchived.
+            const activeOrders = orders.filter(o => !o.isArchived && !o.isDeleted && o.status !== 'Deleted');
+
+            // Apply search
+            const search = document.getElementById('order-search').value.toLowerCase();
+            const filtered = activeOrders.filter(o => o.id.toString().includes(search));
+
+            if (filtered.length === 0) {
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>✅ All clear! No pending orders.</div></td></tr>";
+                return;
+            }
+
+            filtered.forEach(o => {
+                let statusBadge = getStatusBadge(o.status);
+                let btnHtml = '';
+
+                // Actions based on status
+                if (o.status !== 'Completed' && o.status !== 'Cancelled') {
+                    btnHtml = `
+                        <button class="success-btn" onclick="updateOrderStatus(${o.id}, 'Completed')" style="margin-right:5px;">Complete</button>
+                        <button class="action-btn" onclick="updateOrderStatus(${o.id}, 'Cancelled')" style="margin-right:5px;">Cancel</button>
+                        <button onclick="printInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;"><i class="fa-solid fa-print"></i></button>
+                    `;
+                } else if (o.status === 'Completed') {
+                    // Can still print invoice or archive
+                    btnHtml = `
+                        <button onclick="printInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;"><i class="fa-solid fa-print"></i></button>
+                        <button class="action-btn" onclick="deleteOrder(${o.id})" style="background:var(--gray)">Archive</button>
+                     `;
+                } else {
+                    // Cancelled
+                    btnHtml = `
+                        <button onclick="printInvoice(${o.id})" style="background:#0984e3; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-right:5px;"><i class="fa-solid fa-print"></i></button>
+                        <button class="action-btn" onclick="deleteOrder(${o.id})" style="background:var(--red)">Archive</button>
+                     `;
+                }
+
+                list.innerHTML += `
+                    <tr>
+                        <td><b>#${o.id}</b><br><small style='color:var(--gray)'>${o.customer}</small></td>
+                        <td>${o.paymentMethod || 'N/A'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${btnHtml}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'Completed') return '<span class="badge bg-success">Completed</span>';
+            if (status === 'Cancelled') return '<span class="badge" style="background:var(--red)">Cancelled</span>';
+            return '<span class="badge bg-pending">Pending</span>';
+        }
+
+        function filterOrders() {
+            renderManageOrders(allOrdersCache);
+        }
+
+        // --- STATUS UPDATE LOGIC ---
+        let pendingCancelId = null;
+        let pendingCompleteId = null;
+
+        function updateOrderStatus(id, status) {
+            if (status === 'Cancelled') {
+                pendingCancelId = id;
+                document.getElementById('cancel-reason-input').value = "";
+                document.getElementById('cancel-modal').style.display = 'flex';
+                document.getElementById('cancel-reason-input').focus();
+                return;
+            }
+            if (status === 'Completed') {
+                pendingCompleteId = id;
+                document.getElementById('delivery-info-input').value = "";
+                document.getElementById('delivery-modal').style.display = 'flex';
+                document.getElementById('delivery-info-input').focus();
+                return;
+            }
+            // For other statuses
+            processStatusUpdate(id, status);
+        }
+
+        async function processStatusUpdate(id, status, reason = null, deliveryInfo = null) {
+            try {
+                // Fetch latest
+                const res = await fetch('../api/orders?t=' + Date.now());
+                const orders = await res.json();
+                const index = orders.findIndex(o => o.id === id);
+
+                if (index !== -1) {
+                    orders[index].status = status;
+                    if (status === 'Cancelled' && reason) orders[index].cancelReason = reason;
+                    if (status === 'Completed' && deliveryInfo) orders[index].deliveryInfo = deliveryInfo;
+
+                    await saveOrders(orders);
+                }
+            } catch (e) { alert("Update failed"); }
+        }
+
+        async function saveOrders(orders) {
+            await fetch('../api/orders', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orders)
+            });
+            loadOrders();
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancel-modal').style.display = 'none';
+            pendingCancelId = null;
+        }
+
+        function confirmCancellation() {
+            const reason = document.getElementById('cancel-reason-input').value.trim();
+            if (!reason) return alert("Please enter a reason!");
+            processStatusUpdate(pendingCancelId, 'Cancelled', reason);
+            closeCancelModal();
+        }
+
+        function closeDeliveryModal() {
+            document.getElementById('delivery-modal').style.display = 'none';
+            pendingCompleteId = null;
+        }
+
+        function confirmCompletion() {
+            const info = document.getElementById('delivery-info-input').value.trim();
+            processStatusUpdate(pendingCompleteId, 'Completed', null, info);
+            closeDeliveryModal();
+        }
+
+        // --- DELETE/ARCHIVE LOGIC ---
+        let pendingDeleteId = null;
+
+        function deleteOrder(id) {
+            pendingDeleteId = id;
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+            pendingDeleteId = null;
+        }
+
+        async function confirmDelete() {
+            if (!pendingDeleteId) return;
+
+            try {
+                const res = await fetch('../api/orders?t=' + Date.now());
+                const orders = await res.json();
+                const index = orders.findIndex(o => o.id === pendingDeleteId);
+
+                if (index !== -1) {
+                    orders[index].isArchived = true;
+                    await saveOrders(orders);
+                }
+            } catch (e) { alert("Delete failed"); }
+
+            closeDeleteModal();
+        }
+
+        function printInvoice(orderId) {
+            const order = allOrdersCache.find(o => o.id == orderId);
+            if (!order) return alert("Order data missing. Please refresh.");
+
+            const itemsHtml = order.cart ? order.cart.map(item => `
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">${item.name} <br><small>${item.variant || ''}</small></td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">${item.qty}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">৳${item.price * item.qty}</td>
+                </tr>
+            `).join('') : '';
+
+            const invoiceWindow = window.open('', 'PRINT', 'height=600,width=800');
+            invoiceWindow.document.write(`
+                <html>
+                <head>
+                    <title>Invoice #${order.id}</title>
+                    <style>
+                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+                        .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+                        .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+                        h1 { font-size: 24px; margin: 0; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th { text-align: left; padding: 10px; background: #f8f9fa; border-bottom: 2px solid #eee; }
+                        .total { text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; }
+                        .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">TentionFree</div>
+                        <div style="text-align:right;">
+                            <h1>INVOICE</h1>
+                            <p style="margin:5px 0; color:#666;">#${order.id}</p>
+                            <p style="margin:0; color:#666;">${new Date(order.date).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div>
+                            <strong>Bill To:</strong><br>
+                            ${order.customerName}<br>
+                            ${order.customerPhone}<br>
+                            ${order.customerEmail || ''}
+                        </div>
+                        <div style="text-align:right;">
+                            <strong>Payment Method:</strong><br>
+                            ${order.paymentMethod}<br>
+                            <span style="color:${order.status === 'Completed' ? 'green' : 'orange'}">${order.status}</span>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th style="text-align:right;">Qty</th>
+                                <th style="text-align:right;">Price</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="total">
+                        Total Amount: ৳${order.totalAmount}
+                    </div>
+
+                    <div class="footer">
+                        Thank you for your business!<br>
+                        TentionFree - Digital Product Shop Bangladesh
+                    </div>
+                </body>
+                </html>
+            `);
+            invoiceWindow.document.close();
+            invoiceWindow.focus();
+            setTimeout(() => { invoiceWindow.print(); invoiceWindow.close(); }, 500);
+        }
+    </script>
+</body>
+
+</html>

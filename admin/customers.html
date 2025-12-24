@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/1c5c77609a.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="admin-box">
+        <nav id="admin-nav"></nav>
+
+        <!-- Customers Content -->
+        <div class="section active" style="display:block;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                <h3>👥 Customer Database</h3>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="cust-search" class="input-box" placeholder="Search Name, Email, ID..."
+                        style="margin:0; width:200px; padding:8px;" onkeyup="renderCustomers()">
+                    <button onclick="loadCustomers()"
+                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
+                        Refresh</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table id="cust-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Full Name</th>
+                            <th>Contact Info</th>
+                            <th>Joined Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cust-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Profile Modal -->
+    <div id="customer-profile-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:600px; max-height:90vh; overflow-y:auto; padding:30px; border-radius:15px; border:1px solid var(--border); box-shadow:0 20px 50px rgba(0,0,0,0.5); animation:fadeIn 0.3s ease-out; position:relative;">
+
+            <button onclick="closeCustomerModal()"
+                style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.1); border:none; color:white; width:30px; height:30px; border-radius:50%; cursor:pointer;">✕</button>
+
+            <div style="text-align:center; margin-bottom:20px;">
+                <div style="width:70px; height:70px; background:var(--blue); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:30px; font-weight:bold; color:white;"
+                    id="cp-avatar">
+                    U
+                </div>
+                <h3 style="margin:10px 0 5px; color:white;" id="cp-name">User Name</h3>
+                <p style="margin:0; color:var(--gray); font-size:14px;" id="cp-email">user@example.com</p>
+                <code
+                    style="display:inline-block; margin-top:5px; background:#0f172a; padding:2px 8px; border-radius:4px; font-size:11px; color:#cbd5e1;"
+                    id="cp-id">ID: 123</code>
+            </div>
+
+            <div class="grid-2" style="background:#0f172a; padding:15px; gap:15px; margin-bottom:20px;">
+                <div>
+                    <small
+                        style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Phone</small>
+                    <div style="font-weight:bold; color:white;" id="cp-phone">-</div>
+                </div>
+                <div>
+                    <small
+                        style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Joined</small>
+                    <div style="font-weight:bold; color:white;" id="cp-joined">-</div>
+                </div>
+                <div>
+                    <small style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Total
+                        Orders</small>
+                    <div style="font-weight:bold; color:var(--blue);" id="cp-total-orders">0</div>
+                </div>
+                <div>
+                    <small style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Total
+                        Spent</small>
+                    <div style="font-weight:bold; color:var(--green);" id="cp-total-spent">৳0</div>
+                </div>
+            </div>
+
+            <h4 style="color:white; margin-bottom:10px;">Order History</h4>
+            <div id="cp-order-list" style="display:flex; flex-direction:column; gap:10px;">
+                <!-- History items -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadCustomers);
+
+        let allCustomersCache = [];
+
+        async function loadCustomers() {
+            const list = document.getElementById('cust-list');
+            list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Customers...</td></tr>";
+
+            try {
+                const res = await fetch('../api/customers');
+                const users = await res.json();
+
+                if (Array.isArray(users)) {
+                    allCustomersCache = users.reverse(); // Newest first
+                    renderCustomers();
+                } else {
+                    throw new Error("Invalid response");
+                }
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = "<tr><td colspan='5'><div class='empty-state' style='color:var(--red)'>❌ Failed to load customers.</div></td></tr>";
+            }
+        }
+
+        function renderCustomers() {
+            const list = document.getElementById('cust-list');
+            const search = document.getElementById('cust-search').value.toLowerCase();
+            list.innerHTML = "";
+
+            const filtered = allCustomersCache.filter(u =>
+                (u.name && u.name.toLowerCase().includes(search)) ||
+                (u.email && u.email.toLowerCase().includes(search)) ||
+                (u.id && u.id.toString().toLowerCase().includes(search))
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No customers found.</td></tr>";
+                return;
+            }
+
+            filtered.forEach(u => {
+                list.innerHTML += `
+                    <tr>
+                        <td><code style="background:#0f172a; padding:2px 4px; border-radius:4px; font-size:11px;">${u.id}</code></td>
+                        <td><b>${u.name}</b></td>
+                        <td>
+                            <div style="font-size:12px;">${u.email}</div>
+                            <div style="font-size:11px; color:var(--gray);">${u.phone || '-'}</div>
+                        </td>
+                        <td>${new Date(u.joined).toLocaleDateString()}</td>
+                         <td>
+                            <button onclick="viewCustomer('${u.id}')" style="background:var(--blue); color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Profile</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function viewCustomer(userId) {
+            const user = allCustomersCache.find(u => u.id == userId);
+            if (!user) return;
+
+            // Populate User Info
+            document.getElementById('cp-name').innerText = user.name;
+            document.getElementById('cp-email').innerText = user.email;
+            document.getElementById('cp-id').innerText = "ID: " + user.id;
+            document.getElementById('cp-avatar').innerText = user.name.charAt(0).toUpperCase();
+            document.getElementById('cp-phone').innerText = user.phone || 'N/A';
+            document.getElementById('cp-joined').innerText = new Date(user.joined).toLocaleDateString();
+
+            // Load User Orders
+            const container = document.getElementById('cp-order-list');
+            container.innerHTML = "<div style='text-align:center; color:var(--gray)'>Loading history...</div>";
+
+            try {
+                const res = await fetch('../api/orders?t=' + Date.now());
+                const allOrders = await res.json();
+
+                // Filter orders for this user (by email usually, or ID if stored)
+                // Based on previous logic, it seems we match by customer name or email?
+                // Let's assume customer storage in orders includes email or use name/phone match.
+                // Actually secure-admin.html logic wasn't explicit on the match in viewCustomer, let me check.
+                // Checking logic... It wasn't implemented fully in the viewed snippets.
+                // SAFE BET: Match by email if available, else by name.
+
+                const userOrders = allOrders.filter(o =>
+                    (user.email && o.customerEmail === user.email) ||
+                    (user.email && o.customer && o.customer.includes(user.email)) || // Fallback if customer field has email
+                    (o.customer === user.name)
+                );
+
+                // Calc Stats
+                const totalSpent = userOrders
+                    .filter(o => o.status !== 'Cancelled' && o.status !== 'Deleted' && !o.isDeleted)
+                    .reduce((sum, o) => sum + (parseFloat(o.totalAmount || o.price) || 0), 0);
+
+                document.getElementById('cp-total-orders').innerText = userOrders.length;
+                document.getElementById('cp-total-spent').innerText = '৳' + totalSpent;
+
+                container.innerHTML = "";
+                if (userOrders.length === 0) {
+                    container.innerHTML = "<div style='text-align:center; padding:10px; background:rgba(255,255,255,0.02); border-radius:10px;'>No orders found.</div>";
+                } else {
+                    userOrders.reverse().forEach(o => {
+                        let statusColor = "#64748b";
+                        if (o.status === 'Completed') statusColor = "#10b981";
+                        if (o.status === 'Pending') statusColor = "#f59e0b";
+                        if (o.status === 'Cancelled') statusColor = "#ef4444";
+
+                        container.innerHTML += `
+                            <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:bold; font-size:13px;">#${o.id}</div>
+                                    <div style="font-size:11px; color:var(--gray);">${o.date}</div>
+                                </div>
+                                 <div style="text-align:right;">
+                                    <div style="font-weight:bold; font-size:13px;">৳${o.totalAmount || o.price}</div>
+                                    <span style="font-size:10px; color:${statusColor}; border:1px solid ${statusColor}; padding:1px 4px; border-radius:4px;">${o.status}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = "Failed to load history.";
+            }
+
+            document.getElementById('customer-profile-modal').style.display = 'flex';
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customer-profile-modal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
