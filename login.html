@@ -175,8 +175,27 @@
                         <div class="relative flex gap-2">
                             <i class="fa-brands fa-whatsapp absolute left-4 top-3.5 text-slate-500 z-10"></i>
                             <div class="relative w-1/3">
-                                <input type="text" value="+880" readonly
-                                    class="input-glass w-full rounded-xl py-3 pl-11 pr-2 placeholder-slate-500 text-center cursor-not-allowed text-slate-400">
+                                <select id="reg-country-code"
+                                    class="input-glass w-full rounded-xl py-3 pl-2 pr-2 placeholder-slate-500 text-center text-white bg-slate-800 appearance-none focus:outline-none cursor-pointer">
+                                    <option value="+880" selected>🇧🇩 +880</option>
+                                    <option value="+1">🇺🇸 +1</option>
+                                    <option value="+44">🇬🇧 +44</option>
+                                    <option value="+91">🇮🇳 +91</option>
+                                    <option value="+92">🇵🇰 +92</option>
+                                    <option value="+971">🇦🇪 +971</option>
+                                    <option value="+966">🇸🇦 +966</option>
+                                    <option value="+60">🇲🇾 +60</option>
+                                    <option value="+65">🇸🇬 +65</option>
+                                    <option value="+61">🇦🇺 +61</option>
+                                    <option value="+81">🇯🇵 +81</option>
+                                    <option value="+86">🇨🇳 +86</option>
+                                    <option value="+49">🇩🇪 +49</option>
+                                    <option value="+33">🇫🇷 +33</option>
+                                    <option value="+39">🇮🇹 +39</option>
+                                    <option value="+7">🇷🇺 +7</option>
+                                    <option value="+90">🇹🇷 +90</option>
+                                    <!-- Add more as needed -->
+                                </select>
                             </div>
                             <div class="relative w-2/3">
                                 <input type="text" id="reg-phone" required pattern="[0-9]*" inputmode="numeric"
@@ -338,10 +357,11 @@
             }
 
             // Prepare Data
+            const countryCode = document.getElementById('reg-country-code').value;
             const data = {
                 name,
                 email,
-                phone: "+880" + phoneNum,
+                phone: countryCode + phoneNum,
                 dob,
                 password
             };
