@@ -3,9 +3,13 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { connectMongoDB, syncCollection } = require('./mongoBackup'); // Backup Service
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB Backup
+connectMongoDB();
 const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
 
 const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
@@ -55,6 +59,9 @@ app.post('/api/products', (req, res) => {
             console.error(err);
             return res.status(500).json({ error: 'Failed to save products' });
         }
+        // Backup to MongoDB
+        syncCollection('products', products);
+
         res.json({ message: 'Products saved successfully' });
     });
 });
@@ -97,6 +104,9 @@ app.post('/api/orders', (req, res) => {
                 console.error(err);
                 return res.status(500).json({ success: false, error: 'Failed to save order' });
             }
+            // Backup to MongoDB
+            syncCollection('orders', orders);
+
             res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
         });
     });
@@ -110,6 +120,9 @@ app.put('/api/orders', (req, res) => {
             console.error(err);
             return res.status(500).json({ success: false, error: 'Failed to update orders' });
         }
+        // Backup to MongoDB
+        syncCollection('orders', orders);
+
         res.json({ success: true, message: 'Orders updated successfully' });
     });
 });
@@ -172,6 +185,9 @@ app.post('/api/tickets', (req, res) => {
                 console.error("Error writing ticket file:", err);
                 return res.status(500).json({ success: false });
             }
+            // Backup to MongoDB
+            syncCollection('tickets', tickets);
+
             console.log("Ticket saved successfully. Total count:", tickets.length);
             res.json({ success: true, message: 'Ticket submitted' });
         });
@@ -189,6 +205,10 @@ app.delete('/api/tickets/:id', (req, res) => {
 
         fs.writeFile(TICKETS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (err) => {
             if (err) return res.status(500).json({ success: false });
+
+            // Backup to MongoDB
+            syncCollection('tickets', filtered);
+
             res.json({ success: true });
         });
     });
@@ -205,6 +225,10 @@ app.delete('/api/tickets/:id', (req, res) => {
 
         fs.writeFile(TICKETS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (err) => {
             if (err) return res.status(500).json({ success: false });
+
+            // Backup to MongoDB
+            syncCollection('tickets', filtered);
+
             res.json({ success: true });
         });
     });
@@ -274,6 +298,10 @@ app.put('/api/customers/:id', (req, res) => {
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
             if (e) return res.status(500).json({ success: false, message: "Save Error" });
+
+            // Backup to MongoDB
+            syncCollection('customers', customers);
+
             res.json({ success: true, message: "Customer updated" });
         });
     });
@@ -319,6 +347,9 @@ app.delete('/api/customers/:id', (req, res) => {
                 console.error(err);
                 return res.json({ success: false, message: "DB Error" });
             }
+            // Backup to MongoDB
+            syncCollection('customers', customers);
+
             res.json({ success: true, message: "Account deleted successfully" });
         });
     });
@@ -349,6 +380,10 @@ app.post('/api/change-password', (req, res) => {
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
             if (e) return res.status(500).json({ success: false, message: "Save Error" });
+
+            // Backup to MongoDB
+            syncCollection('customers', customers);
+
             res.json({ success: true });
         });
     });
@@ -389,6 +424,10 @@ app.post('/api/register', (req, res) => {
             console.error(err);
             return res.json({ success: false, message: "Server error saving user" });
         }
+
+        // Backup to MongoDB
+        syncCollection('customers', customers);
+
         // Return without password
         const { password, ...userWithoutPass } = newCustomer;
         res.json({ success: true, user: userWithoutPass });
