@@ -633,7 +633,7 @@
                             <div style="font-weight:bold; color: #1e293b; margin-bottom:3px; font-size:16px;">${order.customer || order.customerName || 'Guest'}</div>
                             <div style="color: #64748b; font-size: 14px;">${order.email || ''}</div>
                             <div style="color: #64748b; font-size: 14px;">${order.phone || ''}</div>
-                            ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="color: #64748b; font-size: 14px; margin-top: 5px;">Player/Account ID: <span style="color: #334155; font-weight:500;">${order.gameUid}</span></div>` : ''}
+                            ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="color: #64748b; font-size: 14px; margin-top: 5px; white-space: pre-wrap;"><strong>Player/Account ID:</strong><br><span style="color: #334155; font-weight:500;">${order.gameUid.replace(/\n/g, '<br>')}</span></div>` : ''}
                         </div>
                         <div style="text-align:right;">
                              <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Details</div>
