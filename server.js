@@ -7,6 +7,8 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { connectMongoDB, syncCollection } = require('./mongoBackup'); // Backup Service
+const helmet = require('helmet'); // Secure Headers
+const rateLimit = require('express-rate-limit'); // Rate Limiting
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,7 +21,43 @@ const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 
 // Middleware
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+    'https://tentionfree.store',
+    'https://www.tentionfree.store',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true
+}));
+
+// Security Middleware (Helmet)
+app.use(helmet({
+    contentSecurityPolicy: false, // Disabled to prevent breakage of images/scripts
+    crossOriginEmbedderPolicy: false
+}));
+
+// Rate Limiting (100 requests per 15 minutes)
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { success: false, message: "Too many requests, please try again later." },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
