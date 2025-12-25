@@ -77,6 +77,11 @@
                     <div style="font-weight:bold; color:white;" id="cp-joined">-</div>
                 </div>
                 <div>
+                    <small style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Birth
+                        Date</small>
+                    <div style="font-weight:bold; color:white;" id="cp-dob">-</div>
+                </div>
+                <div>
                     <small style="color:var(--gray); text-transform:uppercase; font-size:10px; font-weight:bold;">Total
                         Orders</small>
                     <div style="font-weight:bold; color:var(--blue);" id="cp-total-orders">0</div>
@@ -169,6 +174,7 @@
             document.getElementById('cp-id').innerText = "ID: " + user.id;
             document.getElementById('cp-avatar').innerText = user.name.charAt(0).toUpperCase();
             document.getElementById('cp-phone').innerText = user.phone || 'N/A';
+            document.getElementById('cp-dob').innerText = user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A';
             document.getElementById('cp-joined').innerText = new Date(user.joined).toLocaleDateString();
 
             // Load User Orders
@@ -242,6 +248,7 @@
             document.getElementById('edit-name').value = user.name;
             document.getElementById('edit-email').value = user.email;
             document.getElementById('edit-phone').value = user.phone || '';
+            document.getElementById('edit-dob').value = user.dob || '';
             document.getElementById('edit-password').value = user.password || ''; // Show current password as requested
 
             document.getElementById('edit-modal').style.display = 'flex';
@@ -259,6 +266,7 @@
                 name: document.getElementById('edit-name').value,
                 email: document.getElementById('edit-email').value,
                 phone: document.getElementById('edit-phone').value,
+                dob: document.getElementById('edit-dob').value,
                 password: document.getElementById('edit-password').value
             };
 
@@ -367,6 +375,11 @@
             <div style="margin-bottom:15px;">
                 <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Phone</label>
                 <input type="text" id="edit-phone" class="input-box">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Date of
+                    Birth</label>
+                <input type="date" id="edit-dob" class="input-box" style="color-scheme: dark;">
             </div>
             <div style="margin-bottom:20px;">
                 <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Password</label>

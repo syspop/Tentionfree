@@ -255,6 +255,7 @@ app.put('/api/customers/:id', (req, res) => {
         if (name) customers[index].name = name;
         if (email) customers[index].email = email;
         if (phone) customers[index].phone = phone;
+        if (req.body.dob) customers[index].dob = req.body.dob;
         if (password) customers[index].password = password;
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
@@ -362,6 +363,7 @@ app.post('/api/register', (req, res) => {
         name: name,
         email: email,
         phone: phone || '',
+        dob: req.body.dob || '', // Store DOB
         password: password, // In production, use bcrypt. Here simple storage as requested for MVP.
         joined: new Date().toISOString()
     };

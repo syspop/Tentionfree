@@ -249,7 +249,7 @@
                     <div id="security-section" class="hidden animate-[fadeIn_0.3s_ease-out]">
                         <div class="max-w-2xl mx-auto">
                             <!-- Info Cards -->
-                            <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="grid grid-cols-3 gap-4 mb-6">
                                 <div class="glass-panel p-5 rounded-2xl border border-white/5">
                                     <p class="text-xs text-slate-500 font-bold uppercase mb-1">Email</p>
                                     <p class="text-white font-medium truncate" id="u-email-sec">...</p>
@@ -257,6 +257,10 @@
                                 <div class="glass-panel p-5 rounded-2xl border border-white/5">
                                     <p class="text-xs text-slate-500 font-bold uppercase mb-1">Phone</p>
                                     <p class="text-white font-medium truncate" id="u-phone-sec">...</p>
+                                </div>
+                                <div class="glass-panel p-5 rounded-2xl border border-white/5">
+                                    <p class="text-xs text-slate-500 font-bold uppercase mb-1">Birth Date</p>
+                                    <p class="text-white font-medium truncate" id="u-dob-sec">...</p>
                                 </div>
                             </div>
 
@@ -386,6 +390,7 @@
             document.getElementById('u-id').innerText = user.id || 'N/A';
             document.getElementById('u-email-sec').innerText = user.email; // Security section
             document.getElementById('u-phone-sec').innerText = user.phone; // Security section
+            document.getElementById('u-dob-sec').innerText = user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'; // Security section
 
             document.getElementById('u-avatar').innerText = user.name.charAt(0).toUpperCase();
 

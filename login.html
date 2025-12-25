@@ -179,6 +179,12 @@
                                 placeholder="Phone / WhatsApp">
                         </div>
                         <div class="relative">
+                            <i class="fa-regular fa-calendar absolute left-4 top-3.5 text-slate-500"></i>
+                            <input type="date" id="reg-dob" required
+                                class="input-glass w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-500 text-slate-400 focus:text-white"
+                                placeholder="Date of Birth">
+                        </div>
+                        <div class="relative">
                             <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-500"></i>
                             <input type="password" id="reg-pass" required
                                 class="input-glass w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-500"
@@ -287,8 +293,32 @@
                 name: document.getElementById('reg-name').value,
                 email: document.getElementById('reg-email').value,
                 phone: document.getElementById('reg-phone').value,
+                dob: document.getElementById('reg-dob').value,
                 password: document.getElementById('reg-pass').value
             };
+
+            // Age Validation (16+)
+            if (data.dob) {
+                const birthDate = new Date(data.dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                if (age < 16) {
+                    showCustomAlert("Age Restriction", "You must be at least 16 years old to create an account.", "error");
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                    return;
+                }
+            } else {
+                showCustomAlert("Missing Info", "Please enter your Date of Birth.", "error");
+                btn.innerHTML = original;
+                btn.disabled = false;
+                return;
+            }
 
             const confirmPass = document.getElementById('reg-confirm-pass').value;
 
