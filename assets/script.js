@@ -1424,6 +1424,7 @@ async function submitOrder() {
 
     // Determine items based on mode
     const itemsToOrder = isBuyNowMode ? [buyNowItem] : cart;
+    const hasGamingItem = itemsToOrder.some(item => item.category === 'gaming');
 
     // --- DUPLICATE TRANSACTION CHECK ---
     if (paymentType === 'now') {
