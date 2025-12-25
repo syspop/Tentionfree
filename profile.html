@@ -810,29 +810,26 @@
         }
 
         function confirmDeleteAccount() {
-            // Use custom alert for confirmation
-            showNotification(
-                "Delete Account?",
-                `<p class="mb-4 text-slate-300">Are you sure you want to delete your account? This action is permanent.</p>
-                 <div class="flex gap-3">
-                    <button onclick="closeAlert()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg font-bold">Cancel</button>
-                    <button onclick="deleteAccount()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-bold">Yes, Delete</button>
-                 </div>`,
-                "warning"
-            );
-            // We need to hide the default "Okay" button of the alert in this Custom Mode, 
-            // but my current showNotification implementation is simple. 
-            // Let's modify showNotification or just handle it here. 
-            // Actually, the current showNotification overwrites existing content. 
-            // But the "Okay" button is part of the modal HTML structure, let's see line 322 in profile.html
-            // The "Okay" button is hardcoded. 
-            // I should hide the default button for this case.
-            document.querySelector('#custom-alert button[onclick="closeAlert()"]').style.display = 'none';
+            const modal = document.getElementById('delete-account-modal');
+            modal.style.pointerEvents = "auto";
+            modal.style.opacity = "1";
+            modal.children[1].style.transform = "scale(1)";
+        }
+
+        function closeDeleteAccountModal() {
+            const modal = document.getElementById('delete-account-modal');
+            modal.style.opacity = "0";
+            modal.style.pointerEvents = "none";
+            modal.children[1].style.transform = "scale(0.9)";
         }
 
         async function deleteAccount() {
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user || !user.id) return;
+
+            const btn = document.getElementById('btn-confirm-delete');
+            btn.innerText = "Deleting...";
+            btn.disabled = true;
 
             try {
                 const res = await fetch('api/customers/' + user.id, { method: 'DELETE' });
@@ -842,32 +839,20 @@
                     localStorage.removeItem('user');
                     window.location.href = 'index.html';
                 } else {
-                    closeAlert(); // Restore UI
-                    document.querySelector('#custom-alert button[onclick="closeAlert()"]').style.display = 'block';
+                    closeDeleteAccountModal();
                     showNotification("Failed to delete account", "error");
                 }
             } catch (e) {
                 console.error(e);
-                closeAlert();
-                document.querySelector('#custom-alert button[onclick="closeAlert()"]').style.display = 'block';
+                closeDeleteAccountModal();
                 showNotification("Server Error", "error");
+            } finally {
+                btn.innerText = "Yes, Delete";
+                btn.disabled = false;
             }
         }
 
-        // Fix for showNotification to restore button display
-        const originalCloseAlert = closeAlert;
-        closeAlert = function () {
-            const btn = document.querySelector('#custom-alert button[onclick="closeAlert()"]');
-            if (btn) btn.style.display = 'block'; // Restore
 
-            // Original logic
-            const modal = document.getElementById('custom-alert');
-            const box = document.querySelector('#custom-alert > div'); // The inner box
-
-            modal.style.opacity = '0';
-            modal.style.pointerEvents = 'none';
-            if (box) box.style.transform = 'scale(0.95)';
-        }
 
         // --- CUSTOM NOTIFICATION LOGIC ---
         function showNotification(msg, type = "success") {
@@ -963,6 +948,32 @@
             }
         }
     </script>
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-account-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
+        <div
+            class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full text-center mx-4">
+            <div
+                class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/20">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Delete Account?</h3>
+            <p class="text-slate-400 text-sm mb-6">Are you sure you want to delete your account? This action is
+                permanent and cannot be undone.</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteAccountModal()"
+                    class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto">
+                    Cancel
+                </button>
+                <button onclick="deleteAccount()" id="btn-confirm-delete"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto">
+                    Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile Bottom Navigation -->
     <div style="z-index: 10001 !important;"
         class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 lg:hidden safe-area-bottom h-20 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
