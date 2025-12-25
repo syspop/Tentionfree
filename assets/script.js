@@ -1736,7 +1736,7 @@ function updateNavbar() {
     const userStr = localStorage.getItem('user');
 
     // Select ALL login buttons (Desktop & Mobile)
-    const loginButtons = document.querySelectorAll('nav a[href="login.html"]');
+    const loginButtons = document.querySelectorAll('nav a[href="login"], nav a[href="login.html"]');
 
     if (userStr) {
         const user = JSON.parse(userStr);
