@@ -1608,9 +1608,8 @@ function showSuccessModal() {
         if (timerInfo) timerInfo.innerText = seconds;
         if (seconds <= 0) {
             clearInterval(interval);
-            // Close Modal (Stay on Page strategy)
-            modal.classList.add('hidden');
-            setTimeout(() => modal.remove(), 300); // Remove from DOM after transition
+            // Redirect to Home Page
+            window.location.href = 'index.html';
         }
     }, 1000);
 }
