@@ -327,7 +327,7 @@
 
                 <!-- Custom Notification Modal (Global) -->
                 <div id="custom-alert"
-                    class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300">
+                    class="fixed inset-0 z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
                     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
                     <div
                         class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full text-center mx-4">
@@ -811,16 +811,21 @@
 
         function confirmDeleteAccount() {
             const modal = document.getElementById('delete-account-modal');
-            modal.style.pointerEvents = "auto";
-            modal.style.opacity = "1";
-            modal.children[1].style.transform = "scale(1)";
+            modal.classList.remove('hidden');
+            // Small delay to allow transition to work? or just remove hidden first then opacity
+            requestAnimationFrame(() => {
+                modal.style.opacity = "1";
+                modal.children[1].style.transform = "scale(1)";
+            });
         }
 
         function closeDeleteAccountModal() {
             const modal = document.getElementById('delete-account-modal');
             modal.style.opacity = "0";
-            modal.style.pointerEvents = "none";
             modal.children[1].style.transform = "scale(0.9)";
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300); // 300ms matches duration-300
         }
 
         async function executeAccountDeletion(e) {
@@ -870,9 +875,11 @@
 
             document.getElementById('alert-msg').innerText = msg;
 
-            modal.style.pointerEvents = "auto";
-            modal.style.opacity = "1";
-            modal.children[1].style.transform = "scale(1)";
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.style.opacity = "1";
+                modal.children[1].style.transform = "scale(1)";
+            });
 
             if (type === "success") {
                 icon.className = "fa-solid fa-check text-emerald-400 text-3xl";
@@ -892,8 +899,10 @@
             }
             const modal = document.getElementById('custom-alert');
             modal.style.opacity = "0";
-            modal.style.pointerEvents = "none";
             modal.children[1].style.transform = "scale(0.9)";
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
         }
 
         let base64Image = "";
@@ -959,7 +968,7 @@
     </script>
     <!-- Delete Account Confirmation Modal -->
     <div id="delete-account-modal"
-        class="fixed inset-0 z-[110] flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300">
+        class="fixed inset-0 z-[110] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
         <div
             class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full text-center mx-4">
