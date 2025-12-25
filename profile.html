@@ -337,8 +337,8 @@
                         </div>
                         <h3 id="alert-title" class="text-xl font-bold text-white mb-2">Notification</h3>
                         <p id="alert-msg" class="text-slate-400 text-sm mb-6">Message goes here...</p>
-                        <button onclick="closeCustomAlert()"
-                            class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto">
+                        <button type="button" onclick="closeCustomAlert(event)"
+                            class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto relative z-50">
                             Okay, Got it
                         </button>
                     </div>
@@ -823,11 +823,16 @@
             modal.children[1].style.transform = "scale(0.9)";
         }
 
-        async function performDeleteAccount() {
+        async function executeAccountDeletion(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user || !user.id) return;
 
-            const btn = document.getElementById('btn-confirm-delete');
+            const btn = document.getElementById('btn-final-delete');
             btn.innerText = "Deleting...";
             btn.disabled = true;
 
@@ -880,7 +885,11 @@
             }
         }
 
-        function closeCustomAlert() {
+        function closeCustomAlert(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             const modal = document.getElementById('custom-alert');
             modal.style.opacity = "0";
             modal.style.pointerEvents = "none";
@@ -966,8 +975,8 @@
                     class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto">
                     Cancel
                 </button>
-                <button onclick="performDeleteAccount()" id="btn-confirm-delete"
-                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto">
+                <button type="button" onclick="executeAccountDeletion(event)" id="btn-final-delete"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto relative z-50">
                     Yes, Delete
                 </button>
             </div>
