@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /secure-admin.html
+Disallow: /chodir-vai
 Disallow: /profile.html
 Disallow: /data/
 

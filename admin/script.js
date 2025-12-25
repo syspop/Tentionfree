@@ -1,11 +1,11 @@
 // Auth Check
 if (sessionStorage.getItem('adminAuth') !== 'true') {
-    window.location.href = '../secure-admin';
+    window.location.href = '../chodir-vai';
 }
 
 function logout() {
     sessionStorage.removeItem('adminAuth');
-    window.location.href = '../secure-admin';
+    window.location.href = '../chodir-vai';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
