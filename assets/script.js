@@ -1353,7 +1353,8 @@ function openPaymentModal() {
 }
 
 function closePaymentModal() {
-    document.getElementById('payment-modal').classList.add('hidden');
+    const modal = document.getElementById('payment-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 async function submitOrder() {
