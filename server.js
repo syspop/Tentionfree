@@ -18,6 +18,9 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // Automatic Redirect: .html -> clean URL
 app.use((req, res, next) => {
+    if (req.path === '/index' || req.path === '/index.html') {
+        return res.redirect(301, '/');
+    }
     if (req.path.endsWith('.html')) {
         const newPath = req.path.slice(0, -5);
         return res.redirect(301, newPath);

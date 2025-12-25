@@ -1665,7 +1665,7 @@ function showSuccessModal() {
         if (seconds <= 0) {
             clearInterval(interval);
             // Redirect to Home Page
-            window.location.href = 'index';
+            window.location.href = '/';
         }
     }, 1000);
 }
