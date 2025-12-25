@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Checkout - Tention Free</title>
+    <meta name="description" content="Complete your purchase securely on Tention Free.">
+
+    <!-- Header/Meta content from index.html -->
+    <link rel="canonical" href="https://tentionfree.store/checkout.html">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    <meta name="theme-color" content="#2563eb">
+
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#0f172a',
+                            100: '#1e293b',
+                            400: '#3b82f6',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#3b82f6',
+                            900: '#60a5fa',
+                            glow: '#3b82f6',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: 'rgba(30, 41, 59, 0.7)',
+                            text: '#f1f5f9'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body
+    class="antialiased min-h-screen flex flex-col relative text-slate-100 bg-slate-950 pb-24 md:pb-0 safe-area-bottom">
+
+    <!-- Navbar -->
+    <nav class="glass-nav fixed w-full z-50 top-0 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center cursor-pointer group"
+                    onclick="window.location.href='index.html'">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-blue-600 flex items-center justify-center mr-3 shadow-lg shadow-brand-500/20 group-hover:shadow-brand-500/40 transition-all">
+                        <i class="fa-solid fa-bolt text-white text-xl"></i>
+                    </div>
+                    <span
+                        class="font-bold text-2xl tracking-tight text-slate-200 group-hover:text-brand-600 transition-colors">Tention<span
+                            class="text-brand-500">Free</span></span>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div
+                    class="hidden md:flex space-x-1 items-center bg-slate-900 rounded-full px-2 py-1 border border-slate-800 shadow-sm">
+                    <a href="index.html"
+                        class="text-slate-300 hover:text-brand-600 hover:bg-slate-800 transition px-5 py-2 rounded-full text-sm font-medium">Home</a>
+                    <a href="products.html"
+                        class="text-slate-300 hover:text-brand-600 hover:bg-slate-800 transition px-5 py-2 rounded-full text-sm font-medium">Products</a>
+                </div>
+
+                <!-- Right Side Actions -->
+                <div class="flex items-center space-x-6">
+                    <a href="login.html" class="flex items-center text-slate-300 hover:text-brand-600 transition">
+                        <i class="fa-solid fa-user text-xl mr-2"></i>
+                        <span class="text-sm font-medium hidden md:block">Login</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto">
+
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-4">Secure <span
+                        class="text-brand-500">Checkout</span></h1>
+                <p class="text-slate-400">Complete your order securely and get instant delivery.</p>
+            </div>
+
+            <div class="glass-card rounded-3xl p-6 md:p-10 border border-slate-800 shadow-2xl relative overflow-hidden">
+                <!-- Glow Effect -->
+                <div
+                    class="absolute top-0 right-0 w-96 h-96 bg-brand-600/10 rounded-full blur-3xl -z-10 pointer-events-none">
+                </div>
+
+                <form id="checkout-form" onsubmit="event.preventDefault(); submitOrder();">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+                        <!-- Left Column: Customer Details -->
+                        <div class="space-y-8">
+                            <div class="flex items-center space-x-4 border-b border-slate-800 pb-4">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-brand-900/20 flex items-center justify-center text-brand-500">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white">Customer Information</h3>
+                            </div>
+
+                            <div class="space-y-5">
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-slate-300 mb-2">Full
+                                        Name</label>
+                                    <input type="text" id="name" required
+                                        class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-500"
+                                        placeholder="Enter your full name">
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label for="phone" class="block text-sm font-medium text-slate-300 mb-2">Phone
+                                            Number</label>
+                                        <input type="tel" id="phone" required
+                                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-500"
+                                            placeholder="017xxxxxxxx">
+                                    </div>
+                                    <div>
+                                        <label for="customer_email"
+                                            class="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+                                        <input type="email" id="customer_email" required
+                                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-500"
+                                            placeholder="you@example.com">
+                                    </div>
+                                </div>
+
+                                <!-- Dynamic Game UIDs Container -->
+                                <div id="game-uid-field"
+                                    class="hidden space-y-4 animate-fade-in bg-slate-900/50 p-4 rounded-xl border border-dashed border-slate-700">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Order Summary & Payment -->
+                        <div class="space-y-8">
+                            <div class="flex items-center space-x-4 border-b border-slate-800 pb-4">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-brand-900/20 flex items-center justify-center text-brand-500">
+                                    <i class="fa-solid fa-cart-shopping"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white">Order Summary</h3>
+                            </div>
+
+                            <!-- Cart Items -->
+                            <div class="bg-slate-900 rounded-xl p-5 border border-slate-800">
+                                <div id="checkout-items-summary"
+                                    class="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                    <!-- Items -->
+                                </div>
+                                <div class="border-t border-slate-800 mt-4 pt-4 flex justify-between items-center">
+                                    <span class="text-slate-400">Total to Pay</span>
+                                    <span id="checkout-total-amount"
+                                        class="text-2xl font-bold text-brand-500">৳0.00</span>
+                                </div>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="space-y-5">
+                                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Payment Method
+                                </h4>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="paymentType" value="now" class="peer sr-only" checked
+                                            onchange="togglePaymentSection()">
+                                        <div
+                                            class="text-center p-4 rounded-xl border border-slate-700 bg-slate-900 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-400 transition-all hover:border-brand-500/50">
+                                            <i class="fa-solid fa-credit-card text-2xl mb-2 block"></i>
+                                            <span class="font-bold">Pay Now</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="paymentType" value="later" class="peer sr-only"
+                                            onchange="togglePaymentSection()">
+                                        <div
+                                            class="text-center p-4 rounded-xl border border-slate-700 bg-slate-900 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-400 transition-all hover:border-brand-500/50">
+                                            <i class="fa-solid fa-comments-dollar text-2xl mb-2 block"></i>
+                                            <span class="font-bold">Pay Later</span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Pay Now Details -->
+                                <div id="payment-details-section"
+                                    class="space-y-5 bg-slate-900 p-5 rounded-xl border border-slate-800 animate-fade-in">
+                                    <div>
+                                        <label for="payment"
+                                            class="block text-sm font-medium text-slate-400 mb-2">Select Wallet</label>
+                                        <div class="relative">
+                                            <select id="payment" onchange="updatePaymentInfo()"
+                                                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 appearance-none">
+                                                <option value="bkash">Bkash</option>
+                                                <option value="nagad">Nagad</option>
+                                                <option value="rocket">Rocket</option>
+                                                <option value="binance">Binance Pay</option>
+                                            </select>
+                                            <div
+                                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                                <i class="fa-solid fa-chevron-down text-sm"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="payment-instruction"
+                                        class="text-sm bg-slate-800 p-4 rounded-xl border border-dashed border-slate-700 text-slate-300 leading-relaxed">
+                                        <!-- Instructions injected by JS -->
+                                    </div>
+
+                                    <div>
+                                        <label for="trxid"
+                                            class="block text-sm font-medium text-slate-400 mb-2">Transaction ID
+                                            (TrxID)</label>
+                                        <input type="text" id="trxid"
+                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 placeholder-slate-500"
+                                            placeholder="e.g. 8JHS72...">
+                                    </div>
+                                </div>
+
+                                <!-- Pay Later Confirmation -->
+                                <div id="confirmation-method-section"
+                                    class="hidden space-y-4 bg-slate-900 p-5 rounded-xl border border-slate-800 animate-fade-in">
+                                    <p class="text-sm text-slate-400">How would you like to confirm your order?</p>
+                                    <div class="flex flex-col space-y-3">
+                                        <label
+                                            class="flex items-center cursor-pointer group p-3 rounded-lg hover:bg-slate-800 transition">
+                                            <input type="radio" name="orderMethod" value="whatsapp" checked
+                                                class="form-radio text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-600 h-5 w-5">
+                                            <span
+                                                class="ml-3 text-slate-300 group-hover:text-white font-medium flex items-center">
+                                                <i class="fa-brands fa-whatsapp text-green-500 text-xl mr-3"></i>
+                                                WhatsApp
+                                            </span>
+                                        </label>
+                                        <label
+                                            class="flex items-center cursor-pointer group p-3 rounded-lg hover:bg-slate-800 transition">
+                                            <input type="radio" name="orderMethod" value="email"
+                                                class="form-radio text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-600 h-5 w-5">
+                                            <span
+                                                class="ml-3 text-slate-300 group-hover:text-white font-medium flex items-center">
+                                                <i class="fa-regular fa-envelope text-blue-500 text-xl mr-3"></i> Email
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit"
+                                class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-500/30 transform hover:-translate-y-1 transition-all text-lg flex items-center justify-center">
+                                <span>Confirm Order</span>
+                                <i class="fa-solid fa-arrow-right ml-3"></i>
+                            </button>
+                            <p class="text-center text-xs text-slate-500 mt-4">By placing this order, you agree to our
+                                Terms of Service.</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-8 text-center text-slate-500 text-sm">
+        <p>&copy; 2025 Tention Free. All rights reserved.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="assets/script.js"></script>
+    <script>
+        // Initialize Checkout Page specific logic
+        document.addEventListener('DOMContentLoaded', () => {
+            initCheckoutPage();
+        });
+    </script>
+</body>
+
+</html>

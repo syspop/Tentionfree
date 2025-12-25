@@ -629,6 +629,102 @@ function initGlobalSearch() {
     }
 }
 
+function initCheckoutPage() {
+    // 1. Determine Mode & Items
+    const buyNowData = localStorage.getItem('tentionfree_buyNow');
+
+    if (buyNowData) {
+        isBuyNowMode = true;
+        buyNowItem = JSON.parse(buyNowData);
+    } else {
+        isBuyNowMode = false;
+        buyNowItem = null;
+    }
+
+    const itemsToCheckout = isBuyNowMode ? [buyNowItem] : cart;
+
+    // 2. Redirect if empty
+    if (itemsToCheckout.length === 0) {
+        window.location.href = 'products.html';
+        return;
+    }
+
+    // 3. Populate Order Summary
+    const summaryContainer = document.getElementById('checkout-items-summary');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = '';
+        let total = 0;
+        itemsToCheckout.forEach(item => {
+            total += item.price * item.quantity;
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center text-sm text-slate-300 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0';
+            div.innerHTML = `
+                <div class="flex items-center">
+                    <img src="${item.image}" class="w-10 h-10 object-contain mr-3 rounded-lg bg-slate-800 p-1">
+                    <div>
+                        <p class="font-medium text-white">${item.name}</p>
+                        <p class="text-xs text-slate-500">x${item.quantity}</p>
+                    </div>
+                </div>
+                <span class="font-bold text-white">৳${item.price * item.quantity}</span>
+            `;
+            summaryContainer.appendChild(div);
+        });
+
+        if (document.getElementById('checkout-total-amount')) {
+            document.getElementById('checkout-total-amount').innerText = '৳' + total.toFixed(2);
+        }
+    }
+
+    // 4. Populate Dynamic Game UIDs
+    const gamingItems = itemsToCheckout.filter(item => item.category === 'gaming');
+    const uidContainer = document.getElementById('game-uid-field');
+
+    if (uidContainer) {
+        uidContainer.innerHTML = '';
+        if (gamingItems.length > 0) {
+            uidContainer.classList.remove('hidden');
+            gamingItems.forEach((item, index) => {
+                const wrapper = document.createElement('div');
+                let labelText = item.name + " ID";
+                let placeholder = "Enter ID";
+                const lowerName = item.name.toLowerCase();
+                if (lowerName.includes('pubg')) {
+                    labelText = "PUBG Player ID";
+                    placeholder = "Enter PUBG ID";
+                } else if (lowerName.includes('free fire') || lowerName.includes('freefire')) {
+                    labelText = "FreeFire UID";
+                    placeholder = "Enter FreeFire UID";
+                }
+
+                wrapper.innerHTML = `
+                    <label class="block text-xs font-bold text-brand-500 mb-1 uppercase tracking-wide">${labelText}</label>
+                    <input type="text" data-item-name="${item.name}" required
+                        class="dynamic-game-uid w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-brand-500 transition-all placeholder-slate-500"
+                        placeholder="${placeholder}">
+                `;
+                uidContainer.appendChild(wrapper);
+            });
+        }
+    }
+
+    // 5. Pre-fill User Info (if logged in)
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            if (document.getElementById('name')) document.getElementById('name').value = user.name || '';
+            if (document.getElementById('phone')) document.getElementById('phone').value = user.phone || '';
+            if (document.getElementById('customer_email')) document.getElementById('customer_email').value = user.email || '';
+        } catch (e) {
+            console.error("Error parsing user info", e);
+        }
+    }
+
+    // 6. Init Payment Info UI
+    updatePaymentInfo();
+}
+
 function setupSearchInput(inputId, initialValue = '') {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -949,8 +1045,8 @@ function saveCart() {
 function buyNow(id, source = 'card') {
     const item = createCartItem(id, source);
     if (item) {
-        buyNowItem = item; // Set global buy now item
-        openCheckout(true); // Open in Buy Now mode
+        localStorage.setItem('tentionfree_buyNow', JSON.stringify(item));
+        window.location.href = 'checkout.html';
     }
 }
 
@@ -1097,101 +1193,21 @@ function renderCartItems() {
 }
 
 function openCheckout(buyNowMode = false) {
-    isBuyNowMode = buyNowMode;
-    const itemsToCheckout = isBuyNowMode ? [buyNowItem] : cart;
-
-    if (itemsToCheckout.length === 0 || (isBuyNowMode && !buyNowItem)) return;
-
-    // If opening from Cart Sidebar, close it first
-    const sidebar = document.getElementById('cart-sidebar');
-    if (!sidebar.classList.contains('pointer-events-none')) {
-        toggleCart();
+    if (!buyNowMode) {
+        localStorage.removeItem('tentionfree_buyNow');
     }
-
-    document.getElementById('checkout-modal').classList.remove('hidden');
-
-    // Reset Payment Type to "Pay Now" on open
-    document.querySelector('input[name="paymentType"][value="now"]').checked = true;
-    togglePaymentSection();
-
-    // Game UID Logic Check (Dynamic)
-    const gamingItems = itemsToCheckout.filter(item => item.category === 'gaming');
-    const uidContainer = document.getElementById('game-uid-field');
-
-    // Clear previous content
-    uidContainer.innerHTML = '';
-
-    if (gamingItems.length > 0) {
-        uidContainer.classList.remove('hidden');
-
-        // Remove duplicates if multiple quantities of same item (we usually need 1 ID per item type, or per item? Assuming 1 ID per item entry in cart)
-        // Actually, if someone buys 2x PUBG, do they need 2 IDs? Usually cart groups them. 
-        // Let's assume we need 1 ID per distinct cart item.
-
-        gamingItems.forEach((item, index) => {
-            const wrapper = document.createElement('div');
-            if (index > 0) wrapper.className = "mt-4 border-t border-slate-700 pt-4";
-
-            let labelText = item.name + " ID";
-            let placeholder = "Enter ID";
-
-            // Smart Labels
-            const lowerName = item.name.toLowerCase();
-            if (lowerName.includes('pubg')) {
-                labelText = "PUBG Player ID";
-                placeholder = "Enter PUBG ID (Number)";
-            } else if (lowerName.includes('free fire') || lowerName.includes('freefire')) {
-                labelText = "FreeFire UID";
-                placeholder = "Enter FreeFire UID";
-            } else if (lowerName.includes('mobile legends')) {
-                labelText = "MLBB User ID (Zone ID)";
-                placeholder = "User ID (Zone ID)";
-            }
-
-            wrapper.innerHTML = `
-                <label class="block text-xs font-medium text-brand-600 mb-1">${labelText} <span class="text-slate-500 font-normal">(${item.name})</span></label>
-                <input type="text" data-item-name="${item.name}" required
-                    class="dynamic-game-uid w-full bg-brand-50 border border-brand-200 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
-                    placeholder="${placeholder}">
-                <p class="text-[10px] text-slate-400 mt-1">Required for direct top-up of this item.</p>
-            `;
-            uidContainer.appendChild(wrapper);
-        });
-
+    // Check if distinct checkout page is needed or if we are already there
+    if (!window.location.pathname.endsWith('checkout.html')) {
+        window.location.href = 'checkout.html';
     } else {
-        uidContainer.classList.add('hidden');
+        window.location.reload();
     }
-
-    // Populate Order Summary Items
-    const summaryContainer = document.getElementById('checkout-items-summary');
-    summaryContainer.innerHTML = '';
-
-    let total = 0;
-
-    itemsToCheckout.forEach(item => {
-        total += item.price * item.quantity;
-        const div = document.createElement('div');
-        div.className = 'flex justify-between text-xs text-gray-300 border-b border-white/5 pb-1 last:border-0 last:pb-0';
-        div.innerHTML = `
-            <div class="flex items-center">
-                <img src="${item.image}" class="w-6 h-6 object-contain mr-2 rounded bg-white/5">
-                <span>${item.name} <span class="text-brand-400 font-bold">x${item.quantity}</span></span>
-            </div>
-            <span class="font-mono">৳${item.price * item.quantity}</span>
-        `;
-        summaryContainer.appendChild(div);
-    });
-
-    // Update Total in Checkout
-    if (document.getElementById('checkout-total-amount')) {
-        document.getElementById('checkout-total-amount').innerText = '৳' + total.toFixed(2);
-    }
-
-    updatePaymentInfo();
 }
 
 function closeCheckout() {
-    document.getElementById('checkout-modal').classList.add('hidden');
+    const modal = document.getElementById('checkout-modal');
+    if (modal) modal.classList.add('hidden');
+
     // Reset mode
     isBuyNowMode = false;
     buyNowItem = null;
@@ -1477,13 +1493,19 @@ async function submitOrder() {
         .then(data => {
             console.log("Order saved:", data);
 
-            // Clear Cart
-            cart = [];
-            saveCart();
-            updateCartCount();
-            if (document.getElementById('cart-sidebar')) renderCartItems();
+            // Handle Buy Now vs Cart cleanup
+            if (isBuyNowMode) {
+                localStorage.removeItem('tentionfree_buyNow');
+                buyNowItem = null;
+            } else {
+                // Clear Cart ONLY if it was a cart order
+                cart = [];
+                saveCart();
+                updateCartCount();
+                if (document.getElementById('cart-sidebar')) renderCartItems();
+            }
 
-            // Close Checkout Modal
+            // Close Checkout Modal (Safe check)
             closeCheckout();
             closePaymentModal();
 
