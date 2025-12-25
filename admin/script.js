@@ -1,11 +1,11 @@
 // Auth Check
 if (sessionStorage.getItem('adminAuth') !== 'true') {
-    window.location.href = '../secure-admin.html';
+    window.location.href = '../secure-admin';
 }
 
 function logout() {
     sessionStorage.removeItem('adminAuth');
-    window.location.href = '../secure-admin.html';
+    window.location.href = '../secure-admin';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -38,25 +38,25 @@ document.addEventListener('DOMContentLoaded', () => {
             <i class="fa-solid fa-layer-group"></i> AdminPanel
         </div>
         <div class="sidebar-menu">
-            <a href="dashboard.html" class="nav-link ${window.location.pathname.includes('dashboard') ? 'active' : ''}">
+            <a href="dashboard" class="nav-link ${window.location.pathname.includes('dashboard') ? 'active' : ''}">
                 <i class="fa-solid fa-chart-pie"></i> Dashboard
             </a>
-            <a href="add-product.html" class="nav-link ${window.location.pathname.includes('add-product') ? 'active' : ''}">
+            <a href="add-product" class="nav-link ${window.location.pathname.includes('add-product') ? 'active' : ''}">
                 <i class="fa-solid fa-plus-circle"></i> Add Product
             </a>
-            <a href="products.html" class="nav-link ${window.location.pathname.includes('products') ? 'active' : ''}">
+            <a href="products" class="nav-link ${window.location.pathname.includes('products') ? 'active' : ''}">
                 <i class="fa-solid fa-box-open"></i> Products
             </a>
-            <a href="manage-orders.html" class="nav-link ${window.location.pathname.includes('manage-orders') ? 'active' : ''}">
+            <a href="manage-orders" class="nav-link ${window.location.pathname.includes('manage-orders') ? 'active' : ''}">
                 <i class="fa-solid fa-clipboard-list"></i> Orders
             </a>
-            <a href="order-history.html" class="nav-link ${window.location.pathname.includes('order-history') ? 'active' : ''}">
+            <a href="order-history" class="nav-link ${window.location.pathname.includes('order-history') ? 'active' : ''}">
                 <i class="fa-solid fa-clock-rotate-left"></i> History
             </a>
-            <a href="customers.html" class="nav-link ${window.location.pathname.includes('customers') ? 'active' : ''}">
+            <a href="customers" class="nav-link ${window.location.pathname.includes('customers') ? 'active' : ''}">
                 <i class="fa-solid fa-users"></i> Customers
             </a>
-            <a href="tickets.html" class="nav-link ${window.location.pathname.includes('tickets') ? 'active' : ''}" style="color:${window.location.pathname.includes('tickets') ? 'white' : '#fab1a0'}">
+            <a href="tickets" class="nav-link ${window.location.pathname.includes('tickets') ? 'active' : ''}" style="color:${window.location.pathname.includes('tickets') ? 'white' : '#fab1a0'}">
                 <i class="fa-solid fa-headset"></i> Tickets
             </a>
         </div>

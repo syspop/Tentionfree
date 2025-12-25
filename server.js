@@ -15,7 +15,18 @@ const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-app.use(express.static(__dirname)); // Serve static files from current directory
+
+// Automatic Redirect: .html -> clean URL
+app.use((req, res, next) => {
+    if (req.path.endsWith('.html')) {
+        const newPath = req.path.slice(0, -5);
+        return res.redirect(301, newPath);
+    }
+    next();
+});
+
+// Serve static files (try .html automatically)
+app.use(express.static(__dirname, { extensions: ['html', 'htm'] }));
 
 // API Routes
 

@@ -189,7 +189,7 @@
 
                 <!-- Login Modal -->
                 <div class="flex-shrink-0 flex items-center cursor-pointer group"
-                    onclick="window.location.href='index.html'">
+                    onclick="window.location.href='index'">
                     <div
                         class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-blue-600 flex items-center justify-center mr-3 shadow-lg shadow-brand-500/20 group-hover:shadow-brand-500/40 transition-all">
                         <i class="fa-solid fa-bolt text-white text-xl"></i>
@@ -202,11 +202,11 @@
                 <!-- Desktop Menu -->
                 <div
                     class="hidden md:flex space-x-1 items-center bg-slate-900 rounded-full px-2 py-1 border border-slate-800 shadow-sm">
-                    <a href="index.html"
+                    <a href="index"
                         class="text-brand-700 bg-brand-50 px-5 py-2 rounded-full text-sm font-medium transition">Home</a>
-                    <a href="products.html"
+                    <a href="products"
                         class="text-slate-300 hover:text-brand-600 hover:bg-slate-800 transition px-5 py-2 rounded-full text-sm font-medium">Products</a>
-                    <a href="services.html"
+                    <a href="services"
                         class="text-slate-300 hover:text-brand-600 hover:bg-slate-800 transition px-5 py-2 rounded-full text-sm font-medium">Services</a>
                 </div>
 
@@ -244,8 +244,7 @@
                     </button>
 
                     <!-- Login Button (Moved) -->
-                    <a href="login.html"
-                        class="hidden md:flex items-center text-slate-300 hover:text-brand-600 transition">
+                    <a href="login" class="hidden md:flex items-center text-slate-300 hover:text-brand-600 transition">
                         <i class="fa-solid fa-user text-xl mr-2"></i>
                         <span class="text-sm font-medium">Login</span>
                     </a>
@@ -259,16 +258,16 @@
         <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-t border-slate-800 absolute w-full shadow-lg">
             <div class="px-4 pt-4 pb-6 space-y-2">
                 <!-- Mobile Search -->
-                <form action="products.html" method="GET" class="mb-4 relative">
+                <form action="products" method="GET" class="mb-4 relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400"></i>
                     <input type="search" name="q" placeholder="Search..."
                         class="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-slate-100 focus:outline-none focus:border-brand-500 transition-colors placeholder-slate-400">
                 </form>
-                <a href="index.html"
+                <a href="index"
                     class="text-slate-300 hover:text-brand-600 block px-3 py-3 rounded-xl hover:bg-slate-800 text-base font-medium transition">Home</a>
-                <a href="products.html"
+                <a href="products"
                     class="text-slate-300 hover:text-brand-600 block px-3 py-3 rounded-xl hover:bg-slate-800 text-base font-medium transition">Shop</a>
-                <a href="login.html"
+                <a href="login"
                     class="text-slate-300 hover:text-brand-600 block px-3 py-3 rounded-xl hover:bg-slate-800 text-base font-medium transition">Login</a>
                 <button onclick="openHowToModal()"
                     class="text-slate-300 hover:text-brand-600 block px-3 py-3 rounded-xl hover:bg-slate-800 text-base font-medium transition w-full text-left">How
@@ -304,7 +303,7 @@
             </p>
 
             <div class="mt-8 mb-10 max-w-2xl mx-auto relative z-20">
-                <form action="products.html" method="GET" class="search-container group">
+                <form action="products" method="GET" class="search-container group">
                     <div class="search-input-wrapper transform transition-transform group-hover:scale-[1.02]">
                         <i class="fa-solid fa-magnifying-glass search-icon-left text-xl"></i>
                         <input type="search" name="q" placeholder="Search for subscriptions, games, or tools..."
@@ -318,7 +317,7 @@
             </div>
 
             <div class="mt-8 flex flex-col sm:flex-row justify-center gap-5">
-                <a href="products.html"
+                <a href="products"
                     class="group bg-gradient-to-r from-brand-600 to-brand-500 hover:to-brand-400 text-white px-8 py-4 rounded-full font-bold transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/50 flex items-center justify-center transform hover:-translate-y-1">
                     Start Shopping
                     <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
@@ -939,10 +938,10 @@
                 <div>
                     <h3 class="text-lg font-bold text-white mb-4">Quick Links</h3>
                     <ul class="space-y-2 text-sm text-slate-400">
-                        <li><a href="index.html" class="hover:text-brand-400 transition">Home</a></li>
-                        <li><a href="products.html" class="hover:text-brand-400 transition">Shop Products</a></li>
-                        <li><a href="services.html" class="hover:text-brand-400 transition">Services</a></li>
-                        <li><a href="login.html" class="hover:text-brand-400 transition">Login / Register</a></li>
+                        <li><a href="index" class="hover:text-brand-400 transition">Home</a></li>
+                        <li><a href="products" class="hover:text-brand-400 transition">Shop Products</a></li>
+                        <li><a href="services" class="hover:text-brand-400 transition">Services</a></li>
+                        <li><a href="login" class="hover:text-brand-400 transition">Login / Register</a></li>
                     </ul>
                 </div>
 
@@ -982,16 +981,16 @@
 <div
     class="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-lg border-t border-slate-800 z-[150] md:hidden safe-area-bottom h-20">
     <div class="grid grid-cols-4 h-full">
-        <a href="index.html" class="flex flex-col items-center justify-center text-brand-500 transition-colors group">
+        <a href="index" class="flex flex-col items-center justify-center text-brand-500 transition-colors group">
             <i class="fa-solid fa-house mb-1 text-xl group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-medium">Home</span>
         </a>
-        <a href="products.html"
+        <a href="products"
             class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
             <i class="fa-solid fa-store mb-1 text-xl group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-medium">Shop</span>
         </a>
-        <a href="services.html"
+        <a href="services"
             class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
             <i class="fa-solid fa-bolt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-medium">Services</span>

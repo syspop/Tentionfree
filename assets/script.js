@@ -519,7 +519,7 @@ function renderProducts() {
                   },
                   "offers": {
                     "@type": "Offer",
-                    "url": "https://tentionfree.store/products.html",
+                    "url": "https://tentionfree.store/products",
                     "priceCurrency": "BDT",
                     "price": "${product.price}",
                     "availability": "${isOutOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock'}",
@@ -645,7 +645,7 @@ function initCheckoutPage() {
 
     // 2. Redirect if empty
     if (itemsToCheckout.length === 0) {
-        window.location.href = 'products.html';
+        window.location.href = 'products';
         return;
     }
 
@@ -1046,7 +1046,7 @@ function buyNow(id, source = 'card') {
     const item = createCartItem(id, source);
     if (item) {
         localStorage.setItem('tentionfree_buyNow', JSON.stringify(item));
-        window.location.href = 'checkout.html';
+        window.location.href = 'checkout';
     }
 }
 
@@ -1197,8 +1197,8 @@ function openCheckout(buyNowMode = false) {
         localStorage.removeItem('tentionfree_buyNow');
     }
     // Check if distinct checkout page is needed or if we are already there
-    if (!window.location.pathname.endsWith('checkout.html')) {
-        window.location.href = 'checkout.html';
+    if (!window.location.pathname.includes('checkout')) {
+        window.location.href = 'checkout';
     } else {
         window.location.reload();
     }
@@ -1665,7 +1665,7 @@ function showSuccessModal() {
         if (seconds <= 0) {
             clearInterval(interval);
             // Redirect to Home Page
-            window.location.href = 'index.html';
+            window.location.href = 'index';
         }
     }, 1000);
 }

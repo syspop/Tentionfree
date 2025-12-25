@@ -120,7 +120,7 @@
     <script>
         // Check if already logged in
         if (sessionStorage.getItem('adminAuth') === 'true') {
-            window.location.href = 'admin/dashboard.html';
+            window.location.href = 'admin/dashboard';
         }
 
         // Enter key login
@@ -150,7 +150,7 @@
 
                 if (data.success) {
                     sessionStorage.setItem('adminAuth', 'true');
-                    window.location.href = 'admin/dashboard.html';
+                    window.location.href = 'admin/dashboard';
                 } else {
                     error.style.display = 'block';
                     btn.innerText = originalText;
