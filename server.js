@@ -265,22 +265,46 @@ app.put('/api/customers/:id', (req, res) => {
 });
 
 // DELETE Customer (Admin/User)
+// DELETE Customer (Secure)
 app.delete('/api/customers/:id', (req, res) => {
-    const id = req.params.id.trim();
+    const userId = req.params.id.trim();
+    // Use express.json() middleware to ensure body is parsed
+    const { password, isAdmin } = req.body;
 
     fs.readFile(CUSTOMERS_FILE, 'utf8', (err, data) => {
         if (err) return res.status(500).json({ success: false, message: "DB Error" });
 
-        let customers = JSON.parse(data);
-        const filtered = customers.filter(c => c.id !== id);
+        let customers = [];
+        try { customers = JSON.parse(data); } catch (e) { }
 
-        if (customers.length === filtered.length) {
-            return res.json({ success: false, message: `User not found (ID: ${id})` });
+        const index = customers.findIndex(c => c.id === userId);
+
+        if (index === -1) {
+            return res.status(404).json({ success: false, message: `User not found (ID: ${userId})` });
         }
 
-        fs.writeFile(CUSTOMERS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (e) => {
-            if (e) return res.status(500).json({ success: false });
-            res.json({ success: true, message: "Account deleted" });
+        // Security Check
+        const ADMIN_PASS = "asy-sala";
+
+        if (isAdmin) {
+            if (password !== ADMIN_PASS) {
+                return res.json({ success: false, message: "Incorrect Admin Password" });
+            }
+        } else {
+            // User deleting their own account
+            if (!password || customers[index].password !== password) {
+                return res.json({ success: false, message: "Incorrect Password" });
+            }
+        }
+
+        customers.splice(index, 1);
+
+        fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (err) => {
+            if (err) {
+                console.error(err);
+                return res.json({ success: false, message: "DB Error" });
+            }
+            res.json({ success: true, message: "Account deleted successfully" });
         });
     });
 });

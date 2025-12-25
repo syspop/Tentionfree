@@ -306,27 +306,33 @@
         async function confirmDelete() {
             if (!deleteUserId) return;
 
+            const pass = document.getElementById('del-admin-pass').value;
+            if (!pass) return alert("Please enter admin password");
+
             const btn = document.getElementById('btn-del-cust');
             btn.innerText = "Deleting...";
             btn.disabled = true;
 
             try {
                 const res = await fetch('../api/customers/' + deleteUserId, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pass, isAdmin: true })
                 });
                 const result = await res.json();
 
                 if (result.success) {
                     closeDeleteModal();
                     loadCustomers();
+                    alert("Account Deleted Successfully");
                 } else {
-                    alert("Failed to delete");
+                    alert(result.message || "Failed to delete");
                 }
             } catch (e) {
                 console.error(e);
                 alert("Server Error");
             } finally {
-                btn.innerText = "Yes, Delete";
+                btn.innerText = "Delete";
                 btn.disabled = false;
             }
         }
@@ -365,7 +371,7 @@
         </div>
     </div>
 
-    <!-- Delete Modal -->
+    <!-- Delete Modal (Secure) -->
     <div id="delete-modal"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
         <div
@@ -375,14 +381,19 @@
                 <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:24px;"></i>
             </div>
             <h3 style="color:white; margin-top:0;">Delete Account?</h3>
-            <p style="color:var(--gray); font-size:14px; margin-bottom:25px;">This action cannot be undone. The user
-                will lose access immediately.</p>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:15px;">This action cannot be undone.</p>
+
+            <div style="margin-bottom:20px; text-align:left;">
+                <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Enter Admin
+                    Password</label>
+                <input type="password" id="del-admin-pass" class="input-box" placeholder="••••••••">
+            </div>
 
             <div style="display:flex; gap:10px; justify-content:center;">
                 <button onclick="closeDeleteModal()" class="tab-btn"
                     style="background:var(--bg-input); border:1px solid var(--border);">Cancel</button>
                 <button onclick="confirmDelete()" id="btn-del-cust" class="action-btn"
-                    style="background:var(--red);">Yes, Delete</button>
+                    style="background:var(--red);">Delete</button>
             </div>
         </div>
     </div>
