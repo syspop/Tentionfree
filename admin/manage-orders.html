@@ -227,14 +227,25 @@
                     Info</small>
                 <div id="view-delivery" style="font-family:monospace; color:white;"></div>
             </div>
-            <div id="view-cancel-container"
-                style="display:none; background:rgba(239,68,68,0.1); padding:15px; border-radius:10px; border:1px solid rgba(239,68,68,0.2);">
-                <small
-                    style="color:#ef4444; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">Cancellation
-                    Reason</small>
-                <div id="view-cancel" style="color:#cbd5e1;"></div>
-            </div>
+            <div id="view-delivery" style="font-family:monospace; color:white;"></div>
         </div>
+
+        <div id="view-proof-container"
+            style="display:none; background:rgba(59,130,246,0.1); padding:15px; border-radius:10px; border:1px solid rgba(59,130,246,0.2); margin-top:10px;">
+            <small
+                style="color:#3b82f6; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:10px;">Payment
+                Proof</small>
+            <img id="view-proof-img" src="" style="width:100%; border-radius:8px; display:block;" alt="Payment Proof">
+        </div>
+
+        <div id="view-cancel-container"
+            style="display:none; background:rgba(239,68,68,0.1); padding:15px; border-radius:10px; border:1px solid rgba(239,68,68,0.2);">
+            <small
+                style="color:#ef4444; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">Cancellation
+                Reason</small>
+            <div id="view-cancel" style="color:#cbd5e1;"></div>
+        </div>
+    </div>
     </div>
 
     <script src="script.js"></script>
@@ -739,6 +750,20 @@
                 document.getElementById('view-delivery').innerText = order.deliveryInfo;
             } else {
                 document.getElementById('view-delivery-container').style.display = 'none';
+            }
+
+            // Proof Info
+            if (order.proof) {
+                document.getElementById('view-proof-container').style.display = 'block';
+                document.getElementById('view-proof-img').src = order.proof;
+                document.getElementById('view-proof-img').onclick = function () {
+                    const w = window.open("");
+                    w.document.write('<img src="' + order.proof + '" style="width:100%">');
+                };
+                document.getElementById('view-proof-img').style.cursor = "pointer";
+                document.getElementById('view-proof-img').title = "Click to enlarge";
+            } else {
+                document.getElementById('view-proof-container').style.display = 'none';
             }
 
             // Cancel Info

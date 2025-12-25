@@ -1352,6 +1352,31 @@ function openPaymentModal() {
     document.getElementById('payment-modal').classList.remove('hidden');
 }
 
+// --- Payment Proof Logic ---
+function previewProof(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            document.getElementById('proof-preview').src = e.target.result;
+            document.getElementById('proof-preview').classList.remove('hidden');
+            document.getElementById('proof-upload-ui').classList.add('hidden');
+            document.getElementById('remove-proof-btn').classList.remove('hidden');
+        }
+
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function clearProof() {
+    const input = document.getElementById('payment-proof');
+    input.value = "";
+    document.getElementById('proof-preview').src = "";
+    document.getElementById('proof-preview').classList.add('hidden');
+    document.getElementById('proof-upload-ui').classList.remove('hidden');
+    document.getElementById('remove-proof-btn').classList.add('hidden');
+}
+
 function closePaymentModal() {
     const modal = document.getElementById('payment-modal');
     if (modal) modal.classList.add('hidden');
@@ -1426,8 +1451,38 @@ async function submitOrder() {
     const itemsToOrder = isBuyNowMode ? [buyNowItem] : cart;
     const hasGamingItem = itemsToOrder.some(item => item.category === 'gaming');
 
-    // --- DUPLICATE TRANSACTION CHECK ---
+    // --- DUPLICATE TRANSACTION CHECK & PROOF VALIDATION ---
+    let proofBase64 = null;
+
     if (paymentType === 'now') {
+        // Validate Proof
+        const fileInput = document.getElementById('payment-proof');
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+            showErrorModal("Proof Required", "Please upload a screenshot of your payment.");
+            return;
+        }
+
+        // Validate File Size (Max 5MB)
+        if (fileInput.files[0].size > 5 * 1024 * 1024) {
+            showErrorModal("File Too Large", "Please upload an image smaller than 5MB.");
+            return;
+        }
+
+        // Convert to Base64
+        try {
+            const toBase64 = file => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+            proofBase64 = await toBase64(fileInput.files[0]);
+        } catch (e) {
+            console.error("File error", e);
+            showErrorModal("File Error", "Failed to process image.");
+            return;
+        }
+
         try {
             const res = await fetch('api/orders?t=' + Date.now());
             const orders = await res.json();
@@ -1466,7 +1521,8 @@ async function submitOrder() {
         status: 'Pending',
         trx: trxid || 'Pay Later',
         paymentMethod: paymentType === 'later' ? 'Pay Later' : payment,
-        items: itemsToOrder // Use itemsToOrder to capture Buy Now items too
+        items: itemsToOrder, // Use itemsToOrder to capture Buy Now items too
+        proof: proofBase64 // Add proof image
     };
 
     // Send to Node Server
