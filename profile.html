@@ -389,8 +389,8 @@
                 const orders = allOrders.filter(o => {
                     const orderEmail = (o.email || '').toLowerCase().trim();
                     const orderName = (o.customer || '').toLowerCase().trim();
-                    // Check if email matches OR (if email missing in order) name matches
-                    return (orderEmail === userEmail) || (orderName === userName);
+                    // Check if email matches
+                    return (orderEmail === userEmail);
                 });
 
                 // --- MEMBERSHIP LOGIC ---

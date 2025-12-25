@@ -267,6 +267,9 @@ app.post('/api/register', (req, res) => {
     if (customers.find(c => c.email === email)) {
         return res.json({ success: false, message: "Email already registered" });
     }
+    if (phone && customers.find(c => c.phone === phone)) {
+        return res.json({ success: false, message: "Phone number already registered" });
+    }
 
     const newCustomer = {
         id: 'usr_' + Date.now().toString(36),
