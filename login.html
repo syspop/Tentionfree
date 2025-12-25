@@ -172,17 +172,30 @@
                                 class="input-glass w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-500"
                                 placeholder="Email Address">
                         </div>
-                        <div class="relative">
-                            <i class="fa-brands fa-whatsapp absolute left-4 top-3.5 text-slate-500"></i>
-                            <input type="text" id="reg-phone" required
-                                class="input-glass w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-500"
-                                placeholder="Phone / WhatsApp">
+                        <div class="relative flex gap-2">
+                            <i class="fa-brands fa-whatsapp absolute left-4 top-3.5 text-slate-500 z-10"></i>
+                            <div class="relative w-1/3">
+                                <input type="text" value="+880" readonly
+                                    class="input-glass w-full rounded-xl py-3 pl-11 pr-2 placeholder-slate-500 text-center cursor-not-allowed text-slate-400">
+                            </div>
+                            <div class="relative w-2/3">
+                                <input type="text" id="reg-phone" required pattern="[0-9]*" inputmode="numeric"
+                                    maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                    class="input-glass w-full rounded-xl py-3 px-4 placeholder-slate-500"
+                                    placeholder="1812345678">
+                            </div>
                         </div>
                         <div class="relative">
-                            <i class="fa-regular fa-calendar absolute left-4 top-3.5 text-slate-500"></i>
-                            <input type="date" id="reg-dob" required
-                                class="input-glass w-full rounded-xl py-3 pl-11 pr-4 placeholder-slate-500 text-slate-400 focus:text-white"
-                                placeholder="Date of Birth">
+                            <label class="block text-xs font-bold text-slate-400 mb-1 ml-1 uppercase">Date of
+                                Birth</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="number" id="reg-dob-day" placeholder="DD" min="1" max="31" required
+                                    class="input-glass w-full rounded-xl py-3 text-center placeholder-slate-500">
+                                <input type="number" id="reg-dob-month" placeholder="MM" min="1" max="12" required
+                                    class="input-glass w-full rounded-xl py-3 text-center placeholder-slate-500">
+                                <input type="number" id="reg-dob-year" placeholder="YYYY" min="1900" max="2100" required
+                                    class="input-glass w-full rounded-xl py-3 text-center placeholder-slate-500">
+                            </div>
                         </div>
                         <div class="relative">
                             <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-500"></i>
@@ -289,36 +302,49 @@
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating...';
             btn.disabled = true;
 
-            const data = {
-                name: document.getElementById('reg-name').value,
-                email: document.getElementById('reg-email').value,
-                phone: document.getElementById('reg-phone').value,
-                dob: document.getElementById('reg-dob').value,
-                password: document.getElementById('reg-pass').value
-            };
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const phoneNum = document.getElementById('reg-phone').value;
+            const password = document.getElementById('reg-pass').value;
 
-            // Age Validation (16+)
-            if (data.dob) {
-                const birthDate = new Date(data.dob);
-                const today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                const m = today.getMonth() - birthDate.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
-                }
+            const day = document.getElementById('reg-dob-day').value;
+            const month = document.getElementById('reg-dob-month').value;
+            const year = document.getElementById('reg-dob-year').value;
 
-                if (age < 16) {
-                    showCustomAlert("Age Restriction", "You must be at least 16 years old to create an account.", "error");
-                    btn.innerHTML = original;
-                    btn.disabled = false;
-                    return;
-                }
-            } else {
-                showCustomAlert("Missing Info", "Please enter your Date of Birth.", "error");
+            if (!day || !month || !year) {
+                showCustomAlert("Missing Info", "Please enter complete Date of Birth.", "error");
                 btn.innerHTML = original;
                 btn.disabled = false;
                 return;
             }
+
+            // Construct DOB YYYY-MM-DD
+            const dob = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+            // Age Validation (16+)
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age < 16) {
+                showCustomAlert("Age Restriction", "You must be at least 16 years old to create an account.", "error");
+                btn.innerHTML = original;
+                btn.disabled = false;
+                return;
+            }
+
+            // Prepare Data
+            const data = {
+                name,
+                email,
+                phone: "+880" + phoneNum,
+                dob,
+                password
+            };
 
             const confirmPass = document.getElementById('reg-confirm-pass').value;
 
@@ -339,7 +365,7 @@
                     </div>`,
                     "error"
                 );
-                btn.innerHTML = original; // Fix: use innerHTML to restore text properly if needed, but original was innerText.
+                btn.innerHTML = original;
                 btn.disabled = false;
                 return;
             }
