@@ -254,8 +254,8 @@ app.put('/api/customers/:id', (req, res) => {
         // Update fields
         if (name) customers[index].name = name;
         if (email) customers[index].email = email;
-        if (phone) customers[index].phone = phone;
-        if (req.body.dob) customers[index].dob = req.body.dob;
+        if (phone !== undefined) customers[index].phone = phone;
+        if (req.body.dob !== undefined) customers[index].dob = req.body.dob;
         if (password) customers[index].password = password;
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {

@@ -395,6 +395,26 @@
             document.getElementById('u-avatar').innerText = user.name.charAt(0).toUpperCase();
 
             loadHistory(user);
+
+            // Fetch fresh user data to ensure updates from admin are reflected
+            fetch('api/customers?t=' + Date.now())
+                .then(res => res.json())
+                .then(users => {
+                    const freshUser = users.find(u => u.id === user.id);
+                    if (freshUser) {
+                        // Update UI
+                        document.getElementById('u-name').innerText = freshUser.name;
+                        document.getElementById('u-name-display').innerText = freshUser.name;
+                        document.getElementById('u-email-sec').innerText = freshUser.email;
+                        document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
+                        document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString() : 'N/A';
+                        document.getElementById('u-avatar').innerText = freshUser.name.charAt(0).toUpperCase();
+
+                        // Update localStorage
+                        localStorage.setItem('user', JSON.stringify(freshUser));
+                    }
+                })
+                .catch(err => console.error("Failed to sync user profile", err));
         });
 
         async function loadHistory(user) {
