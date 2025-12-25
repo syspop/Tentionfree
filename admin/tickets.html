@@ -62,7 +62,9 @@
 
             try {
                 // Adjusted path to ../api/tickets
-                const res = await fetch('../api/tickets?t=' + Date.now());
+                const res = await fetch('../api/tickets?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const tickets = await res.json();
                 console.log("DEBUG: Fetched Tickets:", tickets);
 
@@ -134,7 +136,10 @@
         async function deleteTicket(id) {
             try {
                 // Adjusted path to ../api/tickets
-                const res = await fetch('../api/tickets/' + id, { method: 'DELETE' });
+                const res = await fetch('../api/tickets/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const result = await res.json();
                 if (result.success) {
                     loadTickets();

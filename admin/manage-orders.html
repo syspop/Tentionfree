@@ -261,7 +261,9 @@
             list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Loading...</td></tr>";
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now());
+                const res = await fetch('../api/orders?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const orders = await res.json();
 
                 if (!Array.isArray(orders)) throw new Error("Invalid format");
@@ -434,7 +436,9 @@
         async function processStatusUpdate(id, status, reason = null, deliveryInfo = null, image = null, refundMethod = null, refundTrx = null) {
             try {
                 // Fetch latest
-                const res = await fetch('../api/orders?t=' + Date.now());
+                const res = await fetch('../api/orders?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const orders = await res.json();
                 const index = orders.findIndex(o => o.id === id);
 
@@ -463,7 +467,10 @@
         async function saveOrders(orders) {
             await fetch('../api/orders', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                },
                 body: JSON.stringify(orders)
             });
             loadOrders();
@@ -583,7 +590,9 @@
             if (!pendingDeleteId) return;
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now());
+                const res = await fetch('../api/orders?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const orders = await res.json();
                 const index = orders.findIndex(o => o.id === pendingDeleteId);
 

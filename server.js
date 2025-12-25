@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
+const jwt = require('jsonwebtoken'); // JWT for API Security
 const { connectMongoDB, syncCollection } = require('./mongoBackup'); // Backup Service
 
 const app = express();
@@ -37,6 +38,20 @@ app.use((req, res, next) => {
 // Serve static files (try .html automatically)
 app.use(express.static(__dirname, { extensions: ['html', 'htm'] }));
 
+// --- SECURITY MIDDLEWARE ---
+const authenticateAdmin = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ success: false, message: "Access Denied: Invalid Token" });
+        req.user = user;
+        next();
+    });
+};
+
 // API Routes
 
 // --- PRODUCTS ---
@@ -53,8 +68,8 @@ app.get('/api/products', (req, res) => {
     });
 });
 
-// POST Products (Overwrite all)
-app.post('/api/products', (req, res) => {
+// POST Products (Overwrite all) - PROTECTED
+app.post('/api/products', authenticateAdmin, (req, res) => {
     const products = req.body;
     fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 4), 'utf8', (err) => {
         if (err) {
@@ -69,8 +84,8 @@ app.post('/api/products', (req, res) => {
 });
 
 // --- ORDERS ---
-// GET Orders
-app.get('/api/orders', (req, res) => {
+// GET Orders - PROTECTED
+app.get('/api/orders', authenticateAdmin, (req, res) => {
     fs.readFile(ORDERS_FILE, 'utf8', (err, data) => {
         if (err) {
             if (err.code === 'ENOENT') return res.json([]);
@@ -114,8 +129,8 @@ app.post('/api/orders', (req, res) => {
     });
 });
 
-// PUT Orders (Overwrite ALL - for Admin updates/deletes)
-app.put('/api/orders', (req, res) => {
+// PUT Orders (Overwrite ALL - for Admin updates/deletes) - PROTECTED
+app.put('/api/orders', authenticateAdmin, (req, res) => {
     const orders = req.body;
     fs.writeFile(ORDERS_FILE, JSON.stringify(orders, null, 4), 'utf8', (err) => {
         if (err) {
@@ -132,8 +147,8 @@ app.put('/api/orders', (req, res) => {
 // --- TICKETS (Support) ---
 const TICKETS_FILE = path.join(__dirname, 'data', 'tickets.json');
 
-// GET Tickets (Admin)
-app.get('/api/tickets', (req, res) => {
+// GET Tickets (Admin) - PROTECTED
+app.get('/api/tickets', authenticateAdmin, (req, res) => {
     console.log("GET /api/tickets requested");
     console.log("Reading tickets from:", TICKETS_FILE);
 
@@ -196,8 +211,8 @@ app.post('/api/tickets', (req, res) => {
     });
 });
 
-// DELETE Ticket (Admin)
-app.delete('/api/tickets/:id', (req, res) => {
+// DELETE Ticket (Admin) - PROTECTED
+app.delete('/api/tickets/:id', authenticateAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     fs.readFile(TICKETS_FILE, 'utf8', (err, data) => {
         if (err) return res.status(500).json({ success: false });
@@ -251,8 +266,8 @@ function getCustomers() {
     }
 }
 
-// GET Customers (Admin only ideally, but public for this MVP as per request)
-app.get('/api/customers', (req, res) => {
+// GET Customers (Admin only ideally, but public for this MVP as per request) - SECURED NOW
+app.get('/api/customers', authenticateAdmin, (req, res) => {
     const customers = getCustomers();
     // Return safe data (exclude passwords if necessary, but here likely okay or strip them)
     // Let's strip passwords to be safe
@@ -263,8 +278,8 @@ app.get('/api/customers', (req, res) => {
     res.json(safeCustomers);
 });
 
-// PUT Update Customer (Admin)
-app.put('/api/customers/:id', (req, res) => {
+// PUT Update Customer (Admin) - PROTECTED
+app.put('/api/customers/:id', authenticateAdmin, (req, res) => {
     const id = req.params.id;
     const { name, email, phone, password } = req.body;
 
@@ -507,7 +522,9 @@ app.post('/api/admin-login', (req, res) => {
     const ADMIN_PASS = process.env.ADMIN_PASS || "asy-sala";
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
-        res.json({ success: true });
+        // Generate Token
+        const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        res.json({ success: true, token });
     } else {
         res.json({ success: false, message: "Invalid Admin Credentials" });
     }

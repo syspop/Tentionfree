@@ -1,10 +1,11 @@
 // Auth Check
-if (sessionStorage.getItem('adminAuth') !== 'true') {
+if (sessionStorage.getItem('adminAuth') !== 'true' || !localStorage.getItem('adminToken')) {
     window.location.href = '../chodir-vai';
 }
 
 function logout() {
     sessionStorage.removeItem('adminAuth');
+    localStorage.removeItem('adminToken'); // Clear Token
     window.location.href = '../chodir-vai';
 }
 

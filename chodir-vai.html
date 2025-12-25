@@ -150,6 +150,7 @@
 
                 if (data.success) {
                     sessionStorage.setItem('adminAuth', 'true');
+                    localStorage.setItem('adminToken', data.token); // Save Token!
                     window.location.href = 'admin/dashboard';
                 } else {
                     error.style.display = 'block';

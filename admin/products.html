@@ -158,7 +158,10 @@
 
                 await fetch('../api/products', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
                     body: JSON.stringify(sortedProducts)
                 });
 
@@ -184,7 +187,10 @@
 
                 await fetch('../api/products', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
                     body: JSON.stringify(products)
                 });
 
@@ -201,7 +207,10 @@
 
                     await fetch('../api/products', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
                         body: JSON.stringify(products)
                     });
 

@@ -111,7 +111,9 @@
             list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Customers...</td></tr>";
 
             try {
-                const res = await fetch('../api/customers?t=' + Date.now());
+                const res = await fetch('../api/customers?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const users = await res.json();
 
                 if (Array.isArray(users)) {
@@ -182,7 +184,9 @@
             container.innerHTML = "<div style='text-align:center; color:var(--gray)'>Loading history...</div>";
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now());
+                const res = await fetch('../api/orders?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const allOrders = await res.json();
 
                 const userOrders = allOrders.filter(o =>
@@ -278,7 +282,10 @@
             try {
                 const res = await fetch('../api/customers/' + editUserId, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
                     body: JSON.stringify(data)
                 });
                 const result = await res.json();
@@ -324,7 +331,10 @@
             try {
                 const res = await fetch('../api/customers/' + deleteUserId, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
                     body: JSON.stringify({ password: pass, isAdmin: true })
                 });
                 const result = await res.json();

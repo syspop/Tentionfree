@@ -216,7 +216,10 @@
 
                 await fetch('../api/products', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
                     body: JSON.stringify(products)
                 });
 
