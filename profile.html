@@ -396,45 +396,52 @@
 
             loadHistory(user);
 
-            // Fetch fresh user data to ensure updates from admin are reflected
-            fetch('api/customers?t=' + Date.now())
-                .then(res => res.json())
-                .then(users => {
-                    const freshUser = users.find(u => u.id === user.id);
-                    if (freshUser) {
-                        // Update UI
-                        document.getElementById('u-name').innerText = freshUser.name;
-                        document.getElementById('u-name-display').innerText = freshUser.name;
-                        document.getElementById('u-email-sec').innerText = freshUser.email;
-                        document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
-                        document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString() : 'N/A';
-                        document.getElementById('u-avatar').innerText = freshUser.name.charAt(0).toUpperCase();
-
-                        // Update localStorage
-                        localStorage.setItem('user', JSON.stringify(freshUser));
-                    }
+            const token = localStorage.getItem('userToken');
+            if (token) {
+                // Fetch fresh user data securely
+                fetch('api/my-profile?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token }
                 })
-                .catch(err => console.error("Failed to sync user profile", err));
+                    .then(res => {
+                        if (!res.ok) throw new Error("Auth Failed");
+                        return res.json();
+                    })
+                    .then(freshUser => {
+                        if (freshUser) {
+                            // Update UI
+                            document.getElementById('u-name').innerText = freshUser.name;
+                            document.getElementById('u-name-display').innerText = freshUser.name;
+                            document.getElementById('u-email-sec').innerText = freshUser.email;
+                            document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
+                            document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString() : 'N/A';
+                            document.getElementById('u-avatar').innerText = freshUser.name.charAt(0).toUpperCase();
+
+                            // Update localStorage
+                            localStorage.setItem('user', JSON.stringify(freshUser));
+                        }
+                    })
+                    .catch(err => console.error("Failed to sync user profile", err));
+            }
         });
 
         async function loadHistory(user) {
             const container = document.getElementById('order-list');
             try {
-                // Fetch orders and filter by user
-                const res = await fetch('api/orders?t=' + Date.now());
-                const allOrders = await res.json();
-
-                // Filter checks for email match (primary) or exact name match (fallback)
-                // Normalize to lowercase for comparison
-                const userEmail = user.email.toLowerCase().trim();
-                const userName = user.name.toLowerCase().trim();
-
-                const orders = allOrders.filter(o => {
-                    const orderEmail = (o.email || '').toLowerCase().trim();
-                    const orderName = (o.customer || '').toLowerCase().trim();
-                    // Check if email matches
-                    return (orderEmail === userEmail);
+                // Fetch authenticated user's orders (Server filters by token)
+                const res = await fetch('api/my-orders?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
                 });
+
+                if (res.status === 401 || res.status === 403) {
+                    // Token invalid/expired -> Logout
+                    logoutUser();
+                    return;
+                }
+
+                const orders = await res.json();
+                // Client-side filtering no longer strictly needed if server does it, 
+                // but keeping code simple as 'orders' is now just MY orders.
+
 
                 // --- MEMBERSHIP LOGIC ---
                 // Count only COMPLETED orders
@@ -734,6 +741,7 @@
 
         function logoutUser() {
             localStorage.removeItem('user');
+            localStorage.removeItem('userToken');
             window.location.href = 'index.html';
         }
 

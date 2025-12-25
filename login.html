@@ -629,6 +629,7 @@
 
                 if (result.success) {
                     localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('userToken', result.token);
                     window.location.href = 'profile.html';
                 } else {
                     showCustomAlert("Registration Failed", result.message || "Something went wrong.", "error");
@@ -664,6 +665,7 @@
 
                 if (result.success) {
                     localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('userToken', result.token);
                     window.location.href = 'profile.html';
                 } else {
                     showCustomAlert("Login Failed", result.message || "Invalid credentials.", "error");

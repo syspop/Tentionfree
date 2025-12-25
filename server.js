@@ -38,6 +38,8 @@ app.use((req, res, next) => {
 // Serve static files (try .html automatically)
 app.use(express.static(__dirname, { extensions: ['html', 'htm'] }));
 
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
+
 // --- SECURITY MIDDLEWARE ---
 const authenticateAdmin = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -45,8 +47,21 @@ const authenticateAdmin = (req, res, next) => {
 
     if (!token) return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
 
-    const secret = process.env.JWT_SECRET || 'fallback_secret_key_123';
-    jwt.verify(token, secret, (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ success: false, message: "Access Denied: Invalid Token" });
+        if (user.role !== 'admin') return res.status(403).json({ success: false, message: "Access Denied: Admins Only" });
+        req.user = user;
+        next();
+    });
+};
+
+const authenticateUser = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ success: false, message: "Access Denied: Invalid Token" });
         req.user = user;
         next();
@@ -142,6 +157,27 @@ app.put('/api/orders', authenticateAdmin, (req, res) => {
         syncCollection('orders', orders);
 
         res.json({ success: true, message: 'Orders updated successfully' });
+    });
+});
+
+// GET My Orders (User) - PROTECTED
+app.get('/api/my-orders', authenticateUser, (req, res) => {
+    const userEmail = req.user.email.toLowerCase().trim();
+
+    fs.readFile(ORDERS_FILE, 'utf8', (err, data) => {
+        if (err) {
+            if (err.code === 'ENOENT') return res.json([]);
+            return res.status(500).json({ error: 'Failed to read orders' });
+        }
+        try {
+            const allOrders = JSON.parse(data);
+            const myOrders = allOrders.filter(o =>
+                (o.email && o.email.toLowerCase().trim() === userEmail)
+            );
+            res.json(myOrders);
+        } catch (e) {
+            res.json([]);
+        }
     });
 });
 
@@ -280,9 +316,55 @@ app.get('/api/customers', authenticateAdmin, (req, res) => {
 });
 
 // PUT Update Customer (Admin) - PROTECTED
-app.put('/api/customers/:id', authenticateAdmin, (req, res) => {
+// GET My Profile (User) - PROTECTED
+app.get('/api/my-profile', authenticateUser, (req, res) => {
+    const userId = req.user.id;
+    const customers = getCustomers();
+    const user = customers.find(c => c.id === userId);
+
+    if (user) {
+        const { password, ...userWithoutPass } = user;
+        res.json(userWithoutPass);
+    } else {
+        res.status(404).json({ success: false, message: "User not found" });
+    }
+});
+
+// PUT Update Customer (Admin OR User Self-Update)
+app.put('/api/customers/:id', (req, res) => {
     const id = req.params.id;
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, password, dob } = req.body;
+    let isSelfUpdate = false;
+
+    // Check for Authorization Header (User Token)
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            // Check if user is updating THEIR OWN profile
+            if (decoded.id === id) {
+                isSelfUpdate = true;
+            } else if (decoded.role === 'admin') {
+                isSelfUpdate = true; // Admins can update anyone
+            }
+        } catch (e) { /* Invalid token, proceed to check legacy/admin */ }
+    }
+
+    // IF not verified by token, we fallback to our previous protection (authenticateAdmin)
+    // But since I removed authenticateAdmin from the route definition, I must enforce it here if not self-update.
+    if (!isSelfUpdate) {
+        // Since we don't have user tokens fully integrated in frontend yet, 
+        // we might blocking valid updates if we are too strict.
+        // BUT for "Secure" implementation, we should block.
+        // However, I removed 'authenticateAdmin' from app.put to allow this custom logic.
+        // If not self-update, we DENY.
+
+        // Wait! The user currently has NO token in frontend. So isSelfUpdate will be false.
+        // So this will BREAK user updates until frontend sends token.
+        // Correct behavior: This API expects a token now. Frontend MUST send it.
+        return res.status(401).json({ success: false, message: "Unauthorized Update" });
+    }
 
     fs.readFile(CUSTOMERS_FILE, 'utf8', (err, data) => {
         if (err) return res.status(500).json({ success: false, message: "Server Error" });
@@ -295,7 +377,7 @@ app.put('/api/customers/:id', authenticateAdmin, (req, res) => {
         }
 
         // Check email uniqueness if changed
-        if (email !== customers[index].email) {
+        if (email && email !== customers[index].email) {
             if (customers.find(c => c.email === email && c.id !== id)) {
                 return res.json({ success: false, message: "Email already taken" });
             }
@@ -311,7 +393,7 @@ app.put('/api/customers/:id', authenticateAdmin, (req, res) => {
         if (name) customers[index].name = name;
         if (email) customers[index].email = email;
         if (phone !== undefined) customers[index].phone = phone;
-        if (req.body.dob !== undefined) customers[index].dob = req.body.dob;
+        if (dob !== undefined) customers[index].dob = dob;
         if (password) customers[index].password = password;
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
@@ -468,7 +550,11 @@ app.post('/api/register', (req, res) => {
 
         // Return without password
         const { password, ...userWithoutPass } = newCustomer;
-        res.json({ success: true, user: userWithoutPass });
+
+        // Generate Token
+        const token = jwt.sign({ id: newCustomer.id, email: newCustomer.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({ success: true, user: userWithoutPass, token });
     });
 });
 
@@ -505,7 +591,11 @@ app.post('/api/login', (req, res) => {
             }
 
             const { password, ...userWithoutPass } = customers[index]; // Return fresh data
-            res.json({ success: true, user: userWithoutPass });
+
+            // Generate Token
+            const token = jwt.sign({ id: user.id, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+
+            res.json({ success: true, user: userWithoutPass, token });
         } else {
             res.json({ success: false, message: "Invalid email or password" });
         }
@@ -524,8 +614,7 @@ app.post('/api/admin-login', (req, res) => {
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         // Generate Token
-        const secret = process.env.JWT_SECRET || 'fallback_secret_key_123';
-        const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, secret, { expiresIn: '24h' });
+        const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ success: true, token });
     } else {
         res.json({ success: false, message: "Invalid Admin Credentials" });

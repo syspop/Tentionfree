@@ -341,6 +341,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateCartCount();
 
+    // Check Auth State for Navbar
+    const userJson = localStorage.getItem('user');
+    const userToken = localStorage.getItem('userToken');
+
+    if (userToken && userJson) {
+        // Desktop Navbar
+        const loginLink = document.querySelector('a[href="login"]');
+        if (loginLink) {
+            loginLink.href = 'profile.html';
+            loginLink.innerHTML = `
+                <i class="fa-solid fa-user text-xl mr-2"></i>
+                <span class="text-sm font-medium">Profile</span>
+            `;
+        }
+
+        // Mobile Menu (Legacy)
+        const mobileLoginLink = document.querySelector('#mobile-menu a[href="login"]');
+        if (mobileLoginLink) {
+            mobileLoginLink.href = 'profile.html';
+            mobileLoginLink.innerText = 'Profile';
+        }
+    }
+
     // Initialize Search Inputs (UI only)
     if (document.getElementById('product-grid')) {
         initSearch();
