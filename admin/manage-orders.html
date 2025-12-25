@@ -617,8 +617,8 @@
                         <div style="font-size: 12px; color: #94a3b8 !important;">${item.variant || ''}</div>
                     </td>
                     <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${item.quantity || item.qty || 1}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">৳${item.price || 0}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${order.currency === 'USD' ? '$' : '৳'}${item.price || 0}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">${order.currency === 'USD' ? '$' : '৳'}${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
                 </tr>
             `).join('') : '';
 
