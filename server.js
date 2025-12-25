@@ -266,16 +266,16 @@ app.put('/api/customers/:id', (req, res) => {
 
 // DELETE Customer (Admin/User)
 app.delete('/api/customers/:id', (req, res) => {
-    const id = req.params.id;
+    const id = req.params.id.trim();
 
     fs.readFile(CUSTOMERS_FILE, 'utf8', (err, data) => {
-        if (err) return res.status(500).json({ success: false });
+        if (err) return res.status(500).json({ success: false, message: "DB Error" });
 
         let customers = JSON.parse(data);
         const filtered = customers.filter(c => c.id !== id);
 
         if (customers.length === filtered.length) {
-            return res.json({ success: false, message: "User not found" });
+            return res.json({ success: false, message: `User not found (ID: ${id})` });
         }
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (e) => {

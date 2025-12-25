@@ -840,7 +840,7 @@
                     window.location.href = 'index.html';
                 } else {
                     closeDeleteAccountModal();
-                    showNotification("Failed to delete account", "error");
+                    showNotification(result.message || "Failed to delete account", "error");
                 }
             } catch (e) {
                 console.error(e);
