@@ -45,7 +45,8 @@ const authenticateAdmin = (req, res, next) => {
 
     if (!token) return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    const secret = process.env.JWT_SECRET || 'fallback_secret_key_123';
+    jwt.verify(token, secret, (err, user) => {
         if (err) return res.status(403).json({ success: false, message: "Access Denied: Invalid Token" });
         req.user = user;
         next();
@@ -523,7 +524,8 @@ app.post('/api/admin-login', (req, res) => {
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         // Generate Token
-        const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const secret = process.env.JWT_SECRET || 'fallback_secret_key_123';
+        const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, secret, { expiresIn: '24h' });
         res.json({ success: true, token });
     } else {
         res.json({ success: false, message: "Invalid Admin Credentials" });
