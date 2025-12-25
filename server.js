@@ -223,6 +223,68 @@ app.get('/api/customers', (req, res) => {
     res.json(safeCustomers);
 });
 
+// PUT Update Customer (Admin)
+app.put('/api/customers/:id', (req, res) => {
+    const id = req.params.id;
+    const { name, email, phone, password } = req.body;
+
+    fs.readFile(CUSTOMERS_FILE, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ success: false, message: "Server Error" });
+
+        let customers = JSON.parse(data);
+        const index = customers.findIndex(c => c.id === id);
+
+        if (index === -1) {
+            return res.json({ success: false, message: "User not found" });
+        }
+
+        // Check email uniqueness if changed
+        if (email !== customers[index].email) {
+            if (customers.find(c => c.email === email && c.id !== id)) {
+                return res.json({ success: false, message: "Email already taken" });
+            }
+        }
+        // Check phone uniqueness if changed
+        if (phone && phone !== customers[index].phone) {
+            if (customers.find(c => c.phone === phone && c.id !== id)) {
+                return res.json({ success: false, message: "Phone already taken" });
+            }
+        }
+
+        // Update fields
+        if (name) customers[index].name = name;
+        if (email) customers[index].email = email;
+        if (phone) customers[index].phone = phone;
+        if (password) customers[index].password = password;
+
+        fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
+            if (e) return res.status(500).json({ success: false, message: "Save Error" });
+            res.json({ success: true, message: "Customer updated" });
+        });
+    });
+});
+
+// DELETE Customer (Admin/User)
+app.delete('/api/customers/:id', (req, res) => {
+    const id = req.params.id;
+
+    fs.readFile(CUSTOMERS_FILE, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ success: false });
+
+        let customers = JSON.parse(data);
+        const filtered = customers.filter(c => c.id !== id);
+
+        if (customers.length === filtered.length) {
+            return res.json({ success: false, message: "User not found" });
+        }
+
+        fs.writeFile(CUSTOMERS_FILE, JSON.stringify(filtered, null, 4), 'utf8', (e) => {
+            if (e) return res.status(500).json({ success: false });
+            res.json({ success: true, message: "Account deleted" });
+        });
+    });
+});
+
 // POST Change Password
 app.post('/api/change-password', (req, res) => {
     const { userId, email, oldPass, newPass } = req.body;

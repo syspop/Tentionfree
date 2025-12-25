@@ -148,7 +148,11 @@
                         </td>
                         <td>${new Date(u.joined).toLocaleDateString()}</td>
                          <td>
-                            <button onclick="viewCustomer('${u.id}')" style="background:var(--blue); color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Profile</button>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="viewCustomer('${u.id}')" title="View Profile" style="background:rgba(59, 130, 246, 0.2); color:#3b82f6; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-eye"></i></button>
+                                <button onclick="editCustomer('${u.id}')" title="Edit Customer" style="background:rgba(245, 158, 11, 0.2); color:#f59e0b; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteCustomer('${u.id}')" title="Delete Account" style="background:rgba(239, 68, 68, 0.2); color:#ef4444; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -175,16 +179,9 @@
                 const res = await fetch('../api/orders?t=' + Date.now());
                 const allOrders = await res.json();
 
-                // Filter orders for this user (by email usually, or ID if stored)
-                // Based on previous logic, it seems we match by customer name or email?
-                // Let's assume customer storage in orders includes email or use name/phone match.
-                // Actually secure-admin.html logic wasn't explicit on the match in viewCustomer, let me check.
-                // Checking logic... It wasn't implemented fully in the viewed snippets.
-                // SAFE BET: Match by email if available, else by name.
-
                 const userOrders = allOrders.filter(o =>
                     (user.email && o.customerEmail === user.email) ||
-                    (user.email && o.customer && o.customer.includes(user.email)) || // Fallback if customer field has email
+                    (user.email && o.customer && o.customer.includes(user.email)) ||
                     (o.customer === user.name)
                 );
 
@@ -205,6 +202,7 @@
                         if (o.status === 'Completed') statusColor = "#10b981";
                         if (o.status === 'Pending') statusColor = "#f59e0b";
                         if (o.status === 'Cancelled') statusColor = "#ef4444";
+                        if (o.status === 'Refunded') statusColor = "#a855f7";
 
                         container.innerHTML += `
                             <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
@@ -232,7 +230,162 @@
         function closeCustomerModal() {
             document.getElementById('customer-profile-modal').style.display = 'none';
         }
+
+        // --- EDIT CUSTOMER LOGIC ---
+        let editUserId = null;
+
+        function editCustomer(id) {
+            editUserId = id;
+            const user = allCustomersCache.find(u => u.id === id);
+            if (!user) return;
+
+            document.getElementById('edit-name').value = user.name;
+            document.getElementById('edit-email').value = user.email;
+            document.getElementById('edit-phone').value = user.phone || '';
+            document.getElementById('edit-password').value = user.password || ''; // Show current password as requested
+
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            editUserId = null;
+        }
+
+        async function saveCustomer() {
+            if (!editUserId) return;
+
+            const data = {
+                name: document.getElementById('edit-name').value,
+                email: document.getElementById('edit-email').value,
+                phone: document.getElementById('edit-phone').value,
+                password: document.getElementById('edit-password').value
+            };
+
+            const btn = document.getElementById('btn-save-cust');
+            const original = btn.innerText;
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('../api/customers/' + editUserId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    closeEditModal();
+                    loadCustomers(); // Reload list
+                } else {
+                    alert(result.message || "Failed to update");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Server Error");
+            } finally {
+                btn.innerText = original;
+                btn.disabled = false;
+            }
+        }
+
+        // --- DELETE CUSTOMER LOGIC ---
+        let deleteUserId = null;
+
+        function deleteCustomer(id) {
+            deleteUserId = id;
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+            deleteUserId = null;
+        }
+
+        async function confirmDelete() {
+            if (!deleteUserId) return;
+
+            const btn = document.getElementById('btn-del-cust');
+            btn.innerText = "Deleting...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('../api/customers/' + deleteUserId, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    closeDeleteModal();
+                    loadCustomers();
+                } else {
+                    alert("Failed to delete");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Server Error");
+            } finally {
+                btn.innerText = "Yes, Delete";
+                btn.disabled = false;
+            }
+        }
+
     </script>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:400px; padding:30px; border-radius:15px; border:1px solid var(--border); animation:fadeIn 0.3s ease-out;">
+            <h3 style="color:var(--blue); margin-top:0; margin-bottom:20px;">Edit Customer</h3>
+
+            <div style="margin-bottom:15px;">
+                <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Full Name</label>
+                <input type="text" id="edit-name" class="input-box">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Email</label>
+                <input type="email" id="edit-email" class="input-box">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Phone</label>
+                <input type="text" id="edit-phone" class="input-box">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="color:var(--gray); font-size:12px; display:block; margin-bottom:5px;">Password</label>
+                <input type="text" id="edit-password" class="input-box">
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="closeEditModal()" class="tab-btn"
+                    style="background:var(--bg-input); border:1px solid var(--border);">Cancel</button>
+                <button onclick="saveCustomer()" id="btn-save-cust" class="action-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="delete-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
+            <div
+                style="margin:0 auto 20px auto; width:60px; height:60px; background:rgba(239,68,68,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444; font-size:24px;"></i>
+            </div>
+            <h3 style="color:white; margin-top:0;">Delete Account?</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:25px;">This action cannot be undone. The user
+                will lose access immediately.</p>
+
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="closeDeleteModal()" class="tab-btn"
+                    style="background:var(--bg-input); border:1px solid var(--border);">Cancel</button>
+                <button onclick="confirmDelete()" id="btn-del-cust" class="action-btn"
+                    style="background:var(--red);">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -301,6 +301,24 @@
                                         Update Password
                                     </button>
                                 </form>
+
+                                <!-- Danger Zone -->
+                                <div class="mt-8 border-t border-red-500/20 pt-8">
+                                    <h3 class="text-red-500 font-bold mb-4 uppercase text-xs tracking-wider">Danger Zone
+                                    </h3>
+                                    <div
+                                        class="glass-panel p-6 rounded-2xl border border-red-500/20 bg-red-500/5 flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-white font-bold">Delete Account</h4>
+                                            <p class="text-slate-400 text-sm mt-1">Once you delete your account, there
+                                                is no going back.</p>
+                                        </div>
+                                        <button onclick="confirmDeleteAccount()"
+                                            class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-500/20 text-sm">
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -789,6 +807,66 @@
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
+        }
+
+        function confirmDeleteAccount() {
+            // Use custom alert for confirmation
+            showNotification(
+                "Delete Account?",
+                `<p class="mb-4 text-slate-300">Are you sure you want to delete your account? This action is permanent.</p>
+                 <div class="flex gap-3">
+                    <button onclick="closeAlert()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg font-bold">Cancel</button>
+                    <button onclick="deleteAccount()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-bold">Yes, Delete</button>
+                 </div>`,
+                "warning"
+            );
+            // We need to hide the default "Okay" button of the alert in this Custom Mode, 
+            // but my current showNotification implementation is simple. 
+            // Let's modify showNotification or just handle it here. 
+            // Actually, the current showNotification overwrites existing content. 
+            // But the "Okay" button is part of the modal HTML structure, let's see line 322 in profile.html
+            // The "Okay" button is hardcoded. 
+            // I should hide the default button for this case.
+            document.querySelector('#custom-alert button[onclick="closeAlert()"]').style.display = 'none';
+        }
+
+        async function deleteAccount() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || !user.id) return;
+
+            try {
+                const res = await fetch('api/customers/' + user.id, { method: 'DELETE' });
+                const result = await res.json();
+
+                if (result.success) {
+                    localStorage.removeItem('user');
+                    window.location.href = 'index.html';
+                } else {
+                    closeAlert(); // Restore UI
+                    document.querySelector('#custom-alert button[onclick="closeAlert()"]').style.display = 'block';
+                    showNotification("Failed to delete account", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                closeAlert();
+                document.querySelector('#custom-alert button[onclick="closeAlert()"]').style.display = 'block';
+                showNotification("Server Error", "error");
+            }
+        }
+
+        // Fix for showNotification to restore button display
+        const originalCloseAlert = closeAlert;
+        closeAlert = function () {
+            const btn = document.querySelector('#custom-alert button[onclick="closeAlert()"]');
+            if (btn) btn.style.display = 'block'; // Restore
+
+            // Original logic
+            const modal = document.getElementById('custom-alert');
+            const box = document.querySelector('#custom-alert > div'); // The inner box
+
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            if (box) box.style.transform = 'scale(0.95)';
         }
 
         // --- CUSTOM NOTIFICATION LOGIC ---
