@@ -1351,6 +1351,38 @@ function updatePaymentInfo() {
     };
 
     instructionBox.innerHTML = instructions[method] || '<p class="text-gray-400">Select a payment method to see instructions.</p>';
+    // --- PRICE CONVERSION LOGIC ---
+    // Recalculate Total
+    let isBuyNowMode = false;
+    let buyNowItem = null;
+    const buyNowData = localStorage.getItem('tentionfree_buyNow');
+    if (buyNowData) {
+        isBuyNowMode = true;
+        buyNowItem = JSON.parse(buyNowData);
+    }
+    const cart = JSON.parse(localStorage.getItem('tentionfree_cart')) || [];
+    const itemsToCheckout = isBuyNowMode ? [buyNowItem] : cart;
+
+    let totalBDT = 0;
+    itemsToCheckout.forEach(item => {
+        totalBDT += item.price * item.quantity;
+    });
+
+    const totalElement = document.getElementById('checkout-total-amount');
+    if (totalElement) {
+        if (method === 'binance') {
+            // Conversion: 100 BDT = 1 USD
+            const totalUSD = totalBDT / 100;
+            totalElement.innerText = '$' + totalUSD.toFixed(2);
+            totalElement.classList.add('text-green-400'); // Optional: Change color for USD
+            totalElement.classList.remove('text-brand-500');
+        } else {
+            // Revert to BDT
+            totalElement.innerText = '৳' + totalBDT.toFixed(2);
+            totalElement.classList.remove('text-green-400');
+            totalElement.classList.add('text-brand-500');
+        }
+    }
 }
 
 function copyToClipboard(text) {
