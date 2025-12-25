@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config(); // Load env vars
+const bcrypt = require('bcryptjs'); // Password Hashing
 const { connectMongoDB, syncCollection } = require('./mongoBackup'); // Backup Service
 
 const app = express();
@@ -327,15 +329,26 @@ app.delete('/api/customers/:id', (req, res) => {
         }
 
         // Security Check
-        const ADMIN_PASS = "asy-sala";
+        const ADMIN_PASS = process.env.ADMIN_PASS || "asy-sala";
 
         if (isAdmin) {
             if (password !== ADMIN_PASS) {
                 return res.json({ success: false, message: "Incorrect Admin Password" });
             }
         } else {
-            // User deleting their own account
-            if (!password || customers[index].password !== password) {
+            // User deleting their own account (Check Hash or Plaintext)
+            const storedPass = customers[index].password;
+            let isMatch = false;
+
+            // 1. Try bcrypt compare
+            if (storedPass.startsWith('$2a$')) {
+                isMatch = bcrypt.compareSync(password, storedPass);
+            } else {
+                // 2. Fallback to Plaintext
+                isMatch = (storedPass === password);
+            }
+
+            if (!isMatch) {
                 return res.json({ success: false, message: "Incorrect Password" });
             }
         }
@@ -370,13 +383,22 @@ app.post('/api/change-password', (req, res) => {
             return res.json({ success: false, message: "User not found" });
         }
 
-        // Verify Old Pass
-        if (customers[index].password !== oldPass) {
+        // Verify Old Pass (Hash or Plain)
+        const storedPass = customers[index].password;
+        let isMatch = false;
+
+        if (storedPass.startsWith('$2a$')) {
+            isMatch = bcrypt.compareSync(oldPass, storedPass);
+        } else {
+            isMatch = (storedPass === oldPass);
+        }
+
+        if (!isMatch) {
             return res.json({ success: false, message: "Incorrect current password" });
         }
 
-        // Update Pass
-        customers[index].password = newPass;
+        // Update Pass (Hash new one)
+        customers[index].password = bcrypt.hashSync(newPass, 10);
 
         fs.writeFile(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8', (e) => {
             if (e) return res.status(500).json({ success: false, message: "Save Error" });
@@ -413,7 +435,7 @@ app.post('/api/register', (req, res) => {
         email: email,
         phone: phone || '',
         dob: req.body.dob || '', // Store DOB
-        password: password, // In production, use bcrypt. Here simple storage as requested for MVP.
+        password: bcrypt.hashSync(password, 10), // Hash Password!
         joined: new Date().toISOString()
     };
 
@@ -439,11 +461,38 @@ app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     const customers = getCustomers();
 
-    const user = customers.find(c => c.email === email && c.password === password);
+    const index = customers.findIndex(c => c.email === email);
+    const user = customers[index];
 
     if (user) {
-        const { password, ...userWithoutPass } = user;
-        res.json({ success: true, user: userWithoutPass });
+        let isMatch = false;
+        let needsUpgrade = false;
+
+        // 1. Check Hash
+        if (user.password.startsWith('$2a$')) {
+            isMatch = bcrypt.compareSync(password, user.password);
+        } else {
+            // 2. Check Plaintext (Legacy)
+            if (user.password === password) {
+                isMatch = true;
+                needsUpgrade = true; // Flag to upgrade this user
+            }
+        }
+
+        if (isMatch) {
+            // Lazy Migration: If plain text matched, upgrade to hash NOW
+            if (needsUpgrade) {
+                customers[index].password = bcrypt.hashSync(password, 10);
+                fs.writeFileSync(CUSTOMERS_FILE, JSON.stringify(customers, null, 4), 'utf8');
+                syncCollection('customers', customers); // Backup
+                console.log(`Security Upgrade: User ${user.email} migrated to hashed password.`);
+            }
+
+            const { password, ...userWithoutPass } = customers[index]; // Return fresh data
+            res.json({ success: true, user: userWithoutPass });
+        } else {
+            res.json({ success: false, message: "Invalid email or password" });
+        }
     } else {
         res.json({ success: false, message: "Invalid email or password" });
     }
@@ -453,9 +502,9 @@ app.post('/api/login', (req, res) => {
 app.post('/api/admin-login', (req, res) => {
     const { user, pass } = req.body;
 
-    // Hardcoded credentials as requested
-    const ADMIN_USER = "sai-sad";
-    const ADMIN_PASS = "asy-sala";
+    // Environment Variables
+    const ADMIN_USER = process.env.ADMIN_USER || "sai-sad";
+    const ADMIN_PASS = process.env.ADMIN_PASS || "asy-sala";
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         res.json({ success: true });
