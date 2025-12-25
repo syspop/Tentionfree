@@ -32,6 +32,7 @@
                         <th width="50" class="drag-col" style="display:none;">Sort</th>
                         <th>Img</th>
                         <th>Name</th>
+                        <th>Stock</th>
                         <th>Category</th>
                         <th>Action</th>
                     </tr>
@@ -51,7 +52,7 @@
         // --- LOAD PRODUCTS LIST (Node API) ---
         async function loadProducts() {
             const list = document.getElementById('p-list');
-            list.innerHTML = "<tr><td colspan='5' style='text-align:center'>Loading...</td></tr>";
+            list.innerHTML = "<tr><td colspan='6' style='text-align:center'>Loading...</td></tr>";
 
             try {
                 const res = await fetch('../api/products?t=' + Date.now());
@@ -61,7 +62,7 @@
                 list.innerHTML = "";
 
                 if (products.length === 0) {
-                    list.innerHTML = "<tr><td colspan='5' style='text-align:center'>No products found. Add one!</td></tr>";
+                    list.innerHTML = "<tr><td colspan='6' style='text-align:center'>No products found. Add one!</td></tr>";
                     return;
                 }
 
@@ -72,6 +73,12 @@
                         displayImg = '../' + displayImg;
                     }
 
+                    // Stock Logic (Default true if undefined)
+                    const isInStock = p.inStock !== false;
+                    const stockBadge = isInStock
+                        ? `<button onclick="toggleStock(${p.id}, false)" class="badge" style="background:var(--green); border:none; cursor:pointer;">In Stock</button>`
+                        : `<button onclick="toggleStock(${p.id}, true)" class="badge" style="background:var(--red); border:none; cursor:pointer;">Out of Stock</button>`;
+
                     list.innerHTML += `
                 <tr data-id="${p.id}">
                     <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
@@ -80,6 +87,7 @@
                         <b>${p.name}</b><br>
                         <small style="color:var(--gray)">${p.variants?.length || 0} variants</small>
                     </td>
+                    <td>${stockBadge}</td>
                     <td><span class="badge" style="background:var(--blue)">${p.category}</span></td>
                     <td>
                         <button class="success-btn" onclick="editProduct(${p.id})" style="margin-right:5px; background:var(--blue)">Edit</button>
@@ -182,6 +190,28 @@
 
                 loadProducts();
             } catch (e) { showAlert("Error", "Delete failed", "error"); }
+        }
+        async function toggleStock(id, status) {
+            try {
+                const res = await fetch('../api/products?t=' + Date.now());
+                let products = await res.json();
+                const index = products.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    products[index].inStock = status;
+
+                    await fetch('../api/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(products)
+                    });
+
+                    loadProducts(); // Reload to show update
+                    showAlert("Success", status ? "Product Marked In Stock" : "Product Marked Out of Stock");
+                }
+            } catch (e) {
+                console.error(e);
+                showAlert("Error", "Failed to update stock status", "error");
+            }
         }
     </script>
 </body>

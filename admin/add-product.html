@@ -32,6 +32,12 @@
                         <option value="tools">Tools & VPN</option>
                         <option value="gaming">Gaming</option>
                     </select>
+
+                    <label>Stock Status</label>
+                    <select id="p-stock" class="input-box">
+                        <option value="true">In Stock</option>
+                        <option value="false">Out of Stock</option>
+                    </select>
                 </div>
                 <div>
                     <label>Image URL</label>
@@ -134,10 +140,11 @@
                 document.getElementById('p-name').value = p.name;
                 document.getElementById('p-badge').value = p.badge || '';
                 document.getElementById('p-category').value = p.category;
+                document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
                 document.getElementById('p-img').value = p.image;
                 document.getElementById('p-desc').value = p.desc;
                 document.getElementById('p-long-desc').value = p.longDesc || '';
-                document.getElementById('p-features').value = p.features ? p.features.join('\\n') : '';
+                document.getElementById('p-features').value = p.features ? p.features.join('\n') : '';
                 document.getElementById('p-instructions').value = p.instructions || '';
 
                 const container = document.getElementById('variants-container');
@@ -159,10 +166,11 @@
             const name = document.getElementById('p-name').value;
             const badge = document.getElementById('p-badge').value;
             const category = document.getElementById('p-category').value;
+            const inStock = document.getElementById('p-stock').value === "true";
             const img = document.getElementById('p-img').value;
             const desc = document.getElementById('p-desc').value;
             const longDesc = document.getElementById('p-long-desc').value;
-            const features = document.getElementById('p-features').value.split('\\n').filter(l => l.trim() !== '');
+            const features = document.getElementById('p-features').value.split('\n').filter(l => l.trim() !== '');
             const instructions = document.getElementById('p-instructions').value;
 
             // Variants
@@ -194,7 +202,7 @@
                     if (index !== -1) {
                         products[index] = {
                             ...products[index],
-                            name, badge, category, image: img, desc, longDesc, features, instructions, variants
+                            name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants
                         };
                     }
                 } else {
@@ -202,7 +210,7 @@
                     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
                     products.push({
                         id: newId,
-                        name, badge, category, image: img, desc, longDesc, features, instructions, variants
+                        name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants
                     });
                 }
 
