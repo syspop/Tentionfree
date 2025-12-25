@@ -24,13 +24,18 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // Automatic Redirect: .html -> clean URL
+// Automatic Redirect: .html -> clean URL
 app.use((req, res, next) => {
     if (req.path === '/index' || req.path === '/index.html') {
-        return res.redirect(301, '/');
+        const qIndex = req.url.indexOf('?');
+        const query = qIndex >= 0 ? req.url.slice(qIndex) : '';
+        return res.redirect(301, '/' + query);
     }
     if (req.path.endsWith('.html')) {
         const newPath = req.path.slice(0, -5);
-        return res.redirect(301, newPath);
+        const qIndex = req.url.indexOf('?');
+        const query = qIndex >= 0 ? req.url.slice(qIndex) : '';
+        return res.redirect(301, newPath + query);
     }
     next();
 });
