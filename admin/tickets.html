@@ -42,12 +42,43 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
-    <div id="img-modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:200; align-items:center; justify-content:center;"
-        onclick="this.style.display='none'">
-        <img id="zoom-img" src=""
-            style="max-width:90%; max-height:90%; border-radius:10px; box-shadow:0 0 50px rgba(0,0,0,0.5);">
+    <!-- Ticket Details Modal (New) -->
+    <div id="ticket-modal" class="custom-modal-overlay">
+        <div
+            style="background:var(--bg-card); width:500px; max-width:90%; border-radius:15px; border:1px solid var(--border); padding:20px; position:relative; animation:fadeIn 0.2s ease-out;">
+            <button onclick="document.getElementById('ticket-modal').style.display='none'"
+                style="position:absolute; top:15px; right:15px; background:none; border:none; color:var(--gray); cursor:pointer; font-size:18px;"><i
+                    class="fa-solid fa-xmark"></i></button>
+            <h3
+                style="margin-top:0; color:var(--blue); margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                🎫 Ticket Details</h3>
+
+            <div style="margin-bottom:15px;">
+                <label
+                    style="color:var(--gray); font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">SUBJECT</label>
+                <div id="view-subject" style="color:white; font-weight:600; font-size:16px;"></div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label
+                    style="color:var(--gray); font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">DESCRIPTION</label>
+                <div id="view-desc"
+                    style="background:var(--bg-main); padding:10px; border-radius:8px; color:#cbd5e1; font-size:14px; white-space:pre-wrap; border:1px solid var(--border);">
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label
+                    style="color:var(--gray); font-size:12px; font-weight:bold; display:block; margin-bottom:5px;">SCREENSHOT</label>
+                <div id="view-img-container"
+                    style="border:1px dashed var(--border); border-radius:8px; padding:5px; text-align:center;"></div>
+            </div>
+
+            <div style="text-align:right;">
+                <button onclick="document.getElementById('ticket-modal').style.display='none'" class="action-btn"
+                    style="background:var(--gray);">Close</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
@@ -114,7 +145,8 @@
                         </td>
                         <td>${imgHtml}</td>
                         <td>
-                            <button onclick="resolveTicket(${t.id})" class="success-btn" style="margin-right:5px;"><i class="fa-solid fa-check"></i> Solve</button>
+                            <button onclick='openTicketDetails(${JSON.stringify(t)})' class="action-btn" style="background:#0ea5e9; margin-right:5px;"><i class="fa-solid fa-eye"></i> View</button>
+                            <button onclick="resolveTicket(${t.id})" class="success-btn" style="margin-right:5px;"><i class="fa-solid fa-check"></i></button>
                             <button onclick="deleteTicket(${t.id})" class="action-btn"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
@@ -150,6 +182,26 @@
                 console.error(e);
                 showAlert("Server Error", "Failed to reach server.", "error");
             }
+        }
+
+        // --- VIEW DETAILS FUNCTION ---
+        function openTicketDetails(ticket) {
+            document.getElementById('view-subject').innerText = ticket.subject;
+            document.getElementById('view-desc').innerText = ticket.desc;
+
+            const imgContainer = document.getElementById('view-img-container');
+            let displayImg = ticket.image;
+            if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('../') && !displayImg.startsWith('data:')) {
+                displayImg = '../' + displayImg;
+            }
+
+            if (displayImg) {
+                imgContainer.innerHTML = `<img src="${displayImg}" style="max-width:100%; max-height:200px; border-radius:5px; cursor:pointer;" onclick="window.open('${displayImg}', '_blank')">`;
+            } else {
+                imgContainer.innerHTML = `<span style="color:var(--gray); font-size:12px;">No Screenshot Attached</span>`;
+            }
+
+            document.getElementById('ticket-modal').style.display = 'flex';
         }
     </script>
 </body>
