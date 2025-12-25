@@ -90,7 +90,7 @@
 
             tickets.forEach(t => {
                 let displayImg = t.image;
-                if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('../')) {
+                if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('../') && !displayImg.startsWith('data:')) {
                     displayImg = '../' + displayImg;
                 }
 
