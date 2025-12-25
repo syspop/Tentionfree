@@ -130,6 +130,22 @@ app.get('/api/products', (req, res) => {
 // POST Products (Overwrite all) - PROTECTED
 app.post('/api/products', authenticateAdmin, (req, res) => {
     const products = req.body;
+
+    // Validate Products
+    if (!Array.isArray(products)) {
+        return res.status(400).json({ error: "Invalid data format: Expected an array." });
+    }
+
+    // Basic Validation for each product
+    for (let p of products) {
+        if (!p.name || typeof p.name !== 'string' || p.name.trim() === '') {
+            return res.status(400).json({ error: `Invalid product name for ID ${p.id}` });
+        }
+        if (p.price && isNaN(p.price)) {
+            return res.status(400).json({ error: `Invalid price for product ${p.name}` });
+        }
+    }
+
     fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 4), 'utf8', (err) => {
         if (err) {
             console.error(err);
@@ -560,6 +576,19 @@ app.post('/api/register', (req, res) => {
         return res.json({ success: false, message: "Missing required fields" });
     }
 
+    // Input Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.json({ success: false, message: "Invalid email format" });
+    }
+    if (password.length < 6) {
+        return res.json({ success: false, message: "Password must be at least 6 characters" });
+    }
+    if (phone && !/^\d{10,15}$/.test(phone.replace(/\D/g, ''))) {
+        // Allow only digits, check length 10-15
+        return res.json({ success: false, message: "Invalid phone number" });
+    }
+
     const customers = getCustomers();
 
     // Check duplicate
@@ -662,6 +691,16 @@ app.post('/api/admin-login', (req, res) => {
     } else {
         res.json({ success: false, message: "Invalid Admin Credentials" });
     }
+});
+
+// --- GLOBAL ERROR HANDLER ---
+// (Must be the last middleware)
+app.use((err, req, res, next) => {
+    console.error("SERVER ERROR:", err.stack); // Log for admin
+    res.status(500).json({
+        success: false,
+        message: "Something went wrong! Please try again later."
+    });
 });
 
 // Start Server
