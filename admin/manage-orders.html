@@ -617,8 +617,8 @@
                         <div style="font-size: 12px; color: #94a3b8 !important;">${item.variant || ''}</div>
                     </td>
                     <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${item.quantity || item.qty || 1}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${order.currency === 'USD' ? '$' : '৳'}${item.price || 0}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">${order.currency === 'USD' ? '$' : '৳'}${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳'}${item.price || 0}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳'}${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
                 </tr>
             `).join('') : '';
 
@@ -679,7 +679,7 @@
                     <!-- Total -->
                     <div style="border-top: 2px solid #f1f5f9; padding-top: 20px; text-align: right;">
                         <span style="font-size: 14px; color: #64748b; margin-right: 15px;">Total Amount</span>
-                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">${order.currency === 'USD' ? '$' : '৳'}${order.price || order.totalAmount || 0}</span>
+                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳'}${order.price || order.totalAmount || 0}</span>
                     </div>
 
                     <!-- Footer -->
