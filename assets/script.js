@@ -1074,18 +1074,52 @@ function openCheckout(buyNowMode = false) {
     document.querySelector('input[name="paymentType"][value="now"]').checked = true;
     togglePaymentSection();
 
-    // Game UID Logic Check
-    const hasGamingItem = itemsToCheckout.some(item => item.category === 'gaming');
-    const uidField = document.getElementById('game-uid-field');
-    const uidInput = document.getElementById('game_uid');
+    // Game UID Logic Check (Dynamic)
+    const gamingItems = itemsToCheckout.filter(item => item.category === 'gaming');
+    const uidContainer = document.getElementById('game-uid-field');
 
-    if (hasGamingItem) {
-        uidField.classList.remove('hidden');
-        uidInput.required = true;
+    // Clear previous content
+    uidContainer.innerHTML = '';
+
+    if (gamingItems.length > 0) {
+        uidContainer.classList.remove('hidden');
+
+        // Remove duplicates if multiple quantities of same item (we usually need 1 ID per item type, or per item? Assuming 1 ID per item entry in cart)
+        // Actually, if someone buys 2x PUBG, do they need 2 IDs? Usually cart groups them. 
+        // Let's assume we need 1 ID per distinct cart item.
+
+        gamingItems.forEach((item, index) => {
+            const wrapper = document.createElement('div');
+            if (index > 0) wrapper.className = "mt-4 border-t border-slate-700 pt-4";
+
+            let labelText = item.name + " ID";
+            let placeholder = "Enter ID";
+
+            // Smart Labels
+            const lowerName = item.name.toLowerCase();
+            if (lowerName.includes('pubg')) {
+                labelText = "PUBG Player ID";
+                placeholder = "Enter PUBG ID (Number)";
+            } else if (lowerName.includes('free fire') || lowerName.includes('freefire')) {
+                labelText = "FreeFire UID";
+                placeholder = "Enter FreeFire UID";
+            } else if (lowerName.includes('mobile legends')) {
+                labelText = "MLBB User ID (Zone ID)";
+                placeholder = "User ID (Zone ID)";
+            }
+
+            wrapper.innerHTML = `
+                <label class="block text-xs font-medium text-brand-600 mb-1">${labelText} <span class="text-slate-500 font-normal">(${item.name})</span></label>
+                <input type="text" data-item-name="${item.name}" required
+                    class="dynamic-game-uid w-full bg-brand-50 border border-brand-200 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
+                    placeholder="${placeholder}">
+                <p class="text-[10px] text-slate-400 mt-1">Required for direct top-up of this item.</p>
+            `;
+            uidContainer.appendChild(wrapper);
+        });
+
     } else {
-        uidField.classList.add('hidden');
-        uidInput.required = false;
-        uidInput.value = '';
+        uidContainer.classList.add('hidden');
     }
 
     // Populate Order Summary Items
@@ -1296,7 +1330,33 @@ async function submitOrder() {
         }
     }
 
-    const gameUid = document.getElementById('game_uid').value;
+    // Check for Dynamic Game UIDs
+    const uidInputs = document.querySelectorAll('.dynamic-game-uid');
+    let gameUidString = "";
+
+    // Validate if any are missing
+    let missingUid = false;
+
+    if (uidInputs.length > 0) {
+        const collectedIds = [];
+        uidInputs.forEach(input => {
+            if (!input.value.trim()) {
+                missingUid = true;
+            } else {
+                collectedIds.push(`${input.getAttribute('data-item-name')}: ${input.value.trim()}`);
+            }
+        });
+        gameUidString = collectedIds.join('\n');
+    }
+
+    if (missingUid) {
+        showErrorModal("Game ID Required", "Please enter Player IDs for all gaming items.");
+        return;
+    }
+
+    // Assign to legacy variable for compatibility if needed, or just use the new string
+    const gameUid = gameUidString;
+
     const platform = document.querySelector('input[name="orderMethod"]:checked').value;
 
     // Basic Validation
@@ -1307,13 +1367,6 @@ async function submitOrder() {
 
     // Determine items based on mode
     const itemsToOrder = isBuyNowMode ? [buyNowItem] : cart;
-
-    // Check Game UID if required
-    const hasGamingItem = itemsToOrder.some(item => item.category === 'gaming');
-    if (hasGamingItem && !gameUid) {
-        showErrorModal("Game ID Required", "Please enter your Player ID / Game UID for the gaming items.");
-        return;
-    }
 
     // --- DUPLICATE TRANSACTION CHECK ---
     if (paymentType === 'now') {
