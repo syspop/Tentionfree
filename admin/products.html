@@ -55,7 +55,7 @@
             list.innerHTML = "<tr><td colspan='6' style='text-align:center'>Loading...</td></tr>";
 
             try {
-                const res = await fetch('../api/products?t=' + Date.now());
+                const res = await fetch('/api/products?t=' + Date.now());
                 let products = await res.json();
                 if (!Array.isArray(products)) products = [];
 
@@ -151,12 +151,12 @@
             const newOrderIds = Array.from(rows).map(row => parseInt(row.getAttribute('data-id')));
 
             try {
-                const res = await fetch('../api/products?t=' + Date.now());
+                const res = await fetch('/api/products?t=' + Date.now());
                 const currentProducts = await res.json();
                 const productMap = new Map(currentProducts.map(p => [p.id, p]));
                 const sortedProducts = newOrderIds.map(id => productMap.get(id)).filter(p => p);
 
-                await fetch('../api/products', {
+                await fetch('/api/products', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -181,11 +181,11 @@
 
         async function confirmProductDelete(id) {
             try {
-                const res = await fetch('../api/products?t=' + Date.now());
+                const res = await fetch('/api/products?t=' + Date.now());
                 let products = await res.json();
                 products = products.filter(p => p.id !== id);
 
-                await fetch('../api/products', {
+                await fetch('/api/products', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -199,13 +199,13 @@
         }
         async function toggleStock(id, status) {
             try {
-                const res = await fetch('../api/products?t=' + Date.now());
+                const res = await fetch('/api/products?t=' + Date.now());
                 let products = await res.json();
                 const index = products.findIndex(p => p.id === id);
                 if (index !== -1) {
                     products[index].inStock = status;
 
-                    await fetch('../api/products', {
+                    await fetch('/api/products', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
