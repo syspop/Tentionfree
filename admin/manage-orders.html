@@ -669,11 +669,6 @@
                     <!-- Table -->
                     <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
                         <thead>
-                            <tr style="background-color: #eff6ff; border-bottom: 2px solid #e2e8f0;">
-                                <th style="text-align:left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Item</th>
-                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Qty</th>
-                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Price</th>
-                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -684,7 +679,7 @@
                     <!-- Total -->
                     <div style="border-top: 2px solid #f1f5f9; padding-top: 20px; text-align: right;">
                         <span style="font-size: 14px; color: #64748b; margin-right: 15px;">Total Amount</span>
-                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">৳${order.price || order.totalAmount || 0}</span>
+                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">${order.currency === 'USD' ? '$' : '৳'}${order.price || order.totalAmount || 0}</span>
                     </div>
 
                     <!-- Footer -->

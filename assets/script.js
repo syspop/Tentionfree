@@ -1561,6 +1561,22 @@ async function submitOrder() {
     let total = 0;
     itemsToOrder.forEach(item => total += item.price * item.quantity);
 
+    // --- CURRENCY CONVERSION (Binance = USD) ---
+    let currency = 'BDT';
+    let finalTotal = total;
+    let paymentMethodShort = 'Pay Later';
+
+    // Determine detailed payment method name
+    if (paymentType === 'now') {
+        const pVal = document.getElementById('payment').value;
+        if (pVal === 'binance') {
+            paymentMethodShort = 'Binance Pay';
+            currency = 'USD';
+            finalTotal = total / 100; // 100 BDT = 1 USD
+        } else {
+            paymentMethodShort = pVal.charAt(0).toUpperCase() + pVal.slice(1);
+        }
+    }
 
     // --- Save Order to Server (Node API) ---
     const orderData = {
@@ -1571,110 +1587,119 @@ async function submitOrder() {
         email: customerEmail,
         gameUid: gameUid || 'N/A',
         product: itemsToOrder.map(i => `${i.name} (x${i.quantity})`).join(', '),
-        plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard'),
-        price: total,
-        status: 'Pending',
-        trx: trxid || 'Pay Later',
-        paymentMethod: paymentType === 'later' ? 'Pay Later' : payment,
-        items: itemsToOrder, // Use itemsToOrder to capture Buy Now items too
-        proof: proofBase64 // Add proof image
+        price: finalTotal.toFixed(2), // Store converted price
+        currency: currency, // Store Currency
+        originalPriceBDT: total, // Store original if needed
+        status: "Pending",
+        paymentMethod: paymentMethodShort,
+        trx: trxid,
+        proof: proofBase64,
+        items: itemsToOrder // Save full items for invoice
     };
+    plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard'),
+        price: total,
+            status: 'Pending',
+                trx: trxid || 'Pay Later',
+                    paymentMethod: paymentType === 'later' ? 'Pay Later' : payment,
+                        items: itemsToOrder, // Use itemsToOrder to capture Buy Now items too
+                            proof: proofBase64 // Add proof image
+};
 
-    // Send to Node Server
-    fetch('api/orders', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
+// Send to Node Server
+fetch('api/orders', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(orderData)
+})
+    .then(async response => {
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error("Server Error: " + text.substring(0, 100));
+        }
+
+        if (!response.ok || (data && data.success === false)) {
+            const msg = data.message || data.error || "Unknown server error";
+            throw new Error(msg);
+        }
+        return data;
     })
-        .then(async response => {
-            const text = await response.text();
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                throw new Error("Server Error: " + text.substring(0, 100));
+    .then(data => {
+        console.log("Order saved:", data);
+
+        // Handle Buy Now vs Cart cleanup
+        if (isBuyNowMode) {
+            localStorage.removeItem('tentionfree_buyNow');
+            buyNowItem = null;
+        } else {
+            // Clear Cart ONLY if it was a cart order
+            cart = [];
+            saveCart();
+            updateCartCount();
+            if (document.getElementById('cart-sidebar')) renderCartItems();
+        }
+
+        // Close Checkout Modal (Safe check)
+        closeCheckout();
+        closePaymentModal();
+
+        // Handle Redirection / Success Message based on Payment Type
+        if (paymentType === 'now') {
+            showSuccessModal();
+        } else {
+            // Pay Later: Redirect to WhatsApp/Email
+            // Construct Message JUST IN TIME
+            let message = `*🔥 New Order - Tention Free*\n\n`;
+            message += `👤 *Customer:* ${name}\n`;
+            message += `📱 *Phone:* ${phone}\n`;
+            message += `📧 *Email:* ${customerEmail}\n`;
+            if (hasGamingItem && gameUid) {
+                message += `🎮 *Game UID:* ${gameUid}\n`;
             }
 
-            if (!response.ok || (data && data.success === false)) {
-                const msg = data.message || data.error || "Unknown server error";
-                throw new Error(msg);
-            }
-            return data;
-        })
-        .then(data => {
-            console.log("Order saved:", data);
-
-            // Handle Buy Now vs Cart cleanup
-            if (isBuyNowMode) {
-                localStorage.removeItem('tentionfree_buyNow');
-                buyNowItem = null;
+            // Message format depending on payment
+            if (paymentType === 'later') {
+                message += `💳 *Payment Status:* Pay Later (Discussion Pending)\n`;
             } else {
-                // Clear Cart ONLY if it was a cart order
-                cart = [];
-                saveCart();
-                updateCartCount();
-                if (document.getElementById('cart-sidebar')) renderCartItems();
+                message += `💳 *Payment:* ${payment.toUpperCase()}\n`;
+                message += `🧾 *TrxID:* ${trxid}\n`;
             }
 
-            // Close Checkout Modal (Safe check)
-            closeCheckout();
-            closePaymentModal();
+            message += `\n🛒 *Items:*\n`;
+            itemsToOrder.forEach(item => {
+                message += `• ${item.name} x${item.quantity} = ৳${item.price * item.quantity}\n`;
+            });
 
-            // Handle Redirection / Success Message based on Payment Type
-            if (paymentType === 'now') {
+            message += `\n💰 *Total Bill:* ৳${total}`;
+            message += `\n\n_Please confirm this order._`;
+
+            if (platform === 'whatsapp') {
+                const waNumber = "8801869895549";
+                const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+                showSuccessModal(); // Also show success modal for visual confirmation
+
+            } else if (platform === 'email') {
+                const adminEmail = "kaziemdadul4@gmail.com";
+                const subject = `New Order from ${name}`;
+                const itemsList = itemsToOrder.map(i => `- ${i.name} (x${i.quantity})`).join('%0D%0A');
+                const body = `Name: ${name}%0D%0APhone: ${phone}%0D%0AItems:%0D%0A${itemsList}%0D%0ATotal: ${total}`;
+                window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
                 showSuccessModal();
-            } else {
-                // Pay Later: Redirect to WhatsApp/Email
-                // Construct Message JUST IN TIME
-                let message = `*🔥 New Order - Tention Free*\n\n`;
-                message += `👤 *Customer:* ${name}\n`;
-                message += `📱 *Phone:* ${phone}\n`;
-                message += `📧 *Email:* ${customerEmail}\n`;
-                if (hasGamingItem && gameUid) {
-                    message += `🎮 *Game UID:* ${gameUid}\n`;
-                }
-
-                // Message format depending on payment
-                if (paymentType === 'later') {
-                    message += `💳 *Payment Status:* Pay Later (Discussion Pending)\n`;
-                } else {
-                    message += `💳 *Payment:* ${payment.toUpperCase()}\n`;
-                    message += `🧾 *TrxID:* ${trxid}\n`;
-                }
-
-                message += `\n🛒 *Items:*\n`;
-                itemsToOrder.forEach(item => {
-                    message += `• ${item.name} x${item.quantity} = ৳${item.price * item.quantity}\n`;
-                });
-
-                message += `\n💰 *Total Bill:* ৳${total}`;
-                message += `\n\n_Please confirm this order._`;
-
-                if (platform === 'whatsapp') {
-                    const waNumber = "8801869895549";
-                    const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-                    window.open(url, '_blank');
-                    showSuccessModal(); // Also show success modal for visual confirmation
-
-                } else if (platform === 'email') {
-                    const adminEmail = "kaziemdadul4@gmail.com";
-                    const subject = `New Order from ${name}`;
-                    const itemsList = itemsToOrder.map(i => `- ${i.name} (x${i.quantity})`).join('%0D%0A');
-                    const body = `Name: ${name}%0D%0APhone: ${phone}%0D%0AItems:%0D%0A${itemsList}%0D%0ATotal: ${total}`;
-                    window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
-                    showSuccessModal();
-                }
             }
+        }
 
-        })
-        .catch(error => {
-            console.error("Error saving order:", error);
-            // Alert the SPECIFIC error message from the server
-            // Use styled error modal instead of alert
-            showErrorModal("Submission Failed", error.message);
-        });
+    })
+    .catch(error => {
+        console.error("Error saving order:", error);
+        // Alert the SPECIFIC error message from the server
+        // Use styled error modal instead of alert
+        showErrorModal("Submission Failed", error.message);
+    });
 }
 
 // --- Modals ---
