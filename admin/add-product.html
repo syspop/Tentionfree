@@ -40,8 +40,17 @@
                     </select>
                 </div>
                 <div>
-                    <label>Image URL</label>
-                    <input type="text" id="p-img" class="input-box" placeholder="e.g. images/Netflix.png">
+                    <label>Image (Upload or URL)</label>
+                    <div style="display:flex; gap:5px; margin-bottom:5px;">
+                        <input type="file" id="p-img-file" accept="image/*" class="input-box"
+                            style="padding:5px; font-size:12px; margin:0;" onchange="handleImageUpload()">
+                    </div>
+                    <input type="text" id="p-img" class="input-box" placeholder="OR paste Image URL..."
+                        onchange="handleUrlInput()">
+                    <div id="img-preview-container"
+                        style="width:100%; height:150px; background:var(--bg-main); border-radius:10px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; margin-top:5px;">
+                        <span style="color:var(--gray); font-size:12px;">No Image Selected</span>
+                    </div>
                 </div>
             </div>
 
@@ -154,7 +163,9 @@
                 document.getElementById('p-badge').value = p.badge || '';
                 document.getElementById('p-category').value = p.category;
                 document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
+                document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
                 document.getElementById('p-img').value = p.image;
+                updatePreview(p.image); // Show preview
                 document.getElementById('p-desc').value = p.desc;
                 document.getElementById('p-long-desc').value = p.longDesc || '';
                 document.getElementById('p-features').value = p.features ? p.features.join('\n') : '';
@@ -177,13 +188,48 @@
             }
         }
 
+        // --- IMAGE LOGIC ---
+        let uploadedImageBase64 = null;
+
+        function handleImageUpload() {
+            const fileInput = document.getElementById('p-img-file');
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    uploadedImageBase64 = e.target.result;
+                    document.getElementById('p-img').value = ""; // Clear URL if file uploaded
+                    updatePreview(uploadedImageBase64);
+                }
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        }
+
+        function handleUrlInput() {
+            const url = document.getElementById('p-img').value;
+            if (url) {
+                uploadedImageBase64 = null; // Clear file if URL provided
+                document.getElementById('p-img-file').value = "";
+                updatePreview(url);
+            }
+        }
+
+        function updatePreview(src) {
+            const container = document.getElementById('img-preview-container');
+            if (src) {
+                container.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:contain;">`;
+            } else {
+                container.innerHTML = `<span style="color:var(--gray); font-size:12px;">No Image Selected</span>`;
+            }
+        }
+
         // --- SAVE PRODUCT ---
         async function saveProduct() {
             const name = document.getElementById('p-name').value;
             const badge = document.getElementById('p-badge').value;
             const category = document.getElementById('p-category').value;
             const inStock = document.getElementById('p-stock').value === "true";
-            const img = document.getElementById('p-img').value;
+            // Use uploaded image OR text input
+            const img = uploadedImageBase64 || document.getElementById('p-img').value;
             const desc = document.getElementById('p-desc').value;
             const longDesc = document.getElementById('p-long-desc').value;
             const features = document.getElementById('p-features').value.split('\n').filter(l => l.trim() !== '');
@@ -207,6 +253,10 @@
                 return showAlert("Missing Info", "Please fill required fields (Name, Image, at least 1 variant)", "error");
             }
 
+            // Derive main Price and Original Price from the first variant
+            const mainPrice = variants.length > 0 ? parseInt(variants[0].price) : 0;
+            const mainOriginalPrice = variants.length > 0 ? parseInt(variants[0].originalPrice) : 0;
+
             try {
                 const res = await fetch('/api/products?t=' + Date.now());
                 let products = await res.json();
@@ -218,7 +268,9 @@
                     if (index !== -1) {
                         products[index] = {
                             ...products[index],
-                            name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants
+                            name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
+                            price: mainPrice,
+                            originalPrice: mainOriginalPrice
                         };
                     }
                 } else {
@@ -226,7 +278,9 @@
                     const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
                     products.push({
                         id: newId,
-                        name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants
+                        name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
+                        price: mainPrice,
+                        originalPrice: mainOriginalPrice
                     });
                 }
 

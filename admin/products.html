@@ -69,7 +69,7 @@
                 products.forEach((p) => {
                     // Fix Image Path: prepend ../ if it's a relative local path
                     let displayImg = p.image;
-                    if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('../')) {
+                    if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('../') && !displayImg.startsWith('data:')) {
                         displayImg = '../' + displayImg;
                     }
 
