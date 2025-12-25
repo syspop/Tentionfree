@@ -721,6 +721,16 @@
             // Add Total
             itemsHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:#10b981;">Total: ৳${order.price || order.totalAmount}</div>`;
 
+            // Display Game UIDs if present
+            if (order.gameUid && order.gameUid !== 'N/A') {
+                itemsHtml = `
+                    <div style="background:rgba(59, 130, 246, 0.1); padding:10px; border-radius:8px; border:1px solid rgba(59, 130, 246, 0.2); margin-bottom:15px;">
+                        <small style="color:#3b82f6; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">Player / Game IDs</small>
+                        <div style="font-family:monospace; color:white; white-space: pre-wrap;">${order.gameUid}</div>
+                    </div>
+                ` + itemsHtml;
+            }
+
             document.getElementById('view-items').innerHTML = itemsHtml;
 
             // Delivery Info
