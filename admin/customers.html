@@ -324,7 +324,7 @@
                 if (result.success) {
                     closeDeleteModal();
                     loadCustomers();
-                    alert("Account Deleted Successfully");
+                    openSuccessModal("Account Deleted Successfully");
                 } else {
                     alert(result.message || "Failed to delete");
                 }
@@ -335,6 +335,16 @@
                 btn.innerText = "Delete";
                 btn.disabled = false;
             }
+        }
+
+
+        function openSuccessModal(msg) {
+            document.getElementById('success-msg').innerText = msg;
+            document.getElementById('success-modal').style.display = 'flex';
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('success-modal').style.display = 'none';
         }
 
     </script>
@@ -395,6 +405,21 @@
                 <button onclick="confirmDelete()" id="btn-del-cust" class="action-btn"
                     style="background:var(--red);">Delete</button>
             </div>
+        </div>
+    </div>
+    <!-- Success Modal -->
+    <div id="success-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2200; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out; position:relative;">
+            <div
+                style="margin:0 auto 20px auto; width:60px; height:60px; background:rgba(16, 185, 129, 0.15); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                <i class="fa-solid fa-check" style="color:#10b981; font-size:24px;"></i>
+            </div>
+            <h3 style="color:white; margin-top:0;">Success!</h3>
+            <p style="color:var(--gray); font-size:14px; margin-bottom:25px;" id="success-msg">Action completed
+                successfully.</p>
+            <button onclick="closeSuccessModal()" class="action-btn" style="width:100%;">Okay, Got it</button>
         </div>
     </div>
 </body>
