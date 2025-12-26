@@ -111,6 +111,63 @@ const authenticateUser = (req, res, next) => {
     });
 };
 
+// --- MIGRATION UTILITY (Temporary) ---
+// This endpoint allows triggering the seed process from the deployed server
+// where it has access to both the JSON files and the MONGO_URI.
+app.get('/api/admin/migratedata', authenticateAdmin, async (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+
+    const readJson = (fileName) => {
+        try {
+            const filePath = path.join(__dirname, 'data', fileName);
+            if (!fs.existsSync(filePath)) return [];
+            return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        } catch (e) { return []; }
+    };
+
+    try {
+        let stats = { products: 0, orders: 0, customers: 0, tickets: 0 };
+
+        // 1. Products
+        const products = readJson('products.json');
+        if (products.length > 0) {
+            await Product.deleteMany({});
+            await Product.insertMany(products);
+            stats.products = products.length;
+        }
+
+        // 2. Orders
+        const orders = readJson('orders.json');
+        if (orders.length > 0) {
+            await Order.deleteMany({});
+            await Order.insertMany(orders);
+            stats.orders = orders.length;
+        }
+
+        // 3. Customers
+        const customers = readJson('customers.json');
+        if (customers.length > 0) {
+            await Customer.deleteMany({});
+            await Customer.insertMany(customers);
+            stats.customers = customers.length;
+        }
+
+        // 4. Tickets
+        const tickets = readJson('tickets.json');
+        if (tickets.length > 0) {
+            await Ticket.deleteMany({});
+            await Ticket.insertMany(tickets);
+            stats.tickets = tickets.length;
+        }
+
+        res.json({ success: true, message: "Migration Complete", stats });
+    } catch (err) {
+        console.error("Migration Failed:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // API Routes
 
 // --- PRODUCTS ---
