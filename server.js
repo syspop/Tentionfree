@@ -264,7 +264,7 @@ app.delete('/api/tickets/:id', async (req, res) => {
 });
 
 // --- AUTHENTICATION ---
-const CUSTOMERS_FILE = path.join(__dirname, 'data', 'customers.json');
+
 
 // GET Customers (Admin only)
 app.get('/api/customers', authenticateAdmin, async (req, res) => {
