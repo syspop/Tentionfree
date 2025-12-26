@@ -254,26 +254,85 @@
     <script>
         document.addEventListener('DOMContentLoaded', loadOrders);
 
-        let allOrdersCache = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let isLoading = false;
 
-        async function loadOrders() {
+        async function loadOrders(page = 1, append = false) {
+            if (isLoading) return;
+            isLoading = true;
+
             const list = document.getElementById('manage-order-list');
-            list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Loading...</td></tr>";
+            const loadMoreBtn = document.getElementById('load-more-btn');
+
+            // Show loading indicator only on first load or if not appending
+            if (!append) {
+                list.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px;'>Loading...</td></tr>";
+                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+            } else {
+                if (loadMoreBtn) loadMoreBtn.innerText = 'Loading...';
+            }
 
             try {
-                const res = await fetch('/api/orders?t=' + Date.now(), {
+                const res = await fetch(`/api/orders?page=${page}&limit=20&t=` + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
-                const orders = await res.json();
+                const data = await res.json();
 
-                if (!Array.isArray(orders)) throw new Error("Invalid format");
-                allOrdersCache = orders.reverse();
+                if (!res.ok) throw new Error(data.error || "Server Error");
+
+                // Check structure: { orders, total, page, pages }
+                const orders = data.orders || [];
+                currentPage = data.page || page;
+                totalPages = data.pages || 1;
+
+                if (!append) {
+                    allOrdersCache = orders;
+                } else {
+                    allOrdersCache = [...allOrdersCache, ...orders];
+                }
 
                 renderManageOrders(allOrdersCache);
 
+                // Update "Load More" Visibility
+                updateLoadMoreUI();
+
             } catch (err) {
                 console.error(err);
-                list.innerHTML = `<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ ${err.message || 'Error loading orders'}</div></td></tr>`;
+                if (!append) {
+                    list.innerHTML = `<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ ${err.message || 'Error loading orders'}</div></td></tr>`;
+                } else {
+                    showAlert("Error", "Failed to load more orders", "error");
+                    if (loadMoreBtn) loadMoreBtn.innerText = 'Load More';
+                }
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function updateLoadMoreUI() {
+            let loadMoreContainer = document.getElementById('load-more-container');
+            if (!loadMoreContainer) {
+                // Create container if missing
+                loadMoreContainer = document.createElement('div');
+                loadMoreContainer.id = 'load-more-container';
+                loadMoreContainer.style.textAlign = 'center';
+                loadMoreContainer.style.padding = '20px';
+                document.querySelector('.section.active > .admin-box > div:nth-child(2)').appendChild(loadMoreContainer);
+                // Better selector: append after table container
+                document.querySelector('div[style*="overflow-x:auto"]').insertAdjacentElement('afterend', loadMoreContainer);
+            }
+
+            if (currentPage < totalPages) {
+                loadMoreContainer.innerHTML = `<button id="load-more-btn" onclick="loadNextPage()" style="padding:10px 20px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); border-radius:8px; cursor:pointer;">Load More (${currentPage}/${totalPages})</button>`;
+            } else {
+                loadMoreContainer.innerHTML = ''; // Hide
+            }
+        }
+
+        function loadNextPage() {
+            if (currentPage < totalPages) {
+                loadOrders(currentPage + 1, true);
             }
         }
 

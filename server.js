@@ -223,10 +223,26 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 
 // --- ORDERS ---
 // GET Orders - PROTECTED
+// GET Orders - PROTECTED (Paginated)
 app.get('/api/orders', authenticateAdmin, async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20; // Default 20
+    const skip = (page - 1) * limit;
+
     try {
-        const orders = await Order.find({});
-        res.json(orders);
+        const total = await Order.countDocuments({});
+        // Sort by _id descending (newest first usually) or specific date field
+        const orders = await Order.find({})
+            .sort({ _id: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            orders,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to read orders' });
