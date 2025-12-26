@@ -149,3 +149,14 @@ window.showAlert = function (title, msg, type = 'success') {
 window.closeCustomModal = function () {
     document.getElementById('custom-modal').style.display = 'none';
 };
+
+// Start Helper: Read File as Base64 (Missing Fix)
+window.readFileAsBase64 = function (file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+};
+// End Helper

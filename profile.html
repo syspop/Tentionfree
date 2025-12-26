@@ -947,17 +947,29 @@
             const elementToPrint = container.children[0];
 
             // Use html2pdf to generate and save
+            if (typeof html2pdf === 'undefined') {
+                document.body.removeChild(container);
+                return showNotification("PDF Generator Library Missing. Please refresh.", "error");
+            }
+
             const opt = {
-                margin: 0,
+                margin: 0.2, // Small margin
                 filename: `Invoice_${order.id}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            html2pdf().set(opt).from(elementToPrint).save().then(() => {
-                document.body.removeChild(container);
-            });
+            html2pdf().set(opt).from(elementToPrint).save()
+                .then(() => {
+                    document.body.removeChild(container);
+                    showNotification("Invoice downloaded!", "success");
+                })
+                .catch(err => {
+                    console.error("Invoice Error:", err);
+                    document.body.removeChild(container);
+                    showNotification("Failed to generate PDF. check console.", "error");
+                });
         }
 
         function logoutUser() {
