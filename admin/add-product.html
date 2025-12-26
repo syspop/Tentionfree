@@ -258,47 +258,39 @@
             const mainOriginalPrice = variants.length > 0 ? parseInt(variants[0].originalPrice) : 0;
 
             try {
-                const res = await fetch('/api/products?t=' + Date.now());
-                let products = await res.json();
-                if (!Array.isArray(products)) products = [];
+                const productData = {
+                    name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
+                    price: mainPrice,
+                    originalPrice: mainOriginalPrice
+                };
 
                 if (currentEditingId) {
-                    // Update
-                    const index = products.findIndex(p => p.id == currentEditingId);
-                    if (index !== -1) {
-                        products[index] = {
-                            ...products[index],
-                            name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
-                            price: mainPrice,
-                            originalPrice: mainOriginalPrice
-                        };
-                    }
+                    // Update Single Product
+                    await fetch(`/api/products/${currentEditingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify(productData)
+                    });
                 } else {
-                    // Create
-                    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-                    products.push({
-                        id: newId,
-                        name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
-                        price: mainPrice,
-                        originalPrice: mainOriginalPrice
+                    // Create New Product
+                    await fetch('/api/products/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify(productData)
                     });
                 }
-
-                await fetch('/api/products', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                    },
-                    body: JSON.stringify(products)
-                });
 
                 showSaveSuccessModal(currentEditingId ? "Product Updated!" : "Product Added!");
 
                 if (!currentEditingId) {
                     resetForm();
                 } else {
-                    // Redirect back to products list after update?
                     setTimeout(() => window.location.href = 'products.html', 1500);
                 }
 

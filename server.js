@@ -143,7 +143,7 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// POST Products (Overwrite all) - PROTECTED
+// POST Products (Overwrite all) - PROTECTED (Keep for Reorder, but use with caution)
 app.post('/api/products', authenticateAdmin, async (req, res) => {
     const products = req.body;
 
@@ -152,24 +152,72 @@ app.post('/api/products', authenticateAdmin, async (req, res) => {
         return res.status(400).json({ error: "Invalid data format: Expected an array." });
     }
 
-    // Basic Validation for each product
-    for (let p of products) {
-        if (!p.name || typeof p.name !== 'string' || p.name.trim() === '') {
-            return res.status(400).json({ error: `Invalid product name for ID ${p.id}` });
-        }
-        if (p.price && isNaN(p.price)) {
-            return res.status(400).json({ error: `Invalid price for product ${p.name}` });
-        }
-    }
-
     try {
-        // Full replace logic as per original requirement (Overwrite all)
+        // Full replace logic
         await Product.deleteMany({});
         await Product.insertMany(products);
         res.json({ message: 'Products saved successfully' });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Failed to save products' });
+    }
+});
+
+// --- NEW SAFE ENDPOINTS ---
+
+// POST Add Single Product
+app.post('/api/products/add', authenticateAdmin, async (req, res) => {
+    const newProduct = req.body;
+
+    // Basic validation
+    if (!newProduct.name || !newProduct.price) {
+        return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    try {
+        // Generate ID if not provided (find max ID + 1)
+        if (!newProduct.id) {
+            const lastProduct = await Product.findOne().sort({ id: -1 });
+            newProduct.id = lastProduct ? lastProduct.id + 1 : 1;
+        }
+
+        await Product.create(newProduct);
+        res.json({ success: true, message: "Product added successfully", product: newProduct });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to add product" });
+    }
+});
+
+// PUT Update Single Product
+app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+
+    try {
+        const product = await Product.findOne({ id: id });
+        if (!product) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
+
+        Object.assign(product, updates);
+        await product.save();
+        res.json({ success: true, message: "Product updated successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to update product" });
+    }
+});
+
+// DELETE Single Product
+app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        await Product.deleteOne({ id: id });
+        res.json({ success: true, message: "Product deleted successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to delete product" });
     }
 });
 

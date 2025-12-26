@@ -181,17 +181,11 @@
 
         async function confirmProductDelete(id) {
             try {
-                const res = await fetch('/api/products?t=' + Date.now());
-                let products = await res.json();
-                products = products.filter(p => p.id !== id);
-
-                await fetch('/api/products', {
-                    method: 'POST',
+                await fetch(`/api/products/${id}`, {
+                    method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                    },
-                    body: JSON.stringify(products)
+                    }
                 });
 
                 loadProducts();
@@ -199,24 +193,18 @@
         }
         async function toggleStock(id, status) {
             try {
-                const res = await fetch('/api/products?t=' + Date.now());
-                let products = await res.json();
-                const index = products.findIndex(p => p.id === id);
-                if (index !== -1) {
-                    products[index].inStock = status;
+                // Update Single Product Stock
+                await fetch(`/api/products/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ inStock: status })
+                });
 
-                    await fetch('/api/products', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                        },
-                        body: JSON.stringify(products)
-                    });
-
-                    loadProducts(); // Reload to show update
-                    showAlert("Success", status ? "Product Marked In Stock" : "Product Marked Out of Stock");
-                }
+                loadProducts(); // Reload to show update
+                showAlert("Success", status ? "Product Marked In Stock" : "Product Marked Out of Stock");
             } catch (e) {
                 console.error(e);
                 showAlert("Error", "Failed to update stock status", "error");

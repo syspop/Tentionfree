@@ -17,7 +17,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 const readJson = (fileName) => {
     try {
-        const filePath = path.join(__dirname, 'data', fileName);
+        const filePath = path.join(__dirname, 'data/archive', fileName);
         if (!fs.existsSync(filePath)) {
             console.warn(`⚠️ File not found: ${fileName}. Skipping.`);
             return [];
