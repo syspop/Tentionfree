@@ -184,17 +184,18 @@
             container.innerHTML = "<div style='text-align:center; color:var(--gray)'>Loading history...</div>";
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now(), {
+                const res = await fetch('../api/orders?limit=1000&t=' + Date.now(), { // limit high to get history
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
-                const allOrders = await res.json();
+                const data = await res.json();
+                const allOrders = data.orders || data; // Handle { orders: [...] } or [...]
 
-                const userOrders = allOrders.filter(o =>
+                const userOrders = Array.isArray(allOrders) ? allOrders.filter(o =>
                     (user.email && o.email === user.email) ||
                     (user.email && o.customerEmail === user.email) ||
                     (user.email && o.customer && o.customer.includes(user.email)) ||
                     (o.customer === user.name)
-                );
+                ) : [];
 
                 // Calc Stats
                 const totalSpent = userOrders

@@ -675,9 +675,20 @@
             closeDeleteModal();
         }
 
-        function downloadInvoice(orderId) {
-            const order = allOrdersCache.find(o => o.id == orderId);
-            if (!order) return showAlert("Error", "Order data missing. Please refresh.", "error");
+        async function downloadInvoice(orderId) {
+            let order = allOrdersCache.find(o => o.id == orderId);
+
+            // Fetch if missing items (lightweight)
+            if (!order || !order.items) {
+                try {
+                    const res = await fetch(`/api/orders/${orderId}`, {
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                    });
+                    if (res.ok) order = await res.json();
+                } catch (e) { console.error(e); }
+            }
+
+            if (!order || !order.items) return showAlert("Error", "Order data missing. Please refresh.", "error");
 
             const items = order.items || order.cart || [];
             const itemsHtml = items.length > 0 ? items.map(item => `
@@ -789,8 +800,18 @@
                 document.body.removeChild(container);
             });
         }
-        function viewOrder(id) {
-            const order = allOrdersCache.find(o => o.id == id);
+        async function viewOrder(id) {
+            let order;
+            try {
+                const res = await fetch(`/api/orders/${id}`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                if (res.ok) order = await res.json();
+                else order = allOrdersCache.find(o => o.id == id);
+            } catch (e) {
+                order = allOrdersCache.find(o => o.id == id);
+            }
+
             if (!order) return;
 
             document.getElementById('view-order-id').innerText = '#' + order.id;
@@ -798,6 +819,7 @@
             document.getElementById('view-date').innerText = new Date(order.date).toLocaleDateString();
             document.getElementById('view-method').innerText = order.paymentMethod;
             document.getElementById('view-transaction').innerText = order.trx || order.transactionId || 'N/A';
+
             document.getElementById('view-status').innerHTML = getStatusBadge(order.status);
 
             // Items
