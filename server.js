@@ -296,14 +296,30 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 });
 
 // GET My Orders (User) - PROTECTED
+// GET My Orders (User) - PROTECTED (Paginated)
 app.get('/api/my-orders', authenticateUser, async (req, res) => {
     const userEmail = req.user.email.toLowerCase().trim();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10; // Default 10 for mobile/dashboard
+    const skip = (page - 1) * limit;
+
     try {
-        const myOrders = await Order.find({ email: userEmail }); // Using email directly or use case-insensitive regex if needed
-        // Assuming email is stored consistently, otherwise:
-        // const myOrders = await Order.find({ email: { $regex: new RegExp(`^${userEmail}$`, 'i') } });
-        res.json(myOrders);
+        const query = { email: userEmail };
+        const total = await Order.countDocuments(query);
+
+        const myOrders = await Order.find(query)
+            .sort({ _id: -1 }) // Newest first
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            orders: myOrders,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
+        });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Failed to read orders' });
     }
 });

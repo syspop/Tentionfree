@@ -510,155 +510,173 @@
             }
         });
 
-        async function loadHistory(user) {
+        let userCurrentPage = 1;
+        let userTotalPages = 1;
+        let userIsLoading = false;
+        let userOrdersCache = [];
+
+        async function loadHistory(user, page = 1, append = false) {
+            if (userIsLoading) return;
+            userIsLoading = true;
+
             const container = document.getElementById('order-list');
+            const loadMoreId = 'user-load-more-btn';
+            let loadMoreBtn = document.getElementById(loadMoreId);
+
+            if (!append) {
+                container.innerHTML = `
+                        <div class="glass-panel p-12 rounded-3xl text-center text-slate-400 animate-pulse border border-white/5">
+                            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-brand-500"></i>
+                            <p>Loading your profile data...</p>
+                        </div>`;
+                userOrdersCache = [];
+            } else {
+                if (loadMoreBtn) loadMoreBtn.innerText = 'Loading...';
+            }
+
             try {
                 // Fetch authenticated user's orders (Server filters by token)
-                const res = await fetch('api/my-orders?t=' + Date.now(), {
+                const res = await fetch(`api/my-orders?page=${page}&limit=10&t=` + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
                 });
 
                 if (res.status === 401 || res.status === 403) {
-                    // Token invalid/expired -> Logout
                     logoutUser();
                     return;
                 }
 
-                const orders = await res.json();
-                // Client-side filtering no longer strictly needed if server does it, 
-                // but keeping code simple as 'orders' is now just MY orders.
+                const data = await res.json();
+                const orders = data.orders || [];
+                userCurrentPage = data.page || 1;
+                userTotalPages = data.pages || 1;
+                const completedCount = data.completedCount || 0;
 
+                // Update Membership Badge
+                updateMembershipBadge(completedCount);
 
-                // --- MEMBERSHIP LOGIC ---
-                // Count only COMPLETED orders
-                const orderCount = orders.filter(o => o.status === 'Completed').length;
-                const badgeContainer = document.getElementById('u-badge-container');
-                const badgeText = document.getElementById('u-badge-text');
-                const badgeIcon = document.getElementById('u-badge-icon');
-
-                if (orderCount >= 15) {
-                    // VIP Member
-                    badgeText.innerText = "VIP Member";
-                    badgeIcon.className = "fa-solid fa-crown";
-                    badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[10px] font-bold border border-purple-500/20 w-full justify-center";
-                } else if (orderCount >= 5) {
-                    // Premium Member
-                    badgeText.innerText = "Premium Member";
-                    badgeIcon.className = "fa-solid fa-medal";
-                    badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-bold border border-brand-500/20 w-full justify-center";
+                if (!append) {
+                    if (orders.length === 0) {
+                        renderEmptyState(container);
+                        return;
+                    }
+                    container.innerHTML = '';
+                    userOrdersCache = orders;
                 } else {
-                    // Normal Member
-                    badgeText.innerText = "Normal Member";
-                    badgeIcon.className = "fa-solid fa-user";
-                    badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-bold border border-white/5 w-full justify-center";
+                    userOrdersCache = [...userOrdersCache, ...orders];
                 }
 
-                if (!orders || orders.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-16 glass-panel rounded-3xl border-dashed border-2 border-slate-700">
-                            <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-600">
-                                <i class="fa-solid fa-ghost text-4xl"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-2">No Orders Yet</h3>
-                            <p class="text-slate-400 max-w-sm mx-auto mb-8">You haven't purchased anything yet. Your premium digital collection starts with a single click.</p>
-                            <a href="products" class="inline-block bg-white text-slate-900 px-8 py-3 rounded-full font-bold hover:bg-brand-50 transition-colors">
-                                Explore Store
-                            </a>
-                        </div>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = '';
-                // Sort by date desc
-                const validOrders = orders;
-                userOrdersCache = validOrders; // Update Cache
-
-                if (validOrders.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-16 glass-panel rounded-3xl border-dashed border-2 border-slate-700">
-                            <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-600">
-                                <i class="fa-solid fa-ghost text-4xl"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-2">No Orders Yet</h3>
-                            <p class="text-slate-400 max-w-sm mx-auto mb-8">You haven't purchased anything yet.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                validOrders.reverse().forEach(o => {
+                orders.forEach(o => {
                     // Status Badge Logic
                     let statusClass = "bg-slate-700/50 text-slate-300 border border-slate-600/30";
                     let icon = "fa-clock";
-                    let statusText = o.status;
 
                     if (o.status === 'Completed') {
                         statusClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
                         icon = "fa-check-circle";
                     } else if (o.status === 'Pending') {
                         statusClass = "bg-orange-500/10 text-orange-400 border border-orange-500/20";
-                        icon = "fa-hourglass-half";
-                    } else if (o.status === 'Cancelled') {
-                        statusClass = "bg-red-500/10 text-red-400 border border-red-500/20";
-                        icon = "fa-ban";
-                    } else if (o.status === 'Refunded') {
-                        statusClass = "bg-purple-500/10 text-purple-400 border border-purple-500/20";
-                        icon = "fa-rotate-left";
+                        icon = "fa-hourglass-start"; // Fixed icon
                     }
+                    // Continue rendering...
+                    // Check if card already exists to prevent duplicate on race condition? No, append is controlled.
 
-                    container.innerHTML += `
-                        <div class="glass-panel order-card rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/5 hover:border-brand-500/30 transition-all">
-                            
-                            <!-- Left: ID & Time -->
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 border border-white/5">
-                                    <i class="fa-solid fa-box text-lg"></i>
+                    const card = document.createElement('div');
+                    card.className = "order-card glass-panel rounded-2xl p-5 border border-white/5 relative overflow-hidden group hover:border-brand-500/30 transition-all";
+                    card.onclick = () => viewOrderDetails(o); // Ensure this function exists or is inline
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                                    <i class="fa-solid fa-box-open"></i>
                                 </div>
                                 <div>
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-white font-bold text-base">Order #${o.id}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-xs text-slate-500">
-                                        <i class="fa-regular fa-clock"></i>
-                                        <span>${o.date}</span>
-                                    </div>
+                                    <h3 class="font-bold text-white text-sm">Order #${o.id}</h3>
+                                    <p class="text-[10px] text-slate-500 font-mono">${new Date(o.createdAt || o.date).toLocaleDateString()}</p>
                                 </div>
                             </div>
-
-                            <!-- Middle: Status (Mobile: Width Full, Desktop: Auto) -->
-                            <div class="w-full md:w-auto flex justify-start md:justify-center">
-                                <div class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 ${statusClass}">
-                                    <i class="fa-solid ${icon}"></i> ${statusText}
-                                </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusClass}">
+                                    <i class="fa-solid ${icon}"></i> ${o.status}
+                                </span>
                             </div>
-
-                            <!-- Right: Actions -->
-                            <div class="w-full md:w-auto flex items-center gap-3 justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-white/5">
-                                <button onclick="downloadInvoice(${o.id})" 
-                                    class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 hover:bg-blue-600 hover:text-white border border-white/5 transition-all flex items-center justify-center" 
-                                    title="Download Invoice">
-                                    <i class="fa-solid fa-file-invoice"></i>
-                                </button>
-                                
-                                <button onclick="viewOrder(${o.id})" 
-                                    class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
-                                    View Details <i class="fa-solid fa-arrow-right"></i>
-                                </button>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Total Amount</p>
+                                <p class="text-lg font-bold text-white">৳${o.price || o.totalAmount}</p>
                             </div>
-
+                           <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-brand-500 hover:text-white transition-all">
+                                <i class="fa-solid fa-arrow-right -rotate-45"></i>
+                            </button>
                         </div>
                     `;
+                    container.appendChild(card);
                 });
+
+                updateUserLoadMoreUI(container);
 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = "Failed to load history.";
+                if (!append) container.innerHTML = `<p class="text-red-400 text-center">Failed to load orders.</p>`;
+            } finally {
+                userIsLoading = false;
             }
         }
 
-        // Cache to store user orders for printing
-        let userOrdersCache = [];
+        function updateMembershipBadge(count) {
+            const badgeContainer = document.getElementById('u-badge-container');
+            const badgeText = document.getElementById('u-badge-text');
+            const badgeIcon = document.getElementById('u-badge-icon');
+
+            if (count >= 15) {
+                badgeText.innerText = "VIP Member";
+                badgeIcon.className = "fa-solid fa-crown";
+                badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[10px] font-bold border border-purple-500/20 w-full justify-center";
+            } else if (count >= 5) {
+                badgeText.innerText = "Premium Member";
+                badgeIcon.className = "fa-solid fa-medal";
+                badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-bold border border-brand-500/20 w-full justify-center";
+            } else {
+                badgeText.innerText = "Normal Member";
+                badgeIcon.className = "fa-solid fa-user";
+                badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-bold border border-white/5 w-full justify-center";
+            }
+        }
+
+        function renderEmptyState(container) {
+            container.innerHTML = `
+                <div class="text-center py-16 glass-panel rounded-3xl border-dashed border-2 border-slate-700">
+                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-600">
+                        <i class="fa-solid fa-ghost text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">No Orders Yet</h3>
+                    <p class="text-slate-400 max-w-sm mx-auto mb-8">You haven't purchased anything yet.</p>
+                    <a href="products" class="inline-block bg-white text-slate-900 px-8 py-3 rounded-full font-bold hover:bg-brand-50 transition-colors">
+                        Explore Store
+                    </a>
+                </div>
+            `;
+        }
+
+        function updateUserLoadMoreUI(container) {
+            let loadMoreContainer = document.getElementById('user-load-more-wrapper');
+            if (loadMoreContainer) loadMoreContainer.remove();
+
+            if (userCurrentPage < userTotalPages) {
+                loadMoreContainer = document.createElement('div');
+                loadMoreContainer.id = 'user-load-more-wrapper';
+                loadMoreContainer.className = 'text-center mt-6';
+                loadMoreContainer.innerHTML = `
+                    <button id="user-load-more-btn" onclick="loadHistory(null, ${userCurrentPage + 1}, true)" 
+                        class="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all border border-white/5">
+                        Load More
+                    </button>
+                `;
+                container.parentNode.appendChild(loadMoreContainer);
+            }
+        }
+
 
         function viewOrder(id) {
             const order = userOrdersCache.find(o => o.id == id);
