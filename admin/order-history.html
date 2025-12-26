@@ -124,7 +124,7 @@
             list.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Loading...</td></tr>";
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now(), {
+                const res = await fetch('/api/orders?t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
                 const orders = await res.json();
