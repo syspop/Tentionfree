@@ -11,12 +11,25 @@ const helmet = require('helmet'); // Secure Headers
 const rateLimit = require('express-rate-limit'); // Rate Limiting
 
 const app = express();
+
+// Trust Proxy (Required for Rate Limiting behind Load Balancers like Heroku/Render)
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error("❌ CRITICAL ERROR: MONGO_URI is not defined in environment variables.");
+    console.error("Please set MONGO_URI in your deployment settings (e.g., Render/Heroku Dashboard).");
+    // We don't exit here to allow the server to start even if DB fails, but functional parts will break.
+    // Better to crash or handle gracefully? User just sees crash log now.
+} else {
+    mongoose.connect(MONGO_URI)
+        .then(() => console.log('✅ MongoDB Connected'))
+        .catch(err => console.error('❌ MongoDB Connection Error:', err));
+}
 
 
 // Middleware
