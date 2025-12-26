@@ -283,7 +283,7 @@ const defaultProducts = [
 // --- Load Products ---
 // API Persistence Configuration
 // --- Load Products (Node.js API) ---
-const API_URL = 'data/products.json';
+const API_URL = '/api/products';
 
 async function fetchProducts() {
     try {
