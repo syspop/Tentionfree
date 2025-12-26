@@ -682,6 +682,8 @@
         }
 
 
+        let currentFullOrder = null;
+
         async function viewOrder(id) {
             // Fetch Full Data (On Demand)
             let order;
@@ -699,6 +701,9 @@
             } catch (e) {
                 order = userOrdersCache.find(o => o.id == id);
             }
+
+            // Store for invoice
+            currentFullOrder = order;
 
             if (!order) return showNotification("Order not found", "error");
 
