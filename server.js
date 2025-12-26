@@ -259,6 +259,26 @@ app.put('/api/orders', authenticateAdmin, async (req, res) => {
     }
 });
 
+// [NEW] PUT Update Single Order - Granular logic for efficient status updates
+app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const updates = req.body;
+
+    try {
+        const order = await Order.findOne({ id: id });
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        Object.assign(order, updates);
+        await order.save();
+        res.json({ success: true, message: "Order updated successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to update order" });
+    }
+});
+
 // GET My Orders (User) - PROTECTED
 app.get('/api/my-orders', authenticateUser, async (req, res) => {
     const userEmail = req.user.email.toLowerCase().trim();

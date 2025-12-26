@@ -261,7 +261,7 @@
             list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Loading...</td></tr>";
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now(), {
+                const res = await fetch('/api/orders?t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
                 const orders = await res.json();
@@ -435,37 +435,42 @@
 
         async function processStatusUpdate(id, status, reason = null, deliveryInfo = null, image = null, refundMethod = null, refundTrx = null) {
             try {
-                // Fetch latest
-                const res = await fetch('../api/orders?t=' + Date.now(), {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
-                });
-                const orders = await res.json();
-                const index = orders.findIndex(o => o.id === id);
-
-                if (index !== -1) {
-                    orders[index].status = status;
-                    if (status === 'Cancelled' && reason) {
-                        orders[index].cancelReason = reason;
-                        if (image) orders[index].cancelImage = image;
-                    }
-                    if (status === 'Completed' && deliveryInfo) {
-                        orders[index].deliveryInfo = deliveryInfo;
-                        if (image) orders[index].deliveryImage = image;
-                    }
-                    if (status === 'Refunded') {
-                        if (reason) orders[index].refundNote = reason;
-                        if (image) orders[index].refundImage = image;
-                        if (refundMethod) orders[index].refundMethod = refundMethod;
-                        if (refundTrx) orders[index].refundTrx = refundTrx;
-                    }
-
-                    await saveOrders(orders);
+                // Granular Update
+                const updates = { status };
+                if (status === 'Cancelled' && reason) {
+                    updates.cancelReason = reason;
+                    if (image) updates.cancelImage = image;
                 }
-            } catch (e) { showAlert("Error", "Update failed", "error"); }
+                if (status === 'Completed' && deliveryInfo) {
+                    updates.deliveryInfo = deliveryInfo;
+                    if (image) updates.deliveryImage = image;
+                }
+                if (status === 'Refunded') {
+                    if (reason) updates.refundNote = reason;
+                    if (image) updates.refundImage = image;
+                    if (refundMethod) updates.refundMethod = refundMethod;
+                    if (refundTrx) updates.refundTrx = refundTrx;
+                }
+
+                await fetch(`/api/orders/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify(updates)
+                });
+
+                loadOrders(); // Refresh UI
+
+            } catch (e) {
+                console.error(e);
+                showAlert("Error", "Update failed", "error");
+            }
         }
 
         async function saveOrders(orders) {
-            await fetch('../api/orders', {
+            await fetch('/api/orders', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -590,17 +595,17 @@
             if (!pendingDeleteId) return;
 
             try {
-                const res = await fetch('../api/orders?t=' + Date.now(), {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                await fetch(`/api/orders/${pendingDeleteId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ isArchived: true })
                 });
-                const orders = await res.json();
-                const index = orders.findIndex(o => o.id === pendingDeleteId);
 
-                if (index !== -1) {
-                    orders[index].isArchived = true;
-                    await saveOrders(orders);
-                }
-            } catch (e) { showAlert("Error", "Delete failed", "error"); }
+                loadOrders();
+            } catch (e) { showAlert("Error", "Archive failed", "error"); }
 
             closeDeleteModal();
         }
