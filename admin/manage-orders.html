@@ -273,7 +273,7 @@
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ Error loading orders.</div></td></tr>";
+                list.innerHTML = `<tr><td colspan='4'><div class='empty-state' style='color:var(--red)'>❌ ${err.message || 'Error loading orders'}</div></td></tr>`;
             }
         }
 
