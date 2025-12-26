@@ -318,9 +318,15 @@
                 loadMoreContainer.id = 'load-more-container';
                 loadMoreContainer.style.textAlign = 'center';
                 loadMoreContainer.style.padding = '20px';
-                document.querySelector('.section.active > .admin-box > div:nth-child(2)').appendChild(loadMoreContainer);
-                // Better selector: append after table container
-                document.querySelector('div[style*="overflow-x:auto"]').insertAdjacentElement('afterend', loadMoreContainer);
+
+                // Append after the table container
+                const tableContainer = document.querySelector('.section.active div[style*="overflow-x:auto"]');
+                if (tableContainer && tableContainer.parentNode) {
+                    tableContainer.parentNode.insertBefore(loadMoreContainer, tableContainer.nextSibling);
+                } else {
+                    // Fallback
+                    document.querySelector('.section.active').appendChild(loadMoreContainer);
+                }
             }
 
             if (currentPage < totalPages) {
