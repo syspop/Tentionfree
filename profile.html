@@ -353,6 +353,92 @@
 
     </div>
 
+    <!-- ORDER DETAILS MODAL -->
+    <div id="order-details-modal"
+        class="fixed inset-0 z-[110] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300"
+            onclick="closeOrderModal()"></div>
+
+        <!-- Modal Content -->
+        <div
+            class="glass-panel p-0 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col overflow-hidden">
+
+            <!-- Header -->
+            <div class="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                        Order Details <span id="vo-id" class="text-slate-500 font-mono text-lg">#...</span>
+                    </h3>
+                </div>
+                <button onclick="closeOrderModal()"
+                    class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="p-6 overflow-y-auto custom-scrollbar" id="view-order-content">
+
+                <!-- Status Bar -->
+                <div
+                    class="flex items-center justify-between bg-slate-800/30 p-4 rounded-2xl border border-white/5 mb-6">
+                    <div id="vo-status"></div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Order Date</p>
+                        <p class="text-xs text-white" id="vo-date">...</p>
+                    </div>
+                </div>
+
+                <!-- Main Info Grid -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 rounded-2xl bg-slate-800/30 border border-white/5">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Payment Method</p>
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-brand-400">
+                                <i class="fa-regular fa-credit-card"></i>
+                            </div>
+                            <span class="text-sm font-bold text-white" id="vo-method">...</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-800/30 border border-white/5">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Transaction ID</p>
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-brand-400">
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <span class="text-sm font-mono text-slate-300 truncate" id="vo-trx">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items List -->
+                <div class="mb-6">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-3 px-1">Order Items</p>
+                    <div id="vo-items" class="space-y-2"></div>
+                    <div class="mt-3 flex justify-end items-center gap-3 pt-3 border-t border-white/5">
+                        <span class="text-slate-400 text-xs font-bold uppercase">Total Amount</span>
+                        <span class="text-2xl font-bold text-brand-400" id="vo-total">...</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Extra Info (Delivery, Cancel, Refund, GameID) -->
+                <div id="vo-extra"></div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end">
+                <button onclick="closeOrderModal()"
+                    class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all shadow-lg shadow-black/20">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile Search Modal -->
     <div id="mobile-search-modal"
         class="fixed inset-0 z-[120] bg-slate-900/95 backdrop-blur-sm hidden flex-col p-4 animate-fade-in">
@@ -502,8 +588,8 @@
                 }
 
                 validOrders.reverse().forEach(o => {
-                    // Status Colors
-                    let statusClass = "bg-slate-700 text-slate-300";
+                    // Status Badge Logic
+                    let statusClass = "bg-slate-700/50 text-slate-300 border border-slate-600/30";
                     let icon = "fa-clock";
                     let statusText = o.status;
 
@@ -521,102 +607,46 @@
                         icon = "fa-rotate-left";
                     }
 
-                    // Formatting items
-                    let itemsHtml = '';
-                    if (Array.isArray(o.items)) {
-                        itemsHtml = o.items.map(i => `<span class="inline-flex items-center bg-slate-800/50 px-2.5 py-1 rounded-md text-xs text-slate-300 border border-white/5 mr-2 mb-1"><i class="fa-solid fa-gift mr-1.5 text-brand-400 opacity-70"></i>${i.name}</span>`).join('');
-                    } else {
-                        itemsHtml = `<span class="inline-flex items-center bg-slate-800/50 px-2.5 py-1 rounded-md text-xs text-slate-300 border border-white/5"><i class="fa-solid fa-gift mr-1.5 text-brand-400 opacity-70"></i>${o.product || 'Unknown Item'}</span>`;
-                    }
-
                     container.innerHTML += `
-                        <div class="glass-panel order-card rounded-2xl overflow-hidden group">
-                            <div class="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <span class="text-xs font-mono font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded">#${o.id}</span>
-                                        <span class="text-xs text-slate-500 font-medium">${o.date}</span>
-                                    </div>
-                                    <div class="mb-4">
-                                        ${itemsHtml}
-                                    </div>
-                                    <div class="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                        <div class="flex items-center gap-1.5">
-                                            <i class="fa-regular fa-credit-card"></i> <span class="text-slate-300">${o.paymentMethod || 'Unknown'}</span>
-                                        </div>
-                                    </div>
+                        <div class="glass-panel order-card rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-white/5 hover:border-brand-500/30 transition-all">
+                            
+                            <!-- Left: ID & Time -->
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 border border-white/5">
+                                    <i class="fa-solid fa-box text-lg"></i>
                                 </div>
-
-                            <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-                                    <div class="flex items-center gap-3">
-                                        <button onclick="downloadInvoice(${o.id})" class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center" title="Download Invoice">
-                                            <i class="fa-solid fa-file-arrow-down"></i>
-                                        </button>
-                                        <div class="text-right mr-2">
-                                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-0.5">Total Amount</p>
-                                            <p class="text-xl font-bold text-white">${(o.currency === 'USD' || o.paymentMethod === 'Binance Pay' || o.paymentMethod === 'binance') ? '$' : '৳'}${o.price}</p>
-                                        </div>
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-white font-bold text-base">Order #${o.id}</span>
                                     </div>
-                                    <div class="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${statusClass}">
-                                        <i class="fa-solid ${icon}"></i> ${statusText}
+                                    <div class="flex items-center gap-2 text-xs text-slate-500">
+                                        <i class="fa-regular fa-clock"></i>
+                                        <span>${o.date}</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            ${o.status === 'Cancelled' && o.cancelReason ? `
-                            <details class="bg-red-500/5 border-t border-red-500/10 group">
-                                <summary class="p-4 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                                    <div class="flex items-center gap-3">
-                                        <div class="text-red-400 text-sm"><i class="fa-solid fa-circle-info"></i></div>
-                                        <p class="text-[10px] font-bold text-red-400 uppercase">Why was this cancelled?</p>
-                                    </div>
-                                    <i class="fa-solid fa-chevron-down text-red-400 text-xs transition-transform group-open:rotate-180"></i>
-                                </summary>
-                                <div class="px-4 pb-4 pl-10">
-                                    <p class="text-sm text-slate-300 leading-relaxed">${o.cancelReason}</p>
-                                    ${o.cancelImage ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Attached Proof</p><img src="${o.cancelImage}" class="max-w-[150px] rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${o.cancelImage}', '_blank')"></div>` : ''}
-                                </div>
-                            </details>` : ''}
 
-                            ${o.status === 'Completed' && o.deliveryInfo ? `
-                            <details class="bg-emerald-500/5 border-t border-emerald-500/10 group">
-                                <summary class="p-4 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                                    <div class="flex items-center gap-3">
-                                        <div class="text-emerald-400 text-sm"><i class="fa-solid fa-gift"></i></div>
-                                        <p class="text-[10px] font-bold text-emerald-400 uppercase">View Delivery Credentials</p>
-                                    </div>
-                                    <i class="fa-solid fa-chevron-down text-emerald-400 text-xs transition-transform group-open:rotate-180"></i>
-                                </summary>
-                                <div class="px-4 pb-4 pl-10">
-                                    <div class="text-sm text-slate-300 leading-relaxed font-mono bg-slate-900/50 p-3 rounded-lg border border-white/5 whitespace-pre-wrap select-all">${o.deliveryInfo}</div>
-                                    ${o.deliveryImage ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Attached Image</p><img src="${o.deliveryImage}" class="max-w-[200px] rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${o.deliveryImage}', '_blank')"></div>` : ''}
+                            <!-- Middle: Status (Mobile: Width Full, Desktop: Auto) -->
+                            <div class="w-full md:w-auto flex justify-start md:justify-center">
+                                <div class="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 ${statusClass}">
+                                    <i class="fa-solid ${icon}"></i> ${statusText}
                                 </div>
-                            </details>` : ''}
+                            </div>
 
-                            ${o.status === 'Refunded' ? `
-                            <details class="bg-purple-500/5 border-t border-purple-500/10 group">
-                                <summary class="p-4 flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                                    <div class="flex items-center gap-3">
-                                        <div class="text-purple-400 text-sm"><i class="fa-solid fa-rotate-left"></i></div>
-                                        <p class="text-[10px] font-bold text-purple-400 uppercase">Refund Details</p>
-                                    </div>
-                                    <i class="fa-solid fa-chevron-down text-purple-400 text-xs transition-transform group-open:rotate-180"></i>
-                                </summary>
-                                <div class="px-4 pb-4 pl-10">
-                                    <div class="grid grid-cols-2 gap-4 mb-3 border-b border-white/5 pb-3">
-                                        <div>
-                                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Method</p>
-                                            <p class="text-xs text-white font-medium">${o.refundMethod || 'N/A'}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">TrxID</p>
-                                            <p class="text-xs text-white font-mono bg-white/5 px-2 py-1 rounded inline-block">${o.refundTrx || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    ${o.refundNote ? `<p class="text-sm text-slate-300 leading-relaxed mb-3"><span class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Note</span>${o.refundNote}</p>` : ''}
-                                    ${o.refundImage ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Attached Proof</p><img src="${o.refundImage}" class="max-w-[150px] rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${o.refundImage}', '_blank')"></div>` : ''}
-                                </div>
-                            </details>` : ''}
+                            <!-- Right: Actions -->
+                            <div class="w-full md:w-auto flex items-center gap-3 justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-white/5">
+                                <button onclick="downloadInvoice(${o.id})" 
+                                    class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 hover:bg-blue-600 hover:text-white border border-white/5 transition-all flex items-center justify-center" 
+                                    title="Download Invoice">
+                                    <i class="fa-solid fa-file-invoice"></i>
+                                </button>
+                                
+                                <button onclick="viewOrder(${o.id})" 
+                                    class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
+                                    View Details <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+
                         </div>
                     `;
                 });
@@ -629,6 +659,169 @@
 
         // Cache to store user orders for printing
         let userOrdersCache = [];
+
+        function viewOrder(id) {
+            const order = userOrdersCache.find(o => o.id == id);
+            if (!order) return showNotification("Order not found", "error");
+
+            const modal = document.getElementById('order-details-modal');
+            const container = document.getElementById('view-order-content');
+
+            // Populate Data
+            document.getElementById('vo-id').innerText = '#' + order.id;
+
+            // Status Badge
+            let statusBadge = '';
+            if (order.status === 'Completed') statusBadge = '<span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold"><i class="fa-solid fa-check-circle mr-1"></i> Completed</span>';
+            else if (order.status === 'Pending') statusBadge = '<span class="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-xs font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i> Pending</span>';
+            else if (order.status === 'Cancelled') statusBadge = '<span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i> Cancelled</span>';
+            else if (order.status === 'Refunded') statusBadge = '<span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-bold"><i class="fa-solid fa-rotate-left mr-1"></i> Refunded</span>';
+
+            document.getElementById('vo-status').innerHTML = statusBadge;
+            document.getElementById('vo-date').innerText = order.date;
+            document.getElementById('vo-method').innerText = order.paymentMethod || 'Unknown';
+            document.getElementById('vo-trx').innerText = order.trx || order.transactionId || 'N/A';
+
+            // Items
+            const items = order.items || order.cart || [];
+            let itemsHtml = '';
+            if (Array.isArray(items)) {
+                itemsHtml = items.map(i => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 border border-white/5 mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400">
+                                <i class="fa-solid fa-gift text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">${i.name}</p>
+                                <p class="text-[10px] text-slate-400">${i.variant || 'Standard'}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-sm font-bold text-white">x${i.quantity || i.qty || 1}</p>
+                             <p class="text-xs text-brand-400">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳'}${i.price}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                itemsHtml = `<p class="text-slate-400 italic">Product: ${order.product}</p>`;
+            }
+            document.getElementById('vo-items').innerHTML = itemsHtml;
+            document.getElementById('vo-total').innerText = ((order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳') + order.price;
+
+            // Extra Info Sections (Reset first)
+            const extraContainer = document.getElementById('vo-extra');
+            extraContainer.innerHTML = '';
+
+            // 1. Delivery Info
+            if (order.deliveryInfo) {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+                            <h4 class="text-xs font-bold text-emerald-400 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-envelope-open-text"></i> Delivery Credentials
+                            </h4>
+                            <div class="bg-black/20 p-3 rounded-xl border border-white/5 font-mono text-sm text-emerald-100/90 whitespace-pre-wrap select-all shadow-inner">${order.deliveryInfo}</div>
+                            ${order.deliveryImage ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Attached Image</p><img src="${order.deliveryImage}" class="max-w-full rounded-lg border border-white/10 shadow-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${order.deliveryImage}', '_blank')"></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 2. Cancellation Info
+            if (order.status === 'Cancelled' && order.cancelReason) {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-red-500/5 border border-red-500/20">
+                            <h4 class="text-xs font-bold text-red-400 uppercase mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-exclamation"></i> Cancellation Reason
+                            </h4>
+                            <p class="text-sm text-slate-300">${order.cancelReason}</p>
+                            ${order.cancelImage ? `<div class="mt-3"><img src="${order.cancelImage}" class="max-w-[150px] rounded-lg border border-white/10" onclick="window.open('${order.cancelImage}', '_blank')"></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 3. Refund Info
+            if (order.status === 'Refunded') {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20">
+                            <h4 class="text-xs font-bold text-purple-400 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-left"></i> Refund Details
+                            </h4>
+                            <div class="grid grid-cols-2 gap-4 mb-3">
+                                <div class="bg-black/20 p-2 rounded-lg">
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold">Method</p>
+                                    <p class="text-sm text-white font-medium">${order.refundMethod || 'N/A'}</p>
+                                </div>
+                                <div class="bg-black/20 p-2 rounded-lg">
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold">TrxID</p>
+                                    <p class="text-sm text-white font-mono">${order.refundTrx || 'N/A'}</p>
+                                </div>
+                            </div>
+                            ${order.refundNote ? `<p class="text-sm text-slate-300 italic">"${order.refundNote}"</p>` : ''}
+                            ${order.refundImage ? `<div class="mt-3"><img src="${order.refundImage}" class="max-w-[150px] rounded-lg border border-white/10" onclick="window.open('${order.refundImage}', '_blank')"></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 4. Game UIDs
+            if (order.gameUid && order.gameUid !== 'N/A') {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+                            <h4 class="text-xs font-bold text-blue-400 uppercase mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-gamepad"></i> Player / Account Info
+                            </h4>
+                            <div class="bg-black/20 p-3 rounded-xl border border-white/5 font-mono text-sm text-blue-100/90 whitespace-pre-wrap select-all">${order.gameUid}</div>
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 5. Proof (if user uploaded)
+            if (order.proof) {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-slate-800/30 border border-slate-700/50">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Payment Proof</h4>
+                             <img src="${order.proof}" class="max-w-full rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${order.proof}', '_blank')" title="Click to enlarge">
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // Show Modal
+            modal.classList.remove('hidden');
+            // Trigger animation
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.glass-panel').classList.remove('scale-90');
+                modal.querySelector('.glass-panel').classList.add('scale-100');
+            }, 10);
+
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeOrderModal() {
+            const modal = document.getElementById('order-details-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('.glass-panel').classList.remove('scale-100');
+            modal.querySelector('.glass-panel').classList.add('scale-90');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 300);
+        }
 
         function downloadInvoice(orderId) {
             const order = userOrdersCache.find(o => o.id == orderId);
@@ -692,13 +885,6 @@
 
                     <!-- Table -->
                     <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
-                        <thead>
-                            <tr style="background-color: #eff6ff; border-bottom: 2px solid #e2e8f0;">
-                                <th style="text-align:left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Item</th>
-                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Qty</th>
-                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Price</th>
-                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Total</th>
-                            </tr>
                         <thead>
                             <tr style="background-color: #eff6ff; border-bottom: 2px solid #e2e8f0;">
                                 <th style="text-align:left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Item</th>
