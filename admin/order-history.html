@@ -154,7 +154,10 @@
             // Show all (including deleted/archived for history purposes)
             // Or maybe separate "Deleted"? The prompt logic showed everything.
             // Let's filter by search.
-            const filtered = orders.filter(o => o.id.toString().includes(search));
+            const filtered = orders.filter(o => {
+                const id = o.id ? o.id.toString() : '';
+                return id.includes(search);
+            });
 
             if (filtered.length === 0) {
                 list.innerHTML = "<tr><td colspan='6'><div class='empty-state'>📜 No order history found.</div></td></tr>";
