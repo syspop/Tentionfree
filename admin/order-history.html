@@ -119,12 +119,28 @@
 
         let allOrdersCache = [];
 
-        async function loadOrders() {
+        let historyCurrentPage = 1;
+        let historyTotalPages = 1;
+        let historyIsLoading = false;
+
+        async function loadOrders(page = 1, append = false) {
+            if (historyIsLoading) return;
+            historyIsLoading = true;
+
             const list = document.getElementById('history-order-list');
-            list.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Loading...</td></tr>";
+            const loadMoreBtn = document.getElementById('history-load-more-btn');
+
+            if (!append) {
+                list.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px;'>Loading...</td></tr>";
+                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+                allOrdersCache = [];
+            } else {
+                if (loadMoreBtn) loadMoreBtn.innerText = 'Loading...';
+            }
 
             try {
-                const res = await fetch('/api/orders?t=' + Date.now(), {
+                // Fetch paginated
+                const res = await fetch(`/api/orders?page=${page}&limit=20&t=` + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
 
@@ -132,34 +148,62 @@
                     throw new Error(`Server Error: ${res.status} ${res.statusText}`);
                 }
 
-                const orders = await res.json();
+                const data = await res.json();
 
-                if (!Array.isArray(orders)) throw new Error("Invalid format: Expected array");
-                allOrdersCache = orders.reverse(); // Newest first
+                // Handle new paginated structure vs old array fallback (just in case)
+                let orders = [];
+                if (Array.isArray(data)) {
+                    orders = data; // Fallback if server somehow returns array
+                } else {
+                    orders = data.orders || [];
+                    historyCurrentPage = data.page || 1;
+                    historyTotalPages = data.pages || 1;
+                }
 
-                renderOrderHistory(allOrdersCache);
+                if (!append) {
+                    allOrdersCache = orders; // Newest first sorted by server
+                    if (orders.length === 0) {
+                        list.innerHTML = "<tr><td colspan='6'><div class='empty-state'>📜 No order history found.</div></td></tr>";
+                        return;
+                    }
+                    list.innerHTML = ""; // Clear loader
+                } else {
+                    allOrdersCache = [...allOrdersCache, ...orders];
+                }
+
+                renderOrderHistory(orders, append); // Pass 'orders' chunk to render, or full cache if re-rendering?
+                // Actually renderOrderHistory usually clears and re-renders everything or appends?
+                // The current renderOrderHistory clears innerHTML. Let's modify it or just append here.
+                // Better approach: Let renderOrderHistory handle the appending if we pass a flag, 
+                // OR we just manually append the HTML for new items here.
+
+                // Let's modify renderOrderHistory to be smarter or just use it to render the *new* items if appending.
+                // But wait, renderOrderHistory filters by search input too. 
+                // If we search, we might be searching only loaded items. Server side search is ideal but explicit requirement is just pagination for now.
+                // For now, let's keep client-side search on loaded items.
+
+                updateHistoryLoadMoreUI();
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = `<tr><td colspan='6'><div class='empty-state' style='color:var(--red)'>❌ ${err.message}</div></td></tr>`;
+                if (!append) list.innerHTML = `<tr><td colspan='6'><div class='empty-state' style='color:var(--red)'>❌ ${err.message}</div></td></tr>`;
+            } finally {
+                historyIsLoading = false;
             }
         }
 
-        function renderOrderHistory(orders) {
+        function renderOrderHistory(orders, append = false) {
             const list = document.getElementById('history-order-list');
-            list.innerHTML = "";
-
             const search = document.getElementById('history-search').value.toLowerCase();
 
-            // Show all (including deleted/archived for history purposes)
-            // Or maybe separate "Deleted"? The prompt logic showed everything.
-            // Let's filter by search.
+            if (!append) list.innerHTML = "";
+
             const filtered = orders.filter(o => {
                 const id = o.id ? o.id.toString() : '';
                 return id.includes(search);
             });
 
-            if (filtered.length === 0) {
+            if (filtered.length === 0 && !append) {
                 list.innerHTML = "<tr><td colspan='6'><div class='empty-state'>📜 No order history found.</div></td></tr>";
                 return;
             }
@@ -182,6 +226,29 @@
                     </tr>
                 `;
             });
+        }
+
+        function updateHistoryLoadMoreUI() {
+            let container = document.getElementById('history-load-more-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'history-load-more-container';
+                container.style.textAlign = 'center';
+                container.style.padding = '20px';
+                document.querySelector('.section.active > div[style*="overflow-x:auto"]').insertAdjacentElement('afterend', container);
+            }
+
+            if (historyCurrentPage < historyTotalPages) {
+                container.innerHTML = `<button id="history-load-more-btn" onclick="loadNextHistoryPage()" style="padding:10px 20px; background:var(--bg-card); border:1px solid var(--border); color:white; border-radius:8px; cursor:pointer;">Load More (${historyCurrentPage}/${historyTotalPages})</button>`;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function loadNextHistoryPage() {
+            if (historyCurrentPage < historyTotalPages) {
+                loadOrders(historyCurrentPage + 1, true);
+            }
         }
 
         function getStatusBadge(status) {
