@@ -682,8 +682,24 @@
         }
 
 
-        function viewOrder(id) {
-            const order = userOrdersCache.find(o => o.id == id);
+        async function viewOrder(id) {
+            // Fetch Full Data (On Demand)
+            let order;
+            try {
+                // Try fetching from API first for full details (images)
+                const res = await fetch(`/api/orders/${id}`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
+                });
+                if (res.ok) {
+                    order = await res.json();
+                } else {
+                    // Fallback to cache if API fails (might miss images)
+                    order = userOrdersCache.find(o => o.id == id);
+                }
+            } catch (e) {
+                order = userOrdersCache.find(o => o.id == id);
+            }
+
             if (!order) return showNotification("Order not found", "error");
 
             const modal = document.getElementById('order-details-modal');
@@ -851,8 +867,17 @@
             }, 300);
         }
 
-        function downloadInvoice(orderId) {
-            const order = userOrdersCache.find(o => o.id == orderId);
+        async function downloadInvoice(orderId) {
+            let order = currentFullOrder && currentFullOrder.id == orderId ? currentFullOrder : userOrdersCache.find(o => o.id == orderId);
+
+            // If still missing items or details (because it came from lightweight cache), fetch it
+            if (!order || !order.items) {
+                try {
+                    const res = await fetch(`/api/orders/${orderId}`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') } });
+                    if (res.ok) order = await res.json();
+                } catch (e) { }
+            }
+
             if (!order) return showNotification("Order data missing.", "error");
 
             const items = order.items || order.cart || [];
