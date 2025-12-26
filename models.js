@@ -1,10 +1,13 @@
 const mongoose = require('mongoose');
 
 // Define Schemas
-const productSchema = new mongoose.Schema({}, { strict: false, timestamps: true });
-const orderSchema = new mongoose.Schema({}, { strict: false, timestamps: true });
-const customerSchema = new mongoose.Schema({}, { strict: false, timestamps: true });
-const ticketSchema = new mongoose.Schema({}, { strict: false, timestamps: true });
+// We disable the default 'id' virtual getter to allow our custom 'id' field to work without conflict.
+const schemaOptions = { strict: false, timestamps: true, id: false };
+
+const productSchema = new mongoose.Schema({ id: Number }, schemaOptions);
+const orderSchema = new mongoose.Schema({ id: Number }, schemaOptions);
+const customerSchema = new mongoose.Schema({ id: String }, schemaOptions); // Customer ID is string 'usr_...'
+const ticketSchema = new mongoose.Schema({ id: Number }, schemaOptions);
 
 // Export Models
 const Product = mongoose.model('Product', productSchema);
