@@ -6,6 +6,7 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { Product, Order, Customer, Ticket } = require('./models');
+const { writeLocalJSON, readLocalJSON, syncFromMongo } = require('./data/sync');
 const mongoose = require('mongoose');
 const helmet = require('helmet'); // Secure Headers
 const rateLimit = require('express-rate-limit'); // Rate Limiting
@@ -27,7 +28,10 @@ if (!MONGO_URI) {
     // Better to crash or handle gracefully? User just sees crash log now.
 } else {
     mongoose.connect(MONGO_URI)
-        .then(() => console.log('✅ MongoDB Connected'))
+        .then(() => {
+            console.log('✅ MongoDB Connected');
+            syncFromMongo(); // Sync data to local JSON on startup
+        })
         .catch(err => console.error('❌ MongoDB Connection Error:', err));
 }
 
@@ -132,10 +136,10 @@ const authenticateUser = (req, res, next) => {
 // API Routes
 
 // --- PRODUCTS ---
-// GET Products
+// GET Products (Hybrid: Read from JSON)
 app.get('/api/products', async (req, res) => {
     try {
-        const products = await Product.find({});
+        const products = await readLocalJSON('products.json');
         res.json(products);
     } catch (err) {
         console.error(err);
@@ -165,7 +169,7 @@ app.post('/api/products', authenticateAdmin, async (req, res) => {
 
 // --- NEW SAFE ENDPOINTS ---
 
-// POST Add Single Product
+// POST Add Single Product (Hybrid: Write to Both)
 app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     const newProduct = req.body;
 
@@ -181,7 +185,13 @@ app.post('/api/products/add', authenticateAdmin, async (req, res) => {
             newProduct.id = lastProduct ? lastProduct.id + 1 : 1;
         }
 
+        // 1. Write to Mongo
         await Product.create(newProduct);
+
+        // 2. Sync to JSON
+        const allProducts = await Product.find({});
+        await writeLocalJSON('products.json', allProducts);
+
         res.json({ success: true, message: "Product added successfully", product: newProduct });
     } catch (err) {
         console.error(err);
@@ -189,7 +199,7 @@ app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     }
 });
 
-// PUT Update Single Product
+// PUT Update Single Product (Hybrid: Write to Both)
 app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const updates = req.body;
@@ -202,6 +212,11 @@ app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
 
         Object.assign(product, updates);
         await product.save();
+
+        // Sync
+        const allProducts = await Product.find({});
+        await writeLocalJSON('products.json', allProducts);
+
         res.json({ success: true, message: "Product updated successfully" });
     } catch (err) {
         console.error(err);
@@ -209,11 +224,16 @@ app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
-// DELETE Single Product
+// DELETE Single Product (Hybrid: Write to Both)
 app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     try {
         await Product.deleteOne({ id: id });
+
+        // Sync
+        const allProducts = await Product.find({});
+        await writeLocalJSON('products.json', allProducts);
+
         res.json({ success: true, message: "Product deleted successfully" });
     } catch (err) {
         console.error(err);
@@ -223,19 +243,24 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 
 // --- ORDERS ---
 // GET Orders - PROTECTED
-// GET Orders - PROTECTED (Paginated)
+// GET Orders - PROTECTED (Paginated) (Hybrid: Read from JSON)
 app.get('/api/orders', authenticateAdmin, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20; // Default 20
     const skip = (page - 1) * limit;
 
     try {
-        const total = await Order.countDocuments({});
-        // Sort by _id descending (newest first usually) or specific date field
-        const orders = await Order.find({})
-            .sort({ _id: -1 })
-            .skip(skip)
-            .limit(limit);
+        // Read all orders from JSON (Fast!)
+        let allOrders = await readLocalJSON('orders.json');
+
+        // Ensure sorted by newest first (assuming array is saved that way or we sort here)
+        // Since Mongo find() was returning arbitrary order unless sorted, 
+        // let's assume we want to sort by ID desc or Date desc.
+        // Orders usually have 'id' or 'date'.
+        allOrders.sort((a, b) => (b.id || 0) - (a.id || 0)); // Sort Newest First
+
+        const total = allOrders.length;
+        const orders = allOrders.slice(skip, skip + limit);
 
         res.json({
             orders,
@@ -249,11 +274,16 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
     }
 });
 
-// POST Order (Add NEW Order from Checkout)
+// POST Order (Add NEW Order from Checkout) (Hybrid: Write to Both)
 app.post('/api/orders', async (req, res) => {
     const newOrder = req.body;
     try {
         await Order.create(newOrder);
+
+        // Sync
+        const allOrders = await Order.find({});
+        await writeLocalJSON('orders.json', allOrders);
+
         res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
     } catch (err) {
         console.error(err);
@@ -275,7 +305,7 @@ app.put('/api/orders', authenticateAdmin, async (req, res) => {
     }
 });
 
-// [NEW] PUT Update Single Order - Granular logic for efficient status updates
+// [NEW] PUT Update Single Order - Granular logic (Hybrid: Write to Both)
 app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const updates = req.body;
@@ -288,6 +318,11 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 
         Object.assign(order, updates);
         await order.save();
+
+        // Sync
+        const allOrders = await Order.find({});
+        await writeLocalJSON('orders.json', allOrders);
+
         res.json({ success: true, message: "Order updated successfully" });
     } catch (err) {
         console.error(err);
@@ -325,9 +360,10 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
 });
 
 // --- TICKETS (Support) ---
+// GET Tickets (Hybrid: Read from JSON)
 app.get('/api/tickets', authenticateAdmin, async (req, res) => {
     try {
-        const tickets = await Ticket.find({});
+        const tickets = await readLocalJSON('tickets.json');
         res.json(tickets);
     } catch (err) {
         console.error("Error reading tickets:", err);
@@ -335,7 +371,7 @@ app.get('/api/tickets', authenticateAdmin, async (req, res) => {
     }
 });
 
-// POST Ticket (User)
+// POST Ticket (User) (Hybrid: Write to Both)
 app.post('/api/tickets', async (req, res) => {
     console.log("POST /api/tickets received");
     const { userId, userName, email, subject, desc, image } = req.body;
@@ -352,6 +388,11 @@ app.post('/api/tickets', async (req, res) => {
 
     try {
         await Ticket.create(newTicket);
+
+        // Sync
+        const allTickets = await Ticket.find({});
+        await writeLocalJSON('tickets.json', allTickets);
+
         console.log("Ticket saved successfully.");
         res.json({ success: true, message: 'Ticket submitted' });
     } catch (err) {
@@ -384,11 +425,18 @@ app.delete('/api/tickets/:id', async (req, res) => {
 // --- AUTHENTICATION ---
 
 
-// GET Customers (Admin only)
+// GET Customers (Admin only) (Hybrid: Read from JSON)
 app.get('/api/customers', authenticateAdmin, async (req, res) => {
     try {
-        const customers = await Customer.find({}, '-password'); // Exclude password
-        res.json(customers);
+        const customers = await readLocalJSON('customers.json');
+
+        // Exclude password manually since we can't use Mongoose selection
+        const safeCustomers = customers.map(c => {
+            const { password, ...rest } = c;
+            return rest;
+        });
+
+        res.json(safeCustomers);
     } catch (err) {
         res.status(500).json({ error: 'Failed to read customers' });
     }
@@ -396,13 +444,16 @@ app.get('/api/customers', authenticateAdmin, async (req, res) => {
 
 // PUT Update Customer (Admin) - PROTECTED
 // GET My Profile (User) - PROTECTED
-// GET My Profile (User) - PROTECTED
+// GET My Profile (User) - PROTECTED (Hybrid: Read from JSON)
 app.get('/api/my-profile', authenticateUser, async (req, res) => {
     const userId = req.user.id;
     try {
-        const user = await Customer.findOne({ id: userId }, '-password');
+        const customers = await readLocalJSON('customers.json');
+        const user = customers.find(c => c.id === userId);
+
         if (user) {
-            res.json(user);
+            const { password, ...safeUser } = user;
+            res.json(safeUser);
         } else {
             res.status(404).json({ success: false, message: "User not found" });
         }
@@ -469,6 +520,11 @@ app.put('/api/customers/:id', async (req, res) => {
         }
 
         await user.save();
+
+        // Sync
+        const allCustomers = await Customer.find({});
+        await writeLocalJSON('customers.json', allCustomers);
+
         res.json({ success: true, message: "Customer updated" });
 
     } catch (err) {
@@ -603,6 +659,10 @@ app.post('/api/register', async (req, res) => {
         };
 
         const createdUser = await Customer.create(newCustomer);
+
+        // Sync
+        const allCustomers = await Customer.find({});
+        await writeLocalJSON('customers.json', allCustomers);
 
         // Return without password
         // Use createdUser.toObject() to get plain object and remove password
