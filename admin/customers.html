@@ -190,6 +190,7 @@
                 const allOrders = await res.json();
 
                 const userOrders = allOrders.filter(o =>
+                    (user.email && o.email === user.email) ||
                     (user.email && o.customerEmail === user.email) ||
                     (user.email && o.customer && o.customer.includes(user.email)) ||
                     (o.customer === user.name)

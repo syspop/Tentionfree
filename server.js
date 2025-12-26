@@ -300,6 +300,34 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// GET All Orders (Admin) - PROTECTED
+app.get('/api/orders', authenticateAdmin, async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    try {
+        let allOrders = await readLocalJSON('orders.json');
+
+        // Sort: Newest First
+        // Handle cases where id might be missing or non-numeric just in case
+        allOrders.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+        const total = allOrders.length;
+        const orders = allOrders.slice(skip, skip + limit);
+
+        res.json({
+            orders,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
+        });
+    } catch (err) {
+        console.error("Error reading orders:", err);
+        res.status(500).json({ error: 'Failed to read orders' });
+    }
+});
+
 // GET My Orders (User) - PROTECTED
 // GET My Orders (User) - PROTECTED (Paginated)
 // GET My Orders (User) - PROTECTED (Paginated)
