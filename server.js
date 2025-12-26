@@ -5,9 +5,8 @@ const cors = require('cors');
 require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
-const { Product, Order, Customer, Ticket } = require('./models');
-const { writeLocalJSON, readLocalJSON, syncFromMongo } = require('./data/sync');
-const mongoose = require('mongoose');
+const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
+
 const helmet = require('helmet'); // Secure Headers
 const rateLimit = require('express-rate-limit'); // Rate Limiting
 
@@ -18,22 +17,8 @@ app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-    console.error("❌ CRITICAL ERROR: MONGO_URI is not defined in environment variables.");
-    console.error("Please set MONGO_URI in your deployment settings (e.g., Render/Heroku Dashboard).");
-    // We don't exit here to allow the server to start even if DB fails, but functional parts will break.
-    // Better to crash or handle gracefully? User just sees crash log now.
-} else {
-    mongoose.connect(MONGO_URI)
-        .then(() => {
-            console.log('✅ MongoDB Connected');
-            syncFromMongo(); // Sync data to local JSON on startup
-        })
-        .catch(err => console.error('❌ MongoDB Connection Error:', err));
-}
+// Initialize Database on Start
+initializeDatabase();
 
 
 // Middleware
@@ -147,49 +132,25 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// POST Products (Overwrite all) - PROTECTED (Keep for Reorder, but use with caution)
-app.post('/api/products', authenticateAdmin, async (req, res) => {
-    const products = req.body;
-
-    // Validate Products
-    if (!Array.isArray(products)) {
-        return res.status(400).json({ error: "Invalid data format: Expected an array." });
-    }
-
-    try {
-        // Full replace logic
-        await Product.deleteMany({});
-        await Product.insertMany(products);
-        res.json({ message: 'Products saved successfully' });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Failed to save products' });
-    }
-});
-
-// --- NEW SAFE ENDPOINTS ---
-
-// POST Add Single Product (Hybrid: Write to Both)
+// POST Add Single Product (Inbuilt)
 app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     const newProduct = req.body;
 
-    // Basic validation
     if (!newProduct.name || !newProduct.price) {
         return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
     try {
-        // Generate ID if not provided (find max ID + 1)
+        const allProducts = await readLocalJSON('products.json');
+
+        // Generate ID
         if (!newProduct.id) {
-            const lastProduct = await Product.findOne().sort({ id: -1 });
-            newProduct.id = lastProduct ? lastProduct.id + 1 : 1;
+            // Find max ID
+            const maxId = allProducts.reduce((max, p) => (p.id > max ? p.id : max), 0);
+            newProduct.id = maxId + 1;
         }
 
-        // 1. Write to Mongo
-        await Product.create(newProduct);
-
-        // 2. Sync to JSON
-        const allProducts = await Product.find({});
+        allProducts.push(newProduct);
         await writeLocalJSON('products.json', allProducts);
 
         res.json({ success: true, message: "Product added successfully", product: newProduct });
@@ -199,22 +160,27 @@ app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     }
 });
 
-// PUT Update Single Product (Hybrid: Write to Both)
+// --- NEW SAFE ENDPOINTS ---
+
+
+
+// PUT Update Single Product (Inbuilt)
 app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const updates = req.body;
 
     try {
-        const product = await Product.findOne({ id: id });
-        if (!product) {
+        const allProducts = await readLocalJSON('products.json');
+        const productIndex = allProducts.findIndex(p => p.id === id);
+
+        if (productIndex === -1) {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
-        Object.assign(product, updates);
-        await product.save();
+        // Update
+        const updatedProduct = { ...allProducts[productIndex], ...updates };
+        allProducts[productIndex] = updatedProduct;
 
-        // Sync
-        const allProducts = await Product.find({});
         await writeLocalJSON('products.json', allProducts);
 
         res.json({ success: true, message: "Product updated successfully" });
@@ -224,14 +190,13 @@ app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
-// DELETE Single Product (Hybrid: Write to Both)
+// DELETE Single Product (Inbuilt)
 app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     try {
-        await Product.deleteOne({ id: id });
+        let allProducts = await readLocalJSON('products.json');
+        allProducts = allProducts.filter(p => p.id !== id);
 
-        // Sync
-        const allProducts = await Product.find({});
         await writeLocalJSON('products.json', allProducts);
 
         res.json({ success: true, message: "Product deleted successfully" });
@@ -274,14 +239,19 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
     }
 });
 
-// POST Order (Add NEW Order from Checkout) (Hybrid: Write to Both)
+// POST Order (Add NEW Order from Checkout) (Inbuilt)
 app.post('/api/orders', async (req, res) => {
     const newOrder = req.body;
     try {
-        await Order.create(newOrder);
+        const allOrders = await readLocalJSON('orders.json');
 
-        // Sync
-        const allOrders = await Order.find({});
+        // Ensure ID
+        if (!newOrder.id) {
+            const maxId = allOrders.reduce((max, o) => (o.id > max ? o.id : max), 0);
+            newOrder.id = maxId + 1;
+        }
+
+        allOrders.push(newOrder);
         await writeLocalJSON('orders.json', allOrders);
 
         res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
@@ -291,13 +261,11 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-// PUT Orders (Overwrite ALL - for Admin updates/deletes) - PROTECTED
+// PUT Orders (Overwrite ALL) - PROTECTED
 app.put('/api/orders', authenticateAdmin, async (req, res) => {
     const orders = req.body;
     try {
-        // Using full replace strategy as requested by previous logic
-        await Order.deleteMany({});
-        await Order.insertMany(orders);
+        await writeLocalJSON('orders.json', orders);
         res.json({ success: true, message: 'Orders updated successfully' });
     } catch (err) {
         console.error(err);
@@ -306,21 +274,23 @@ app.put('/api/orders', authenticateAdmin, async (req, res) => {
 });
 
 // [NEW] PUT Update Single Order - Granular logic (Hybrid: Write to Both)
+// [NEW] PUT Update Single Order - Granular logic (Inbuilt)
 app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const updates = req.body;
 
     try {
-        const order = await Order.findOne({ id: id });
-        if (!order) {
+        const allOrders = await readLocalJSON('orders.json');
+        const orderIndex = allOrders.findIndex(o => o.id === id);
+
+        if (orderIndex === -1) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
-        Object.assign(order, updates);
-        await order.save();
+        // Update
+        const updatedOrder = { ...allOrders[orderIndex], ...updates };
+        allOrders[orderIndex] = updatedOrder;
 
-        // Sync
-        const allOrders = await Order.find({});
         await writeLocalJSON('orders.json', allOrders);
 
         res.json({ success: true, message: "Order updated successfully" });
@@ -332,20 +302,23 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 
 // GET My Orders (User) - PROTECTED
 // GET My Orders (User) - PROTECTED (Paginated)
+// GET My Orders (User) - PROTECTED (Paginated)
 app.get('/api/my-orders', authenticateUser, async (req, res) => {
     const userEmail = req.user.email.toLowerCase().trim();
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10; // Default 10 for mobile/dashboard
+    const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     try {
-        const query = { email: userEmail };
-        const total = await Order.countDocuments(query);
+        const allOrders = await readLocalJSON('orders.json');
+        // Filter by email
+        const myOrdersFull = allOrders.filter(o => o.email && o.email.toLowerCase().trim() === userEmail);
 
-        const myOrders = await Order.find(query)
-            .sort({ _id: -1 }) // Newest first
-            .skip(skip)
-            .limit(limit);
+        // Sort newest first
+        myOrdersFull.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+        const total = myOrdersFull.length;
+        const myOrders = myOrdersFull.slice(skip, skip + limit);
 
         res.json({
             orders: myOrders,
@@ -371,7 +344,7 @@ app.get('/api/tickets', authenticateAdmin, async (req, res) => {
     }
 });
 
-// POST Ticket (User) (Hybrid: Write to Both)
+// POST Ticket (Inbuilt)
 app.post('/api/tickets', async (req, res) => {
     console.log("POST /api/tickets received");
     const { userId, userName, email, subject, desc, image } = req.body;
@@ -387,10 +360,8 @@ app.post('/api/tickets', async (req, res) => {
     };
 
     try {
-        await Ticket.create(newTicket);
-
-        // Sync
-        const allTickets = await Ticket.find({});
+        const allTickets = await readLocalJSON('tickets.json');
+        allTickets.push(newTicket);
         await writeLocalJSON('tickets.json', allTickets);
 
         console.log("Ticket saved successfully.");
@@ -401,26 +372,21 @@ app.post('/api/tickets', async (req, res) => {
     }
 });
 
-// DELETE Ticket (Admin) - PROTECTED
+// DELETE Ticket (Inbuilt)
 app.delete('/api/tickets/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     try {
-        await Ticket.deleteOne({ id: id });
+        let allTickets = await readLocalJSON('tickets.json');
+        allTickets = allTickets.filter(t => t.id !== id);
+        await writeLocalJSON('tickets.json', allTickets);
+
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false });
     }
 });
 
-app.delete('/api/tickets/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    try {
-        await Ticket.deleteOne({ id: id });
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ success: false });
-    }
-});
+
 
 // --- AUTHENTICATION ---
 
@@ -464,6 +430,7 @@ app.get('/api/my-profile', authenticateUser, async (req, res) => {
 
 // PUT Update Customer (Admin OR User Self-Update)
 // PUT Update Customer (Admin OR User Self-Update)
+// PUT Update Customer (Inbuilt)
 app.put('/api/customers/:id', async (req, res) => {
     const id = req.params.id;
     const { name, email, phone, password, dob } = req.body;
@@ -486,19 +453,23 @@ app.put('/api/customers/:id', async (req, res) => {
     }
 
     try {
-        const user = await Customer.findOne({ id: id });
-        if (!user) {
+        const allCustomers = await readLocalJSON('customers.json');
+        const index = allCustomers.findIndex(c => c.id === id);
+
+        if (index === -1) {
             return res.json({ success: false, message: "User not found" });
         }
 
+        const user = allCustomers[index];
+
         // Check email uniqueness
         if (email && email !== user.email) {
-            const exists = await Customer.findOne({ email: email });
+            const exists = allCustomers.find(c => c.email === email);
             if (exists) return res.json({ success: false, message: "Email already taken" });
         }
         // Check phone uniqueness
         if (phone && phone !== user.phone) {
-            const exists = await Customer.findOne({ phone: phone });
+            const exists = allCustomers.find(c => c.phone === phone);
             if (exists) return res.json({ success: false, message: "Phone already taken" });
         }
 
@@ -506,23 +477,15 @@ app.put('/api/customers/:id', async (req, res) => {
         if (email) user.email = email;
         if (phone !== undefined) user.phone = phone;
         if (dob !== undefined) user.dob = dob;
-        if (password) user.password = password; // Assuming backend handles hashing if raw password sent, or frontend sends hash (based on current logic, backend receives raw here often?)
-        // WAIT: The original code just set `customers[index].password = password`. It did NOT hash it here unless it was registering?
-        // Actually line 456 in original code: `if (password) customers[index].password = password;`
-        // And Login checks hash OR plain. So if user updates password here, it might be stored plain! 
-        // I should probably hash it if I want to be "better", but let's stick to original behavior OR improve it.
-        // Original behavior: plain text storage on update.
-        // Let's improve it: Hash it if it's not starting with $2a$ (basic check)
+
         if (password && !password.startsWith('$2a$')) {
             user.password = bcrypt.hashSync(password, 10);
         } else if (password) {
             user.password = password;
         }
 
-        await user.save();
-
-        // Sync
-        const allCustomers = await Customer.find({});
+        // Save
+        allCustomers[index] = user;
         await writeLocalJSON('customers.json', allCustomers);
 
         res.json({ success: true, message: "Customer updated" });
@@ -536,12 +499,16 @@ app.put('/api/customers/:id', async (req, res) => {
 // DELETE Customer (Admin/User)
 // DELETE Customer (Secure)
 // DELETE Customer (Admin/User)
+// DELETE Customer (Inbuilt)
 app.delete('/api/customers/:id', async (req, res) => {
     const userId = req.params.id.trim();
     const { password, isAdmin } = req.body;
 
     try {
-        const user = await Customer.findOne({ id: userId });
+        let allCustomers = await readLocalJSON('customers.json');
+        const userIndex = allCustomers.findIndex(c => c.id === userId);
+        const user = allCustomers[userIndex];
+
         if (!user) {
             return res.status(404).json({ success: false, message: `User not found (ID: ${userId})` });
         }
@@ -569,7 +536,10 @@ app.delete('/api/customers/:id', async (req, res) => {
             }
         }
 
-        await Customer.deleteOne({ id: userId });
+        // Remove
+        allCustomers.splice(userIndex, 1);
+        await writeLocalJSON('customers.json', allCustomers);
+
         res.json({ success: true, message: "Account deleted successfully" });
 
     } catch (err) {
@@ -580,11 +550,15 @@ app.delete('/api/customers/:id', async (req, res) => {
 
 // POST Change Password
 // POST Change Password
+// POST Change Password (Inbuilt)
 app.post('/api/change-password', async (req, res) => {
     const { userId, email, oldPass, newPass } = req.body;
 
     try {
-        const user = await Customer.findOne({ id: userId, email: email });
+        const allCustomers = await readLocalJSON('customers.json');
+        const index = allCustomers.findIndex(c => c.id === userId && c.email === email);
+        const user = allCustomers[index];
+
         if (!user) {
             return res.json({ success: false, message: "User not found" });
         }
@@ -605,7 +579,9 @@ app.post('/api/change-password', async (req, res) => {
 
         // Update Pass
         user.password = bcrypt.hashSync(newPass, 10);
-        await user.save();
+        allCustomers[index] = user;
+
+        await writeLocalJSON('customers.json', allCustomers);
 
         res.json({ success: true });
 
@@ -616,6 +592,7 @@ app.post('/api/change-password', async (req, res) => {
 
 // POST Register
 // POST Register
+// POST Register (Inbuilt)
 app.post('/api/register', async (req, res) => {
     const { name, email, phone, password } = req.body;
 
@@ -636,13 +613,15 @@ app.post('/api/register', async (req, res) => {
     }
 
     try {
+        const allCustomers = await readLocalJSON('customers.json');
+
         // Check duplicate
-        const emailExists = await Customer.findOne({ email });
+        const emailExists = allCustomers.find(c => c.email === email);
         if (emailExists) {
             return res.json({ success: false, message: "Email already registered" });
         }
         if (phone) {
-            const phoneExists = await Customer.findOne({ phone });
+            const phoneExists = allCustomers.find(c => c.phone === phone);
             if (phoneExists) {
                 return res.json({ success: false, message: "Phone number already registered" });
             }
@@ -658,16 +637,11 @@ app.post('/api/register', async (req, res) => {
             joined: new Date().toISOString()
         };
 
-        const createdUser = await Customer.create(newCustomer);
-
-        // Sync
-        const allCustomers = await Customer.find({});
+        allCustomers.push(newCustomer);
         await writeLocalJSON('customers.json', allCustomers);
 
         // Return without password
-        // Use createdUser.toObject() to get plain object and remove password
-        const userObj = createdUser.toObject();
-        const { password: _, ...userWithoutPass } = userObj;
+        const { password: _, ...userWithoutPass } = newCustomer;
 
         // Generate Token
         const token = jwt.sign({ id: newCustomer.id, email: newCustomer.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
@@ -682,11 +656,14 @@ app.post('/api/register', async (req, res) => {
 
 // POST Login
 // POST Login
+// POST Login (Inbuilt)
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await Customer.findOne({ email });
+        const allCustomers = await readLocalJSON('customers.json');
+        const user = allCustomers.find(c => c.email === email);
+        // Note: 'user' here is a plain object reference from the array/cache
 
         if (user) {
             let isMatch = false;
@@ -707,13 +684,16 @@ app.post('/api/login', async (req, res) => {
                 // Lazy Migration: If plain text matched, upgrade to hash NOW
                 if (needsUpgrade) {
                     user.password = bcrypt.hashSync(password, 10);
-                    await user.save();
+                    // Find index to update in list
+                    const index = allCustomers.findIndex(c => c.email === email);
+                    if (index !== -1) allCustomers[index] = user;
+
+                    await writeLocalJSON('customers.json', allCustomers);
                     console.log(`Security Upgrade: User ${user.email} migrated to hashed password.`);
                 }
 
                 // Return fresh data without password
-                const userObj = user.toObject();
-                const { password: _, ...userWithoutPass } = userObj;
+                const { password: _, ...userWithoutPass } = user;
 
                 // Generate Token
                 const token = jwt.sign({ id: user.id, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
