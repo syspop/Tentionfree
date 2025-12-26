@@ -309,6 +309,15 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
     try {
         let allOrders = await readLocalJSON('orders.json') || [];
 
+        // Server-side Filtering (Optional)
+        if (req.query.email) {
+            const qEmail = req.query.email.toLowerCase().trim();
+            allOrders = allOrders.filter(o =>
+                (o.email && o.email.toLowerCase() === qEmail) ||
+                (o.customerEmail && o.customerEmail.toLowerCase() === qEmail)
+            );
+        }
+
         // Sort: Newest First
         const sortedOrders = [...allOrders].sort((a, b) => (b.id || 0) - (a.id || 0));
 

@@ -184,7 +184,11 @@
             container.innerHTML = "<div style='text-align:center; color:var(--gray)'>Loading history...</div>";
 
             try {
-                const res = await fetch('../api/orders?limit=1000&t=' + Date.now(), { // limit high to get history
+                let url = '../api/orders?limit=100&t=' + Date.now();
+                if (user.email) url += `&email=${encodeURIComponent(user.email)}`;
+                else url += '&limit=1000'; // Fallback for no-email users to scan everything
+
+                const res = await fetch(url, {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
                 const data = await res.json();
