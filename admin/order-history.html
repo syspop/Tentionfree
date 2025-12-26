@@ -127,16 +127,21 @@
                 const res = await fetch('/api/orders?t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
+
+                if (!res.ok) {
+                    throw new Error(`Server Error: ${res.status} ${res.statusText}`);
+                }
+
                 const orders = await res.json();
 
-                if (!Array.isArray(orders)) throw new Error("Invalid format");
+                if (!Array.isArray(orders)) throw new Error("Invalid format: Expected array");
                 allOrdersCache = orders.reverse(); // Newest first
 
                 renderOrderHistory(allOrdersCache);
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = "<tr><td colspan='6'><div class='empty-state' style='color:var(--red)'>❌ Error loading orders.</div></td></tr>";
+                list.innerHTML = `<tr><td colspan='6'><div class='empty-state' style='color:var(--red)'>❌ ${err.message}</div></td></tr>`;
             }
         }
 
