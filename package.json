@@ -4,7 +4,8 @@
     "description": "Local server for Digi Store admin persistence",
     "main": "server.js",
     "scripts": {
-        "start": "node server.js"
+        "start": "node server.js",
+        "seed": "node seed_db.js"
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",
