@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 
 // Define Schemas
-// We disable the default 'id' virtual getter to allow our custom 'id' field to work without conflict.
-const schemaOptions = { strict: false, timestamps: true, id: false };
+// We remove 'id: false' to allow default virtual for models without custom ID (like Orders).
+const schemaOptions = { strict: false, timestamps: true };
+
 
 const productSchema = new mongoose.Schema({ id: Number }, schemaOptions);
 const orderSchema = new mongoose.Schema({ id: Number }, schemaOptions);
