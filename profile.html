@@ -707,8 +707,8 @@
                 itemsHtml = items.map(i => `
                     <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 border border-white/5 mb-2">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400">
-                                <i class="fa-solid fa-gift text-xs"></i>
+                            <div class="w-12 h-12 rounded-lg bg-slate-700/50 overflow-hidden flex-shrink-0 border border-white/5">
+                                <img src="${i.image || 'assets/images/logo.png'}" alt="${i.name}" class="w-full h-full object-cover" onerror="this.src='assets/images/logo.png'">
                             </div>
                             <div>
                                 <p class="text-sm font-bold text-white">${i.name}</p>

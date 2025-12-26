@@ -307,14 +307,13 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
     const skip = (page - 1) * limit;
 
     try {
-        let allOrders = await readLocalJSON('orders.json');
+        let allOrders = await readLocalJSON('orders.json') || [];
 
-        // Sort: Newest First
-        // Handle cases where id might be missing or non-numeric just in case
-        allOrders.sort((a, b) => (b.id || 0) - (a.id || 0));
+        // Sort: Newest First (Create copy to avoid mutating cache)
+        const sortedOrders = [...allOrders].sort((a, b) => (b.id || 0) - (a.id || 0));
 
-        const total = allOrders.length;
-        const orders = allOrders.slice(skip, skip + limit);
+        const total = sortedOrders.length;
+        const orders = sortedOrders.slice(skip, skip + limit);
 
         res.json({
             orders,
@@ -338,7 +337,7 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
     const skip = (page - 1) * limit;
 
     try {
-        const allOrders = await readLocalJSON('orders.json');
+        const allOrders = await readLocalJSON('orders.json') || [];
         // Filter by email
         const myOrdersFull = allOrders.filter(o => o.email && o.email.toLowerCase().trim() === userEmail);
 
