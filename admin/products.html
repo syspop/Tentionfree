@@ -156,7 +156,7 @@
                 const productMap = new Map(currentProducts.map(p => [p.id, p]));
                 const sortedProducts = newOrderIds.map(id => productMap.get(id)).filter(p => p);
 
-                await fetch('/api/products', {
+                const saveRes = await fetch('/api/products', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -164,6 +164,8 @@
                     },
                     body: JSON.stringify(sortedProducts)
                 });
+
+                if (!saveRes.ok) throw new Error("Server failed to save order");
 
                 showAlert("Success", "Order Saved!");
                 toggleReorder(); // Exit reorder mode

@@ -132,6 +132,22 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
+// POST Save All Products (Reorder)
+app.post('/api/products', authenticateAdmin, async (req, res) => {
+    const products = req.body;
+    if (!Array.isArray(products)) {
+        return res.status(400).json({ success: false, message: "Invalid data format. Expected array." });
+    }
+
+    try {
+        await writeLocalJSON('products.json', products);
+        res.json({ success: true, message: "Product order saved successfully." });
+    } catch (e) {
+        console.error("Error saving product order:", e);
+        res.status(500).json({ success: false, message: "Failed to save order." });
+    }
+});
+
 // POST Add Single Product (Inbuilt)
 app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     const newProduct = req.body;
