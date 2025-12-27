@@ -19,9 +19,13 @@ async function writeLocalJSON(filename, data) {
         CACHE[key] = data;
     }
 
-    // 2. Write to File (Async - don't block response)
-    fs.writeFile(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2))
-        .catch(err => console.error(`❌ Error writing ${filename}:`, err));
+    // 2. Write to File (Async - await to ensure persistence)
+    try {
+        await fs.writeFile(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2));
+    } catch (err) {
+        console.error(`❌ Error writing ${filename}:`, err);
+        throw err; // Propagate error so caller knows write failed
+    }
 }
 
 // Helper to read data from JSON file (and use Cache)
