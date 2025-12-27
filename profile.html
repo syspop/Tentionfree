@@ -586,7 +586,7 @@
 
                     const card = document.createElement('div');
                     card.className = "order-card glass-panel rounded-2xl p-5 border border-white/5 relative overflow-hidden group hover:border-brand-500/30 transition-all";
-                    card.onclick = () => viewOrderDetails(o); // Ensure this function exists or is inline
+                    card.onclick = () => viewOrder(o.id);
 
                     card.innerHTML = `
                         <div class="flex items-center justify-between mb-4">
@@ -1068,86 +1068,7 @@
             }
         }
 
-        // Fix: Missing viewOrderDetails function to prevent ReferenceError
-        function viewOrderDetails(order) {
-            const modal = document.getElementById('order-details-modal');
 
-            // Populate Data
-            if (document.getElementById('vo-id')) document.getElementById('vo-id').innerText = '#' + (order.id || 'N/A');
-            if (document.getElementById('vo-date')) document.getElementById('vo-date').innerText = new Date(order.date || order.createdAt).toLocaleString();
-
-            const method = order.paymentMethod || 'Unknown';
-            if (document.getElementById('vo-method')) document.getElementById('vo-method').innerText = method;
-            if (document.getElementById('vo-trx')) document.getElementById('vo-trx').innerText = order.trx || order.transactionId || 'N/A';
-
-            // Items
-            const items = order.items || order.cart || [];
-            let itemsHtml = '';
-            if (Array.isArray(items) && items.length > 0) {
-                itemsHtml = items.map(i => `
-                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 border border-white/5 mb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400">
-                                <i class="fa-solid fa-gift text-xs"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-white">${i.name}</p>
-                                <p class="text-[10px] text-slate-400">${i.variant || 'Standard'}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                             <p class="text-sm font-bold text-white">x${i.quantity || i.qty || 1}</p>
-                             <p class="text-xs text-brand-400">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' + ((i.price || 0) / 100).toFixed(2) : '৳' + i.price}</p>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                itemsHtml = `<p class="text-slate-400 italic">Product: ${order.product || 'N/A'} - ৳${order.price}</p>`;
-            }
-            if (document.getElementById('vo-items')) document.getElementById('vo-items').innerHTML = itemsHtml;
-
-            // Total
-            if (document.getElementById('vo-total')) document.getElementById('vo-total').innerText = ((order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳') + (order.price || order.totalAmount);
-
-            // Invoice Button
-            const dlBtn = document.getElementById('vo-download-btn');
-            if (dlBtn) dlBtn.onclick = () => downloadInvoice(order.id);
-
-            // Extra Sections (Delivery, Refund, etc)
-            const extra = document.getElementById('vo-extra');
-            if (extra) {
-                extra.innerHTML = ''; // Reset
-
-                if (order.deliveryInfo) {
-                    extra.innerHTML += `
-                        <div class="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                            <h4 class="text-xs font-bold text-emerald-400 uppercase mb-2">Delivery Info</h4>
-                            <div class="font-mono text-sm text-emerald-100 select-all whitespace-pre-wrap">${order.deliveryInfo}</div>
-                        </div>`;
-                }
-
-                if (order.status === 'Refunded') {
-                    extra.innerHTML += `
-                        <div class="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                            <h4 class="text-xs font-bold text-purple-400 uppercase mb-2">Refund Details</h4>
-                            <p class="text-sm text-slate-300">Method: ${order.refundMethod || 'N/A'}</p>
-                            <p class="text-sm text-slate-300">TrxID: ${order.refundTrx || 'N/A'}</p>
-                        </div>`;
-                }
-            }
-
-            // Show Modal
-            if (modal) {
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    modal.classList.remove('opacity-0');
-                    modal.querySelector('.glass-panel').classList.remove('scale-90');
-                    modal.querySelector('.glass-panel').classList.add('scale-100');
-                }, 10);
-            }
-
-            document.body.style.overflow = 'hidden';
-        }
 
         async function changePassword(e) {
             e.preventDefault();

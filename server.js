@@ -52,7 +52,7 @@ app.use(helmet({
 // Rate Limiting (100 requests per 15 minutes)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 1000, // Limit each IP to 1000 requests per windowMs (Increased for better UX)
     message: { success: false, message: "Too many requests, please try again later." },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -424,11 +424,9 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
             refundMethod: o.refundMethod,
             refundTrx: o.refundTrx,
             refundNote: o.refundNote,
-            gameUid: o.gameUid,
-            proof: o.proof,
-            deliveryImage: o.deliveryImage,
-            cancelImage: o.cancelImage,
-            refundImage: o.refundImage
+            refundNote: o.refundNote,
+            gameUid: o.gameUid
+            // Images removed for performance (fetched on viewOrder)
         }));
 
         res.json({
@@ -727,7 +725,7 @@ app.post('/api/register', async (req, res) => {
         const allCustomers = await readLocalJSON('customers.json');
 
         // Check duplicate
-        const emailExists = allCustomers.find(c => c.email === email);
+        const emailExists = allCustomers.find(c => c.email === email.toLowerCase().trim());
         if (emailExists) {
             return res.json({ success: false, message: "Email already registered" });
         }
@@ -741,7 +739,7 @@ app.post('/api/register', async (req, res) => {
         const newCustomer = {
             id: 'usr_' + Date.now().toString(36),
             name: name,
-            email: email,
+            email: email.toLowerCase().trim(),
             phone: phone || '',
             dob: req.body.dob || '',
             password: bcrypt.hashSync(password, 10),
@@ -769,7 +767,8 @@ app.post('/api/register', async (req, res) => {
 // POST Login
 // POST Login (Inbuilt)
 app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : '';
 
     try {
         const allCustomers = await readLocalJSON('customers.json');
