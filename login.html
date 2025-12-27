@@ -693,18 +693,46 @@
         async function socialLogin(provider) {
             const btnLogin = document.getElementById('btn-login');
 
-            showCustomAlert("Coming Soon", `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is currently being set up. Please use email/password for now.`, "info");
+            // SIMULATION: Since we don't have API keys yet, we simulate the provider response.
+            // In the future, this will be replaced by Google/Facebook SDK calls.
 
-            // Placeholder for backend call
-            /*
+            // 1. Ask user for email (Simulate "Continue with Google")
+            const email = prompt(`[SIMULATION] Enter email to login with ${provider}:`);
+            if (!email) return;
+
+            const name = prompt(`[SIMULATION] Enter your name:`) || "Social User";
+
+            const originalBtn = btnLogin.innerHTML;
+            btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btnLogin.disabled = true;
+
             try {
-                const res = await fetch(`/api/auth/${provider}`, { method: 'POST' });
+                const res = await fetch(`/api/auth/${provider}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name })
+                });
                 const result = await res.json();
-                if(result.success) {
-                   // login logic
+
+                if (result.success) {
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('userToken', result.token);
+
+                    showCustomAlert("Success", `Logged in via ${provider}!`, "success");
+
+                    setTimeout(() => {
+                        window.location.href = 'profile.html';
+                    }, 1500);
+                } else {
+                    showCustomAlert("Login Failed", result.message, "error");
                 }
-            } catch(e) {}
-            */
+            } catch (e) {
+                console.error(e);
+                showCustomAlert("Error", "Could not connect to server.", "error");
+            } finally {
+                btnLogin.innerHTML = originalBtn;
+                btnLogin.disabled = false;
+            }
         }
 
         // --- CUSTOM ALERT LOGIC ---

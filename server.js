@@ -181,15 +181,59 @@ app.get('/api/debug/db', async (req, res) => {
     }
 });
 
-// --- SOCIAL AUTH (Placeholders) ---
+// --- SOCIAL AUTH (Inbuilt Logic) ---
+async function handleSocialLogin(req, res, provider) {
+    const { email, name, photo } = req.body;
+
+    if (!email) {
+        return res.json({ success: false, message: "Email is required from provider." });
+    }
+
+    try {
+        const allCustomers = await readLocalJSON('customers.json');
+        let user = allCustomers.find(c => c.email === email.toLowerCase().trim());
+
+        if (user) {
+            console.log(`[SOCIAL LOGIN] Existing user found: ${email}`);
+        } else {
+            console.log(`[SOCIAL REGISTER] Creating new user: ${email}`);
+            // Register new user
+            user = {
+                id: 'usr_' + Date.now().toString(36),
+                name: name || 'User',
+                email: email.toLowerCase().trim(),
+                phone: '',
+                password: '$2a$10$SOCIAL_LOGIN_NO_PASS_' + Date.now(), // Dummy password for social users
+                joined: new Date().toISOString(),
+                provider: provider,
+                photo: photo || ''
+            };
+            allCustomers.push(user);
+            await writeLocalJSON('customers.json', allCustomers);
+        }
+
+        // Generate Token
+        // Remove password from response
+        const { password: _, ...userWithoutPass } = user;
+        const token = jwt.sign({ id: user.id, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({ success: true, user: userWithoutPass, token });
+
+    } catch (err) {
+        console.error("Social Login Error:", err);
+        res.status(500).json({ success: false, message: "Server Error during Social Login" });
+    }
+}
+
 app.post('/api/auth/google', async (req, res) => {
-    // In a real app, verify the token from frontend with Google API
-    // req.body.token
-    res.json({ success: false, message: "Google Login Coming Soon!" });
+    // In real app: Verify ID Token here.
+    // For now: Trust frontend data (Simulation Mode)
+    await handleSocialLogin(req, res, 'google');
 });
 
 app.post('/api/auth/facebook', async (req, res) => {
-    res.json({ success: false, message: "Facebook Login Coming Soon!" });
+    // In real app: Verify Access Token here.
+    await handleSocialLogin(req, res, 'facebook');
 });
 
 // --- NEW SAFE ENDPOINTS ---
