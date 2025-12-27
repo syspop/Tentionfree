@@ -19,6 +19,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -691,25 +692,29 @@
             }
         }
 
-        // --- GOOGLE LOGIN INIT ---
+        // --- SOCIAL AUTH INIT (Google & Facebook) ---
         window.onload = function () {
+            // Google
             google.accounts.id.initialize({
                 client_id: "966188173381-2ebngavegtsmpk5gdgc6om3mjoolb5ll.apps.googleusercontent.com",
                 callback: handleGoogleCredentialResponse
             });
-            // We can render a button or just use our custom button to trigger it
+
+            // Facebook
+            window.fbAsyncInit = function () {
+                FB.init({
+                    appId: '1662529888042179',
+                    cookie: true,
+                    xfbml: true,
+                    version: 'v18.0'
+                });
+                console.log("Facebook SDK Initialized");
+            };
         };
 
+        // --- GOOGLE HANDLER ---
         function handleGoogleCredentialResponse(response) {
-            // Decode the JWT credential to extract user info
             const responsePayload = decodeJwtResponse(response.credential);
-
-            console.log("ID: " + responsePayload.sub);
-            console.log('Name: ' + responsePayload.name);
-            console.log('Image URL: ' + responsePayload.picture);
-            console.log('Email: ' + responsePayload.email);
-
-            // Send to our backend
             processSocialLogin('google', {
                 email: responsePayload.email,
                 name: responsePayload.name,
@@ -726,23 +731,40 @@
             return JSON.parse(jsonPayload);
         }
 
-        async function socialLogin(provider) {
+        // --- MAIN LOGIN TRIGGER ---
+        function socialLogin(provider) {
             if (provider === 'google') {
-                // Trigger Google Prompt
                 google.accounts.id.prompt();
                 return;
             }
 
-            // For Facebook (Still Simulated for now unless App ID provided)
-            const btnLogin = document.getElementById('btn-login');
-            const email = prompt(`[SIMULATION] Enter email to login with ${provider}:`);
-            if (!email) return;
-            const name = prompt(`[SIMULATION] Enter your name:`) || "Social User";
-
-            processSocialLogin(provider, { email, name, photo: '' });
+            if (provider === 'facebook') {
+                FB.login(function (response) {
+                    if (response.authResponse) {
+                        // User authorized app, get profile
+                        FB.api('/me', { fields: 'name, email, picture' }, function (userData) {
+                            console.log('FB User:', userData);
+                            processSocialLogin('facebook', {
+                                email: userData.email, // Note: Email might be missing if user hides it
+                                name: userData.name,
+                                photo: userData.picture?.data?.url || ''
+                            });
+                        });
+                    } else {
+                        console.log('User cancelled login or did not fully authorize.');
+                    }
+                }, { scope: 'public_profile,email' });
+                return;
+            }
         }
 
+        // --- BACKEND PROCESSING ---
         async function processSocialLogin(provider, userData) {
+            if (!userData.email) {
+                showCustomAlert("Error", "Could not get email from provider. Please try again or use regular login.", "error");
+                return;
+            }
+
             const btnLogin = document.getElementById('btn-login');
             const originalBtn = btnLogin.innerHTML;
             btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
