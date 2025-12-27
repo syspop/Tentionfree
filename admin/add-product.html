@@ -264,9 +264,10 @@
                     originalPrice: mainOriginalPrice
                 };
 
+                let res;
                 if (currentEditingId) {
                     // Update Single Product
-                    await fetch(`/api/products/${currentEditingId}`, {
+                    res = await fetch(`/api/products/${currentEditingId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -276,7 +277,7 @@
                     });
                 } else {
                     // Create New Product
-                    await fetch('/api/products/add', {
+                    res = await fetch('/api/products/add', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -284,6 +285,11 @@
                         },
                         body: JSON.stringify(productData)
                     });
+                }
+
+                if (!res.ok) {
+                    const errorDate = await res.json();
+                    throw new Error(errorDate.message || "Server rejected request");
                 }
 
                 showSaveSuccessModal(currentEditingId ? "Product Updated!" : "Product Added!");

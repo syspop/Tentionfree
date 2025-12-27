@@ -299,6 +299,7 @@
                 if (result.success) {
                     closeEditModal();
                     loadCustomers(); // Reload list
+                    showCustomAlert("Customer updated successfully!", "success");
                 } else {
                     showCustomAlert(result.message || "Failed to update", "error");
                 }
