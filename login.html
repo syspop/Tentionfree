@@ -148,11 +148,11 @@
 
                     <div class="grid grid-cols-2 gap-3 mt-4">
                         <button type="button" onclick="socialLogin('google')"
-                            class="flex items-center justify-center bg-white text-slate-900 font-bold py-2.5 rounded-xl hover:bg-slate-200 transition-colors">
+                            class="flex items-center justify-center bg-white text-slate-900 font-bold py-2.5 rounded-xl hover:bg-slate-200 transition-colors z-20 relative">
                             <i class="fa-brands fa-google text-red-500 mr-2"></i> Google
                         </button>
                         <button type="button" onclick="socialLogin('facebook')"
-                            class="flex items-center justify-center bg-[#1877F2] text-white font-bold py-2.5 rounded-xl hover:bg-[#166fe5] transition-colors">
+                            class="flex items-center justify-center bg-[#1877F2] text-white font-bold py-2.5 rounded-xl hover:bg-[#166fe5] transition-colors z-20 relative">
                             <i class="fa-brands fa-facebook text-white mr-2"></i> Facebook
                         </button>
                     </div>
@@ -744,19 +744,33 @@
 
         // --- MAIN LOGIN TRIGGER ---
         function socialLogin(provider) {
+            console.log("Social Login Clicked:", provider); // Debug Log
+
             if (provider === 'google') {
-                google.accounts.id.prompt();
+                if (typeof google === 'undefined' || !google.accounts) {
+                    showCustomAlert("Error", "Google Sign-In is not loaded yet. Please refresh.", "error");
+                    return;
+                }
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        console.log("Google Prompt Skipped:", notification.getNotDisplayedReason());
+                        // Fallback or alert user if needed
+                    }
+                });
                 return;
             }
 
             if (provider === 'facebook') {
+                if (typeof FB === 'undefined') {
+                    showCustomAlert("Error", "Facebook SDK is not loaded yet. Please refresh.", "error");
+                    return;
+                }
                 FB.login(function (response) {
                     if (response.authResponse) {
-                        // User authorized app, get profile
                         FB.api('/me', { fields: 'name, email, picture' }, function (userData) {
                             console.log('FB User:', userData);
                             processSocialLogin('facebook', {
-                                email: userData.email, // Note: Email might be missing if user hides it
+                                email: userData.email,
                                 name: userData.name,
                                 photo: userData.picture?.data?.url || ''
                             });

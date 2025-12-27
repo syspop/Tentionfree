@@ -1332,6 +1332,168 @@
             </a>
         </div>
     </div>
+    <!-- COMPLETE PROFILE MODAL -->
+    <div id="complete-profile-modal"
+        class="fixed inset-0 z-[150] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+        <div
+            class="glass-panel p-8 rounded-3xl border border-brand-500/30 shadow-2xl relative z-10 transform scale-95 transition-all duration-300 max-w-md w-full mx-4">
+
+            <div class="text-center mb-6">
+                <div
+                    class="w-16 h-16 bg-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-500/40 animate-pulse">
+                    <i class="fa-solid fa-user-pen text-3xl text-brand-400"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Complete Your Profile</h3>
+                <p class="text-slate-400 text-sm">We need a few more details to process your orders securely.</p>
+            </div>
+
+            <form onsubmit="handleProfileCompletion(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Phone Number</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-phone absolute left-4 top-3.5 text-slate-500"></i>
+                        <input type="text" id="cp-phone" required pattern="[0-9]*" inputmode="numeric"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white focus:border-brand-500 focus:outline-none transition-colors"
+                            placeholder="01712345678">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Date of Birth</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" id="cp-day" placeholder="DD" min="1" max="31" required
+                            class="bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white focus:border-brand-500 focus:outline-none">
+                        <input type="number" id="cp-month" placeholder="MM" min="1" max="12" required
+                            class="bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white focus:border-brand-500 focus:outline-none">
+                        <input type="number" id="cp-year" placeholder="YYYY" min="1900" max="2100" required
+                            class="bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white focus:border-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <button type="submit" id="cp-submit-btn"
+                    class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all mt-2">
+                    Save & Continue
+                </button>
+            </form>
+        </div>
+    </div>
+    <script>
+        // CHECK PROFILE COMPLETION ON LOAD
+        document.addEventListener('DOMContentLoaded', () => {
+            // Give it a moment for the main user load to happen (though we can check localStorage directly)
+            setTimeout(checkProfileCompletion, 1000);
+        });
+
+        function checkProfileCompletion() {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return;
+
+            const user = JSON.parse(userStr);
+            // Check if Phone or DOB (dob logic varies, might be string or empty)
+            const hasPhone = user.phone && user.phone.length > 5;
+            const hasDob = user.dob && user.dob.length > 5;
+
+            if (!hasPhone || !hasDob) {
+                openCompleteProfileModal(user);
+            }
+        }
+
+        function openCompleteProfileModal(user) {
+            const modal = document.getElementById('complete-profile-modal');
+            modal.classList.remove('hidden');
+            // small delay for transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div.transform').classList.remove('scale-95');
+                modal.querySelector('div.transform').classList.add('scale-100');
+            }, 10);
+
+            // Pre-fill if partial data exists
+            if (user.phone) document.getElementById('cp-phone').value = user.phone;
+            if (user.dob) {
+                const date = new Date(user.dob);
+                if (!isNaN(date.getTime())) {
+                    document.getElementById('cp-day').value = date.getDate();
+                    document.getElementById('cp-month').value = date.getMonth() + 1;
+                    document.getElementById('cp-year').value = date.getFullYear();
+                }
+            }
+        }
+
+        async function handleProfileCompletion(e) {
+            e.preventDefault();
+            const btn = document.getElementById('cp-submit-btn');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const phone = document.getElementById('cp-phone').value;
+            const day = document.getElementById('cp-day').value;
+            const month = document.getElementById('cp-month').value;
+            const year = document.getElementById('cp-year').value;
+
+            const dob = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+            // Age Check
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age < 12) { // Basic sanity check
+                showNotification("Invalid Date of Birth", "error");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const token = localStorage.getItem('userToken');
+
+                const res = await fetch(`/api/customers/${user.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ phone, dob })
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    showNotification("Profile Completed!", "success");
+
+                    // Update Local Storage
+                    user.phone = phone;
+                    user.dob = dob;
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    // Update UI
+                    document.getElementById('u-phone-sec').innerText = phone;
+                    document.getElementById('u-dob-sec').innerText = new Date(dob).toLocaleDateString();
+
+                    // Close Modal
+                    const modal = document.getElementById('complete-profile-modal');
+                    modal.classList.add('opacity-0');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
+                } else {
+                    showNotification(result.message || "Failed to update profile", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification("Server Error", "error");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 
 </html>
