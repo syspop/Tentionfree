@@ -144,6 +144,17 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <button type="button" onclick="socialLogin('google')"
+                            class="flex items-center justify-center bg-white text-slate-900 font-bold py-2.5 rounded-xl hover:bg-slate-200 transition-colors">
+                            <i class="fa-brands fa-google text-red-500 mr-2"></i> Google
+                        </button>
+                        <button type="button" onclick="socialLogin('facebook')"
+                            class="flex items-center justify-center bg-[#1877F2] text-white font-bold py-2.5 rounded-xl hover:bg-[#166fe5] transition-colors">
+                            <i class="fa-brands fa-facebook text-white mr-2"></i> Facebook
+                        </button>
+                    </div>
+
                     <button type="submit" id="btn-login"
                         class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transform hover:-translate-y-0.5 transition-all mt-2">
                         Log In Now
@@ -677,6 +688,23 @@
                 btn.innerHTML = original;
                 btn.disabled = false;
             }
+        }
+
+        async function socialLogin(provider) {
+            const btnLogin = document.getElementById('btn-login');
+
+            showCustomAlert("Coming Soon", `${provider.charAt(0).toUpperCase() + provider.slice(1)} login is currently being set up. Please use email/password for now.`, "info");
+
+            // Placeholder for backend call
+            /*
+            try {
+                const res = await fetch(`/api/auth/${provider}`, { method: 'POST' });
+                const result = await res.json();
+                if(result.success) {
+                   // login logic
+                }
+            } catch(e) {}
+            */
         }
 
         // --- CUSTOM ALERT LOGIC ---

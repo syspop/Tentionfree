@@ -160,6 +160,38 @@ app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- DEBUG ENDPOINT ---
+app.get('/api/debug/db', async (req, res) => {
+    try {
+        const customers = await readLocalJSON('customers.json');
+        const orders = await readLocalJSON('orders.json');
+        const products = await readLocalJSON('products.json');
+
+        res.json({
+            success: true,
+            counts: {
+                customers: customers.length,
+                orders: orders.length,
+                products: products.length
+            },
+            customersSample: customers.slice(0, 3).map(c => ({ email: c.email, hasPass: !!c.password, id: c.id }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- SOCIAL AUTH (Placeholders) ---
+app.post('/api/auth/google', async (req, res) => {
+    // In a real app, verify the token from frontend with Google API
+    // req.body.token
+    res.json({ success: false, message: "Google Login Coming Soon!" });
+});
+
+app.post('/api/auth/facebook', async (req, res) => {
+    res.json({ success: false, message: "Facebook Login Coming Soon!" });
+});
+
 // --- NEW SAFE ENDPOINTS ---
 
 
