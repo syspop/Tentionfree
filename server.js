@@ -231,10 +231,7 @@ app.post('/api/auth/google', async (req, res) => {
     await handleSocialLogin(req, res, 'google');
 });
 
-app.post('/api/auth/facebook', async (req, res) => {
-    // In real app: Verify Access Token here.
-    await handleSocialLogin(req, res, 'facebook');
-});
+
 
 // --- NEW SAFE ENDPOINTS ---
 
