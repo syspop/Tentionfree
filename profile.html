@@ -845,7 +845,7 @@
             // Set Invoice Download Action
             const invoiceBtn = document.getElementById('btn-download-invoice');
             if (invoiceBtn) {
-                invoiceBtn.setAttribute('onclick', `downloadInvoice(${order.id})`);
+                invoiceBtn.onclick = () => downloadInvoice(order.id);
             }
 
             // Show Modal
@@ -875,12 +875,13 @@
         async function downloadInvoice(orderId) {
             let order = currentFullOrder && currentFullOrder.id == orderId ? currentFullOrder : userOrdersCache.find(o => o.id == orderId);
 
-            // If still missing items or details (because it came from lightweight cache), fetch it
-            if (!order || !order.items) {
+            // If still missing items or details, fetch it
+            if (!order || !order.items || !order.customer) {
                 try {
+                    console.log("Fetching full order for invoice...", orderId);
                     const res = await fetch(`/api/orders/${orderId}`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') } });
                     if (res.ok) order = await res.json();
-                } catch (e) { }
+                } catch (e) { console.error("Invoice Fetch Error", e); }
             }
 
             if (!order) return showNotification("Order data missing.", "error");

@@ -415,8 +415,20 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
             currency: o.currency,
             paymentMethod: o.paymentMethod,
             trx: o.trx,
-            items: o.items // Keep items for basic display if needed? Profile usually shows "Product Name" column.
-            // Let's keep items for User Dashboard as it might show "Netflix x1" in the row.
+            items: o.items,
+            customer: o.customer,
+            phone: o.phone,
+            email: o.email,
+            deliveryInfo: o.deliveryInfo,
+            cancelReason: o.cancelReason,
+            refundMethod: o.refundMethod,
+            refundTrx: o.refundTrx,
+            refundNote: o.refundNote,
+            gameUid: o.gameUid,
+            proof: o.proof,
+            deliveryImage: o.deliveryImage,
+            cancelImage: o.cancelImage,
+            refundImage: o.refundImage
         }));
 
         res.json({
