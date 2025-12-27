@@ -747,6 +747,7 @@ app.post('/api/register', async (req, res) => {
         };
 
         allCustomers.push(newCustomer);
+        console.log(`[REGISTER] Saving user: ${email}, Total: ${allCustomers.length}`);
         await writeLocalJSON('customers.json', allCustomers);
 
         // Return without password
@@ -773,7 +774,7 @@ app.post('/api/login', async (req, res) => {
     try {
         const allCustomers = await readLocalJSON('customers.json');
         const user = allCustomers.find(c => c.email === email);
-        // Note: 'user' here is a plain object reference from the array/cache
+        console.log(`[LOGIN ATTEMPT] Email: ${email}, Found: ${!!user}`);
 
         if (user) {
             let isMatch = false;
@@ -782,11 +783,15 @@ app.post('/api/login', async (req, res) => {
             // 1. Check Hash
             if (user.password.startsWith('$2a$')) {
                 isMatch = bcrypt.compareSync(password, user.password);
+                console.log(`[LOGIN CHECK] Hashed: ${isMatch}`);
             } else {
                 // 2. Check Plaintext (Legacy)
                 if (user.password === password) {
                     isMatch = true;
                     needsUpgrade = true;
+                    console.log(`[LOGIN CHECK] Plaintext: Success`);
+                } else {
+                    console.log(`[LOGIN CHECK] Plaintext: Fail`);
                 }
             }
 
@@ -810,9 +815,11 @@ app.post('/api/login', async (req, res) => {
 
                 res.json({ success: true, user: userWithoutPass, token });
             } else {
+                console.warn(`[LOGIN FAIL] Password mismatch for ${email}`);
                 res.json({ success: false, message: "Invalid email or password" });
             }
         } else {
+            console.warn(`[LOGIN FAIL] User not found: ${email}`);
             res.json({ success: false, message: "Invalid email or password" });
         }
     } catch (err) {
