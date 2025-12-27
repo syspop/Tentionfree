@@ -761,11 +761,16 @@
             }
 
             if (provider === 'facebook') {
+                // DEBUG: Remove after fixing
+                // alert("Facebook Button Clicked");
+
                 if (typeof FB === 'undefined') {
-                    showCustomAlert("Error", "Facebook SDK is not loaded yet. Please refresh.", "error");
+                    alert("Error: Facebook SDK not loaded. Check internet or AdBlocker.");
                     return;
                 }
+
                 FB.login(function (response) {
+                    // alert("FB Response: " + response.status); 
                     if (response.authResponse) {
                         FB.api('/me', { fields: 'name, email, picture' }, function (userData) {
                             console.log('FB User:', userData);
@@ -776,6 +781,7 @@
                             });
                         });
                     } else {
+                        alert("Facebook Login Failed or Cancelled.");
                         console.log('User cancelled login or did not fully authorize.');
                     }
                 }, { scope: 'public_profile,email' });
