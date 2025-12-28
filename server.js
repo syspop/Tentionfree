@@ -6,6 +6,7 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
+const { sendOrderEmail } = require('./services/emailService');
 
 const helmet = require('helmet'); // Secure Headers
 const rateLimit = require('express-rate-limit'); // Rate Limiting
@@ -342,6 +343,9 @@ app.post('/api/orders', async (req, res) => {
 
         allOrders.push(newOrder);
         await writeLocalJSON('orders.json', allOrders);
+
+        // Send Email Notification in Background
+        sendOrderEmail(newOrder).catch(err => console.error("Email Error:", err));
 
         res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
     } catch (err) {
