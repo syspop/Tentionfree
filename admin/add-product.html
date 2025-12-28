@@ -33,11 +33,7 @@
                         <option value="gaming">Gaming</option>
                     </select>
 
-                    <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:10px;">
-                        <input type="checkbox" id="p-view-index"
-                            style="width:20px; height:20px; accent-color:var(--blue);">
-                        <label for="p-view-index" style="margin:0; cursor:pointer;">Show on Home Page (Index)</label>
-                    </div>
+                    <div style="margin-top:10px; margin-bottom:10px;"></div>
 
                     <label>Stock Status</label>
                     <select id="p-stock" class="input-box">
@@ -229,7 +225,7 @@
                 document.getElementById('p-badge').value = p.badge || '';
                 document.getElementById('p-category').value = p.category;
                 document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
-                document.getElementById('p-view-index').checked = p.viewInIndex === true;
+                document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
                 document.getElementById('p-img').value = p.image;
                 updatePreview(p.image); // Show preview
                 document.getElementById('p-desc').value = p.desc;
@@ -294,7 +290,6 @@
             const badge = document.getElementById('p-badge').value;
             const category = document.getElementById('p-category').value;
             const inStock = document.getElementById('p-stock').value === "true";
-            const viewInIndex = document.getElementById('p-view-index').checked;
             // Use uploaded image OR text input
             const img = uploadedImageBase64 || document.getElementById('p-img').value;
             const desc = document.getElementById('p-desc').value;
@@ -326,7 +321,7 @@
 
             try {
                 const productData = {
-                    name, badge, category, inStock, viewInIndex, image: img, desc, longDesc, features, instructions, variants,
+                    name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
                     price: mainPrice,
                     originalPrice: mainOriginalPrice
                 };
@@ -375,7 +370,7 @@
 
         function resetForm() {
             document.querySelectorAll('input, textarea').forEach(i => i.value = "");
-            document.getElementById('p-view-index').checked = false;
+            document.querySelectorAll('input, textarea').forEach(i => i.value = "");
             document.getElementById('variants-container').innerHTML = '';
             addVariantRow('1 Month', '', '');
             currentEditingId = null;
