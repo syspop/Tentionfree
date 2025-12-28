@@ -1307,6 +1307,7 @@ function togglePaymentSection() {
 // --- HOME PAGE SPECIFIC RENDER ---
 function renderHomeProducts() {
     const grid = document.getElementById('home-product-grid');
+    console.log("renderHomeProducts called. Grid:", grid, "Products:", products ? products.length : "null");
     if (!grid) return;
 
     if (!products || products.length === 0) {
@@ -1326,6 +1327,7 @@ function renderHomeProducts() {
 
     // Explicitly check for true, or string "true" just in case.
     const featured = products.filter(p => p.viewInIndex === true || p.viewInIndex === "true");
+    console.log("Featured products found:", featured.length, featured);
 
     if (featured.length === 0) {
         grid.innerHTML = `
