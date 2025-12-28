@@ -97,16 +97,7 @@ async function sendOrderStatusEmail(order, updates) {
                     </div>
                 `;
             }
-            if (updates.deliveryImage) {
-                additionalContent += `
-                    <div style="margin: 20px 0;">
-                        <span style="font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Delivery Proof</span>
-                        <div style="margin-top: 5px; border-radius: 8px; overflow: hidden; border: 1px solid #334155;">
-                            <img src="${resolveImage(updates.deliveryImage)}" style="width: 100%; display: block;" alt="Delivery Proof">
-                        </div>
-                    </div>
-                `;
-            }
+            // Removed Delivery Proof Image as requested
         } else if (status === 'Cancelled') {
             subject = `Order #${order.id} Cancelled ❌`;
             themeColor = '#ef4444'; // Red 500
@@ -121,16 +112,7 @@ async function sendOrderStatusEmail(order, updates) {
                     </div>
                 `;
             }
-            if (updates.cancelImage) {
-                additionalContent += `
-                    <div style="margin: 20px 0;">
-                         <span style="font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Cancellation Proof</span>
-                        <div style="margin-top: 5px; border-radius: 8px; overflow: hidden; border: 1px solid #334155;">
-                            <img src="${resolveImage(updates.cancelImage)}" style="width: 100%; display: block;" alt="Proof">
-                        </div>
-                    </div>
-                `;
-            }
+            // Removed Cancellation Proof Image as requested
         } else if (status === 'Refunded') {
             subject = `Order #${order.id} Refunded ↩️`;
             themeColor = '#a855f7'; // Purple 500
@@ -156,16 +138,7 @@ async function sendOrderStatusEmail(order, updates) {
                     </table>
                 </div>
             `;
-            if (updates.refundImage) {
-                additionalContent += `
-                     <div style="margin: 20px 0;">
-                        <span style="font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Refund Proof</span>
-                        <div style="margin-top: 5px; border-radius: 8px; overflow: hidden; border: 1px solid #334155;">
-                            <img src="${resolveImage(updates.refundImage)}" style="width: 100%; display: block;" alt="Refund Proof">
-                        </div>
-                    </div>
-                `;
-            }
+            // Removed Refund Proof Image as requested
         }
 
         // --- Items Table ---
@@ -191,22 +164,20 @@ async function sendOrderStatusEmail(order, updates) {
             `;
         }).join('');
 
-        // Payment Proof Section
+        // Payment Proof Section - Removing Image, Keeping TRX info if implies
+        // User said "baki gola kate dao", likely wants the proof image gone.
         let paymentInfo = '';
-        if (order.proof || (order.trx && !order.proof)) {
+        if (order.trx) {
             paymentInfo = `
                 <div style="margin-top: 30px; background: rgba(51, 65, 85, 0.5); border: 1px dashed #475569; border-radius: 12px; padding: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Your Payment Info</span>
-                        ${order.trx ? `<span style="font-family: monospace; font-size: 12px; color: #cbd5e1; background: #334155; padding: 2px 6px; border-radius: 4px; border: 1px solid #475569;">TRX: ${order.trx}</span>` : ''}
+                        <span style="font-family: monospace; font-size: 12px; color: #cbd5e1; background: #334155; padding: 2px 6px; border-radius: 4px; border: 1px solid #475569;">TRX: ${order.trx}</span>
                     </div>
-                    ${order.proof ? `
-                        <div style="border-radius: 8px; overflow: hidden; border: 1px solid #475569;">
-                            <img src="${resolveImage(order.proof)}" style="width: 100%; display: block;" alt="Payment Proof">
-                        </div>` : ''}
                 </div>
             `;
         }
+        // Removed order.proof image block
 
         // --- Final HTML Construction ---
         // Dark Theme Implementation with Table-based Layout for Email Compatibility
