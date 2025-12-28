@@ -376,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Logic to run AFTER products are loaded
         handleUrlParams();
         loadCategoryFilters(); // New: Load dynamic categories
+        renderHomeProducts(); // New: Render home page products
     });
 
     // Navbar scroll effect
@@ -1304,6 +1305,118 @@ function updatePaymentInfo() {
     const method = document.getElementById('payment').value;
     const instructionBox = document.getElementById('payment-instruction');
 
+    // --- HOME PAGE SPECIFIC RENDER ---
+    function renderHomeProducts() {
+        const grid = document.getElementById('home-product-grid');
+        if (!grid) return;
+
+        if (!products || products.length === 0) {
+            // Retry if products not loaded yet (should be covered by fetch promise though)
+            return;
+        }
+
+        // Filter products with viewInIndex === true
+        // Also include default popular ones as fallback if none selected?
+        // User requested "aita theke product on korle sodo on kkora product gola index e dekha jabe" 
+        // -> ONLY enabled products.
+
+        // Explicitly check for true, or string "true" just in case.
+        const featured = products.filter(p => p.viewInIndex === true || p.viewInIndex === "true");
+
+        if (featured.length === 0) {
+            grid.innerHTML = `
+            <div class="col-span-full text-center py-10">
+                <p class="text-slate-500 text-sm">No featured products selected.</p>
+            </div>
+        `;
+            return;
+        }
+
+        grid.innerHTML = '';
+
+        featured.forEach((product, index) => {
+            const card = document.createElement('div');
+            // Use same styling as products page card
+            card.style.animationDelay = `${index * 100}ms`;
+            card.className = 'glass-card rounded-2xl overflow-hidden product-card flex flex-col animate-[fadeIn_0.5s_ease-out_forwards]';
+
+            // Stock Logic
+            const isOutOfStock = product.inStock === false;
+            const opacityClass = isOutOfStock ? 'opacity-70 grayscale-[0.5]' : '';
+            const badgeHtml = isOutOfStock
+                ? `<span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20">Out of Stock</span>`
+                : `<span id="h-badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg">${product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
+
+            const buyButtonHtml = isOutOfStock
+                ? `<button class="z-10 bg-gray-700 text-gray-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium border border-gray-600 cursor-not-allowed">Out of Stock</button>`
+                : `<button onclick="buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all border border-white/10 hover:border-brand-400">Buy Now</button>`;
+
+            const addCartAction = isOutOfStock ? '' : `onclick="addToCart(${product.id})"`;
+            const addCartCursor = isOutOfStock ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-brand-500 hover:text-white';
+
+            // Variant Selector HTML (Scoped to home grid to avoid ID collision)
+            let variantSelectorHtml = '';
+            if (product.variants && product.variants.length > 0) {
+                variantSelectorHtml = `
+                <div class="mb-3">
+                    <select id="h-variant-select-${product.id}" onchange="updateCardPriceHome(${product.id})" onclick="event.stopPropagation()"
+                        class="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer hover:bg-white/10 transition-colors" ${isOutOfStock ? 'disabled' : ''}>
+                        ${product.variants.map((v, i) => `<option value="${i}" class="bg-gray-900">${v.label}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+            }
+
+            card.innerHTML = `
+            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer ${opacityClass}" onclick="openDetails(${product.id})">
+                <img src="${product.image}" alt="${product.name}" loading="lazy" width="200" height="200"
+                    class="h-full max-w-full object-contain drop-shadow-2xl transform group-hover:scale-110 transition duration-500 aspect-square"
+                    onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
+                ${badgeHtml}
+                
+                <div class="absolute bottom-1 left-1 md:hidden z-10">
+                    <button onclick="event.stopPropagation(); openDetails(${product.id})" class="bg-black/60 text-white text-[9px] px-2 py-1 rounded backdrop-blur-md border border-white/10 flex items-center shadow-lg">
+                        <i class="fa-regular fa-eye mr-1"></i> View
+                    </button>
+                </div>
+            </div>
+            <div class="p-3 md:p-5 flex-1 flex flex-col relative ${opacityClass}">
+                <div class="absolute top-2 right-2 md:top-4 md:right-4 bg-dark-bg/90 backdrop-blur border border-white/10 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-all z-10 ${addCartCursor}" ${addCartAction} aria-label="Add to Cart">
+                    <i class="fa-solid fa-plus text-xs md:text-base"></i>
+                </div>
+                
+                <div class="text-[9px] md:text-[10px] text-brand-400 font-bold uppercase tracking-widest mb-1 md:mb-2 mt-0.5">${product.category}</div>
+                <h3 class="text-sm md:text-lg font-bold text-white mb-1 leading-tight pr-8 md:pr-12 cursor-pointer hover:text-brand-400 transition" onclick="openDetails(${product.id})">${product.name}</h3>
+                <p class="text-gray-400 text-[10px] md:text-xs mb-2 md:mb-3 flex-1 line-clamp-2">${product.desc}</p>
+                
+                ${variantSelectorHtml}
+
+                <div class="flex items-center justify-between mt-auto pt-3 md:pt-4 border-t border-white/5">
+                    <div class="flex flex-col">
+                        <span id="h-price-original-${product.id}" class="text-[10px] md:text-xs text-gray-500 line-through">৳${product.originalPrice}</span>
+                        <span id="h-price-current-${product.id}" class="text-base md:text-xl font-bold text-white">৳${product.price}</span>
+                    </div>
+                    ${buyButtonHtml}
+                </div>
+            </div>
+        `;
+            grid.appendChild(card);
+        });
+    }
+
+    function updateCardPriceHome(id) {
+        const product = products.find(p => p.id === id);
+        const select = document.getElementById(`h-variant-select-${id}`);
+        const index = select.value;
+        const variant = product.variants[index];
+
+        document.getElementById(`h-price-current-${id}`).innerText = `৳${variant.price}`;
+        document.getElementById(`h-price-original-${id}`).innerText = `৳${variant.originalPrice}`;
+
+        const discount = Math.round(((variant.originalPrice - variant.price) / variant.originalPrice) * 100);
+        const badge = document.getElementById(`h-badge-${id}`);
+        if (badge) badge.innerText = `${discount}% OFF`;
+    }
     const instructions = {
         bkash: `
             <div class="space-y-2">

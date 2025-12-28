@@ -27,17 +27,16 @@
                     <input type="text" id="p-badge" class="input-box" placeholder="e.g. HOT, 50% OFF, BEST SELLER">
 
                     <label>Category</label>
-                    <div style="display:flex; gap:5px;">
-                        <select id="p-category" class="input-box" style="flex:1;">
-                            <option value="streaming">Streaming</option>
-                            <option value="tools">Tools & VPN</option>
-                            <option value="gaming">Gaming</option>
-                        </select>
-                        <button onclick="openAddCategoryModal()"
-                            style="background:var(--bg-card); color:var(--blue); border:1px solid var(--border); padding:0 12px; border-radius:8px; cursor:pointer;"
-                            title="Add Component">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
+                    <select id="p-category" class="input-box">
+                        <option value="streaming">Streaming</option>
+                        <option value="tools">Tools & VPN</option>
+                        <option value="gaming">Gaming</option>
+                    </select>
+
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:10px; margin-bottom:10px;">
+                        <input type="checkbox" id="p-view-index"
+                            style="width:20px; height:20px; accent-color:var(--blue);">
+                        <label for="p-view-index" style="margin:0; cursor:pointer;">Show on Home Page (Index)</label>
                     </div>
 
                     <label>Stock Status</label>
@@ -88,23 +87,7 @@
         </div>
     </div>
 
-    <!-- Category Modal -->
-    <div id="category-modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
-        <div
-            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center;">
-            <h3 style="color:var(--blue); margin-top:0;">Add Category</h3>
-            <input type="text" id="cat-name" class="input-box" placeholder="Name (e.g. Software)"
-                style="margin-bottom:10px;">
-            <input type="text" id="cat-id" class="input-box" placeholder="ID (e.g. software) - unique, lowercase"
-                style="margin-bottom:20px;">
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button onclick="document.getElementById('category-modal').style.display='none'" class="tab-btn"
-                    style="background:var(--bg-input);">Cancel</button>
-                <button onclick="addNewCategory()" class="action-btn">Add Service</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Success Modal -->
     <div id="save-success-modal"
@@ -203,41 +186,6 @@
             }
         }
 
-        function openAddCategoryModal() {
-            document.getElementById('category-modal').style.display = 'flex';
-        }
-
-        async function addNewCategory() {
-            const name = document.getElementById('cat-name').value;
-            const id = document.getElementById('cat-id').value.toLowerCase().replace(/\s+/g, '-');
-
-            if (!name || !id) return showCustomAlert("Missing Info", "Name and ID are required!", "error");
-
-            try {
-                const res = await fetch('/api/categories', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                    },
-                    body: JSON.stringify({ name, id })
-                });
-
-                const data = await res.json();
-                if (data.success) {
-                    showCustomAlert("Success!", "Category added successfully.", "success");
-                    document.getElementById('category-modal').style.display = 'none';
-                    loadCategories(); // Refresh list
-                    document.getElementById('cat-name').value = '';
-                    document.getElementById('cat-id').value = '';
-                } else {
-                    showCustomAlert("Error", data.message || "Failed", "error");
-                }
-            } catch (e) {
-                showCustomAlert("Error", "Error adding category", "error");
-            }
-        }
-
         // --- VARIANT LOGIC ---
         function addVariantRow(label = '', price = '', original = '') {
             const container = document.getElementById('variants-container');
@@ -281,7 +229,7 @@
                 document.getElementById('p-badge').value = p.badge || '';
                 document.getElementById('p-category').value = p.category;
                 document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
-                document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
+                document.getElementById('p-view-index').checked = p.viewInIndex === true;
                 document.getElementById('p-img').value = p.image;
                 updatePreview(p.image); // Show preview
                 document.getElementById('p-desc').value = p.desc;
@@ -346,6 +294,7 @@
             const badge = document.getElementById('p-badge').value;
             const category = document.getElementById('p-category').value;
             const inStock = document.getElementById('p-stock').value === "true";
+            const viewInIndex = document.getElementById('p-view-index').checked;
             // Use uploaded image OR text input
             const img = uploadedImageBase64 || document.getElementById('p-img').value;
             const desc = document.getElementById('p-desc').value;
@@ -377,7 +326,7 @@
 
             try {
                 const productData = {
-                    name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
+                    name, badge, category, inStock, viewInIndex, image: img, desc, longDesc, features, instructions, variants,
                     price: mainPrice,
                     originalPrice: mainOriginalPrice
                 };
@@ -426,6 +375,7 @@
 
         function resetForm() {
             document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+            document.getElementById('p-view-index').checked = false;
             document.getElementById('variants-container').innerHTML = '';
             addVariantRow('1 Month', '', '');
             currentEditingId = null;
