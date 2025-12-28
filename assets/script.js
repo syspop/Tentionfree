@@ -25,6 +25,7 @@ const defaultProducts = [
         id: 1,
         name: "Netflix Premium (4K)",
         category: "streaming",
+        viewInIndex: true,
         price: 340,
         originalPrice: 500,
         image: "assets/images/Netflix.png",
@@ -50,6 +51,7 @@ const defaultProducts = [
         id: 2,
         name: "Spotify Premium",
         category: "streaming",
+        viewInIndex: true,
         price: 150,
         originalPrice: 300,
         image: "assets/images/spotify.png",
@@ -128,6 +130,7 @@ const defaultProducts = [
         id: 5,
         name: "Free Fire (115 💎)",
         category: "gaming",
+        viewInIndex: true,
         price: 85,
         originalPrice: 90,
         image: "assets/images/Freefire.png",
@@ -287,7 +290,7 @@ const API_URL = '/api/products';
 
 async function fetchProducts() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(`${API_URL}?t=${Date.now()}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         let fetchedData = await response.json();
 
