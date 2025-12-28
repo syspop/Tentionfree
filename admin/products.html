@@ -33,7 +33,7 @@
                         <th>Img</th>
                         <th>Name</th>
                         <th>Stock</th>
-                        <th>Home</th>
+                        <th>Add to Home</th>
                         <th>Category</th>
                         <th>Action</th>
                     </tr>
@@ -89,19 +89,41 @@
                         <small style="color:var(--gray)">${p.variants?.length || 0} variants</small>
                     </td>
                     <td>${stockBadge}</td>
+                    // View in Index Logic
+                    const isOnHome = p.viewInIndex === true || p.viewInIndex === "true";
+                    
+                    const homeBtns = `
+                        < div style = "display:flex; gap:5px;" >
+                            <button onclick="toggleHomeStatus(${p.id}, true)" 
+                                style="font-size:10px; padding:4px 8px; border-radius:4px; border:none; cursor:pointer; background:${isOnHome ? 'var(--green)' : '#334155'}; color:white; font-weight:${isOnHome ? 'bold' : 'normal'}">
+                                ON
+                            </button>
+                            <button onclick="toggleHomeStatus(${p.id}, false)" 
+                                style="font-size:10px; padding:4px 8px; border-radius:4px; border:none; cursor:pointer; background:${!isOnHome ? 'var(--red)' : '#334155'}; color:white; font-weight:${!isOnHome ? 'bold' : 'normal'}">
+                                OFF
+                            </button>
+                        </div >
+                        `;
+
+                    list.innerHTML += `
+                        < tr data - id="${p.id}" >
+                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
+                    <td><img src="${displayImg}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
                     <td>
-                         <label class="switch">
-                            <input type="checkbox" ${p.viewInIndex ? 'checked' : ''} onchange="toggleHomeStatus(${p.id}, this.checked)">
-                            <span class="slider round"></span>
-                        </label>
+                        <strong>${p.name}</strong><br>
+                        <small style="color:var(--gray)">${p.variants?.length || 0} variants</small>
+                    </td>
+                    <td>${stockBadge}</td>
+                    <td>
+                         ${homeBtns}
                     </td>
                     <td><span class="badge" style="background:var(--blue)">${p.category}</span></td>
                     <td>
                         <button class="success-btn" onclick="editProduct('${p.id}')" style="margin-right:5px; background:var(--blue)">Edit</button>
                         <button class="delete-btn" onclick="deleteProduct(${p.id})" style="background:var(--red)">Delete</button>
                     </td>
-                </tr>
-            `;
+                </tr >
+                        `;
                 });
 
                 // Re-apply reorder state if active
@@ -116,7 +138,7 @@
         }
 
         function editProduct(id) {
-            window.location.href = `add-product?edit=${id}`;
+            window.location.href = `add - product ? edit = ${ id } `;
         }
 
         // --- REORDER LOGIC ---
@@ -190,7 +212,7 @@
 
         async function confirmProductDelete(id) {
             try {
-                await fetch(`/api/products/${id}`, {
+                await fetch(`/ api / products / ${ id } `, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
@@ -201,10 +223,10 @@
             } catch (e) { showAlert("Error", "Delete failed", "error"); }
         }
         async function toggleStock(id, status) {
-            if (!confirm(`Mark product as ${status ? 'IN STOCK' : 'OUT STOCK'}?`)) return;
+            if (!confirm(`Mark product as ${ status ? 'IN STOCK' : 'OUT STOCK' }?`)) return;
 
             try {
-                const res = await fetch(`/api/products/${id}`, {
+                const res = await fetch(`/ api / products / ${ id } `, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -223,8 +245,9 @@
         }
 
         async function toggleHomeStatus(id, isChecked) {
+            // Optimistic UI update could be done here, but reload ensures sync
             try {
-                const res = await fetch(`/api/products/${id}`, {
+                const res = await fetch(`/ api / products / ${ id }`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -234,14 +257,15 @@
                 });
 
                 const data = await res.json();
-                if (!data.success) {
+                if (data.success) {
+                    // Success! Reload logic to show updated button states
+                    loadProducts();
+                } else {
                     alert("Failed to update status: " + (data.message || "Unknown error"));
-                    loadProducts(); // revert
                 }
             } catch (e) {
                 console.error(e);
                 alert("Network error updating status");
-                loadProducts(); // revert
             }
         }
     </script>
