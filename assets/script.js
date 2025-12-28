@@ -1304,10 +1304,64 @@ function togglePaymentSection() {
     }
 }
 
-function updatePaymentInfo() {
-    const method = document.getElementById('payment').value;
-    const instructionBox = document.getElementById('payment-instruction');
+// --- HOME PAGE SPECIFIC RENDER ---
+function renderHomeProducts() {
+    const grid = document.getElementById('home-product-grid');
+    if (!grid) return;
 
+    if (!products || products.length === 0) {
+        // Fallback: If products empty, show message after distinct clear, NOT loading forever
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-10">
+                <p class="text-slate-500 text-sm">No products available at the moment.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Filter products with viewInIndex === true
+    // Also include default popular ones as fallback if none selected?
+    // User requested "aita theke product on korle sodo on kkora product gola index e dekha jabe" 
+    // -> ONLY enabled products.
+
+    // Explicitly check for true, or string "true" just in case.
+    const featured = products.filter(p => p.viewInIndex === true || p.viewInIndex === "true");
+
+    if (featured.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-10">
+                <p class="text-slate-500 text-sm">No featured products selected.</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = '';
+
+    featured.forEach((product, index) => {
+        const card = document.createElement('div');
+        // Use same styling as products page card
+        card.style.animationDelay = `${index * 100}ms`;
+        card.className = 'glass-card rounded-2xl overflow-hidden product-card flex flex-col animate-[fadeIn_0.5s_ease-out_forwards]';
+
+        // Stock Logic
+        const isOutOfStock = product.inStock === false;
+        const opacityClass = isOutOfStock ? 'opacity-70 grayscale-[0.5]' : '';
+        const badgeHtml = isOutOfStock
+            ? `<span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20">Out of Stock</span>`
+            : `<span id="h-badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg">${product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
+
+        const buyButtonHtml = isOutOfStock
+            ? `<button class="z-10 bg-gray-700 text-gray-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium border border-gray-600 cursor-not-allowed">Out of Stock</button>`
+            : `<button onclick="buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all border border-white/10 hover:border-brand-400">Buy Now</button>`;
+
+        const addCartAction = isOutOfStock ? '' : `onclick="addToCart(${product.id})"`;
+        const addCartCursor = isOutOfStock ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-brand-500 hover:text-white';
+
+        // Variant Selector HTML (Scoped to home grid to avoid ID collision)
+        let variantSelectorHtml = '';
+        if (product.variants && product.variants.length > 0) {
+            variantSelectorHtml = `
     // --- HOME PAGE SPECIFIC RENDER ---
     function renderHomeProducts() {
         const grid = document.getElementById('home-product-grid');
@@ -1316,10 +1370,10 @@ function updatePaymentInfo() {
         if (!products || products.length === 0) {
             // Fallback: If products empty, show message after distinct clear, NOT loading forever
             grid.innerHTML = `
-                <div class="col-span-full text-center py-10">
+                < div class="col-span-full text-center py-10" >
                     <p class="text-slate-500 text-sm">No products available at the moment.</p>
-                </div>
-            `;
+                </div >
+                `;
             return;
         }
 
@@ -1333,10 +1387,10 @@ function updatePaymentInfo() {
 
         if (featured.length === 0) {
             grid.innerHTML = `
-            <div class="col-span-full text-center py-10">
-                <p class="text-slate-500 text-sm">No featured products selected.</p>
-            </div>
-        `;
+                < div class="col-span-full text-center py-10" >
+                    <p class="text-slate-500 text-sm">No featured products selected.</p>
+            </div >
+                `;
             return;
         }
 
@@ -1345,38 +1399,38 @@ function updatePaymentInfo() {
         featured.forEach((product, index) => {
             const card = document.createElement('div');
             // Use same styling as products page card
-            card.style.animationDelay = `${index * 100}ms`;
+            card.style.animationDelay = `${ index * 100 } ms`;
             card.className = 'glass-card rounded-2xl overflow-hidden product-card flex flex-col animate-[fadeIn_0.5s_ease-out_forwards]';
 
             // Stock Logic
             const isOutOfStock = product.inStock === false;
             const opacityClass = isOutOfStock ? 'opacity-70 grayscale-[0.5]' : '';
             const badgeHtml = isOutOfStock
-                ? `<span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20">Out of Stock</span>`
-                : `<span id="h-badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg">${product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
+                ? `< span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20" > Out of Stock</span > `
+                : `< span id = "h-badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg" > ${ product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF' }</span > `;
 
             const buyButtonHtml = isOutOfStock
-                ? `<button class="z-10 bg-gray-700 text-gray-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium border border-gray-600 cursor-not-allowed">Out of Stock</button>`
-                : `<button onclick="buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all border border-white/10 hover:border-brand-400">Buy Now</button>`;
+                ? `< button class="z-10 bg-gray-700 text-gray-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium border border-gray-600 cursor-not-allowed" > Out of Stock</button > `
+                : `< button onclick = "buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all border border-white/10 hover:border-brand-400" > Buy Now</button > `;
 
-            const addCartAction = isOutOfStock ? '' : `onclick="addToCart(${product.id})"`;
+            const addCartAction = isOutOfStock ? '' : `onclick = "addToCart(${product.id})"`;
             const addCartCursor = isOutOfStock ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-brand-500 hover:text-white';
 
             // Variant Selector HTML (Scoped to home grid to avoid ID collision)
             let variantSelectorHtml = '';
             if (product.variants && product.variants.length > 0) {
                 variantSelectorHtml = `
-                <div class="mb-3">
+                < div class="mb-3" >
                     <select id="h-variant-select-${product.id}" onchange="updateCardPriceHome(${product.id})" onclick="event.stopPropagation()"
                         class="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer hover:bg-white/10 transition-colors" ${isOutOfStock ? 'disabled' : ''}>
                         ${product.variants.map((v, i) => `<option value="${i}" class="bg-gray-900">${v.label}</option>`).join('')}
                     </select>
-                </div>
-            `;
+                </div >
+                `;
             }
 
             card.innerHTML = `
-            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer ${opacityClass}" onclick="openDetails(${product.id})">
+                < div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer ${opacityClass}" onclick = "openDetails(${product.id})" >
                 <img src="${product.image}" alt="${product.name}" loading="lazy" width="200" height="200"
                     class="h-full max-w-full object-contain drop-shadow-2xl transform group-hover:scale-110 transition duration-500 aspect-square"
                     onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
@@ -1407,27 +1461,27 @@ function updatePaymentInfo() {
                     ${buyButtonHtml}
                 </div>
             </div>
-        `;
+            `;
             grid.appendChild(card);
         });
     }
 
     function updateCardPriceHome(id) {
         const product = products.find(p => p.id === id);
-        const select = document.getElementById(`h-variant-select-${id}`);
+        const select = document.getElementById(`h - variant - select - ${ id } `);
         const index = select.value;
         const variant = product.variants[index];
 
-        document.getElementById(`h-price-current-${id}`).innerText = `৳${variant.price}`;
-        document.getElementById(`h-price-original-${id}`).innerText = `৳${variant.originalPrice}`;
+        document.getElementById(`h - price - current - ${ id } `).innerText = `৳${ variant.price } `;
+        document.getElementById(`h - price - original - ${ id } `).innerText = `৳${ variant.originalPrice } `;
 
         const discount = Math.round(((variant.originalPrice - variant.price) / variant.originalPrice) * 100);
-        const badge = document.getElementById(`h-badge-${id}`);
-        if (badge) badge.innerText = `${discount}% OFF`;
+        const badge = document.getElementById(`h - badge - ${ id } `);
+        if (badge) badge.innerText = `${ discount }% OFF`;
     }
     const instructions = {
         bkash: `
-            <div class="space-y-2">
+                < div class="space-y-2" >
                 <p class="text-brand-400 font-bold border-b border-white/10 pb-1 mb-2">📱 1. bKash Payment (USSD Method)</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*247#</span></li>
@@ -1440,9 +1494,9 @@ function updatePaymentInfo() {
                     <li>Enter Reference (optional)</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div>`,
+            </div > `,
         nagad: `
-            <div class="space-y-2">
+                < div class="space-y-2" >
                 <p class="text-orange-400 font-bold border-b border-white/10 pb-1 mb-2">📱 2. Nagad Payment (USSD Method)</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*167#</span></li>
@@ -1455,9 +1509,9 @@ function updatePaymentInfo() {
                     <li>Enter Reference</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div>`,
+            </div > `,
         rocket: `
-            <div class="space-y-2">
+                < div class="space-y-2" >
                 <p class="text-purple-400 font-bold border-b border-white/10 pb-1 mb-2">📱 3. Rocket Payment (DBBL)</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*322#</span></li>
@@ -1470,9 +1524,9 @@ function updatePaymentInfo() {
                     <li>Enter Reference</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div>`,
+            </div > `,
         upay: `
-            <div class="space-y-2">
+                < div class="space-y-2" >
                 <p class="text-blue-400 font-bold border-b border-white/10 pb-1 mb-2">📱 4. Upay Payment</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*268#</span></li>
@@ -1484,9 +1538,9 @@ function updatePaymentInfo() {
                     <li>Enter Amount</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div>`,
+            </div > `,
         binance: `
-            <div class="space-y-2">
+                < div class="space-y-2" >
                 <p class="text-yellow-400 font-bold border-b border-white/10 pb-1 mb-2">💰 5. Binance USDT (Crypto)</p>
                 <p class="text-gray-300 mb-2">You can send USDT directly using Binance.</p>
                 <div class="flex items-center flex-wrap gap-2 mb-2">
@@ -1503,7 +1557,7 @@ function updatePaymentInfo() {
                     <li>Enter Amount</li>
                     <li>Confirm transfer</li>
                 </ul>
-            </div>`
+            </div > `
     };
 
     instructionBox.innerHTML = instructions[method] || '<p class="text-gray-400">Select a payment method to see instructions.</p>';
@@ -1636,7 +1690,7 @@ async function submitOrder() {
             if (!input.value.trim()) {
                 missingUid = true;
             } else {
-                collectedIds.push(`${input.getAttribute('data-item-name')}: ${input.value.trim()}`);
+                collectedIds.push(`${ input.getAttribute('data-item-name') }: ${ input.value.trim() } `);
             }
         });
         gameUidString = collectedIds.join('\n');
@@ -1742,7 +1796,7 @@ async function submitOrder() {
         phone: phone,
         email: customerEmail,
         gameUid: gameUid || 'N/A',
-        product: itemsToOrder.map(i => `${i.name} (x${i.quantity})`).join(', '),
+        product: itemsToOrder.map(i => `${ i.name } (x${ i.quantity })`).join(', '),
         price: finalTotal.toFixed(2), // Store converted price
         currency: currency, // Store Currency
         originalPriceBDT: total, // Store original if needed
@@ -1802,53 +1856,53 @@ async function submitOrder() {
             } else {
                 // Pay Later: Redirect to WhatsApp/Email
                 // Construct Message JUST IN TIME
-                let message = `*🔥 New Order - Tention Free*\n\n`;
-                message += `👤 *Customer:* ${name}\n`;
-                message += `📱 *Phone:* ${phone}\n`;
-                message += `📧 *Email:* ${customerEmail}\n`;
+                let message = `*🔥 New Order - Tention Free *\n\n`;
+                message += `👤 * Customer:* ${ name } \n`;
+                message += `📱 * Phone:* ${ phone } \n`;
+                message += `📧 * Email:* ${ customerEmail } \n`;
                 if (hasGamingItem && gameUid) {
-                    message += `🎮 *Game UID:* ${gameUid}\n`;
+                    message += `🎮 * Game UID:* ${ gameUid } \n`;
                 }
 
                 // Message format depending on payment
                 if (paymentType === 'later') {
-                    message += `💳 *Payment Status:* Pay Later (Discussion Pending)\n`;
+                    message += `💳 * Payment Status:* Pay Later(Discussion Pending) \n`;
                 } else {
-                    message += `💳 *Payment:* ${payment.toUpperCase()}\n`;
-                    message += `🧾 *TrxID:* ${trxid}\n`;
+                    message += `💳 * Payment:* ${ payment.toUpperCase() } \n`;
+                    message += `🧾 * TrxID:* ${ trxid } \n`;
                 }
 
-                message += `\n🛒 *Items:*\n`;
+                message += `\n🛒 * Items:*\n`;
                 itemsToOrder.forEach(item => {
-                    message += `• ${item.name} x${item.quantity} = ৳${item.price * item.quantity}\n`;
+                    message += `• ${ item.name } x${ item.quantity } = ৳${ item.price * item.quantity } \n`;
                 });
 
-                message += `\n💰 *Total Bill:* ৳${total}`;
+                message += `\n💰 * Total Bill:* ৳${ total } `;
                 message += `\n\n_Please confirm this order._`;
 
                 if (platform === 'whatsapp') {
                     const waNumber = "8801869895549";
                     const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-                    window.open(url, '_blank');
-                    showSuccessModal(); // Also show success modal for visual confirmation
+    window.open(url, '_blank');
+    showSuccessModal(); // Also show success modal for visual confirmation
 
-                } else if (platform === 'email') {
-                    const adminEmail = "kaziemdadul4@gmail.com";
-                    const subject = `New Order from ${name}`;
-                    const itemsList = itemsToOrder.map(i => `- ${i.name} (x${i.quantity})`).join('%0D%0A');
-                    const body = `Name: ${name}%0D%0APhone: ${phone}%0D%0AItems:%0D%0A${itemsList}%0D%0ATotal: ${total}`;
-                    window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
-                    showSuccessModal();
-                }
+} else if (platform === 'email') {
+    const adminEmail = "kaziemdadul4@gmail.com";
+    const subject = `New Order from ${name}`;
+    const itemsList = itemsToOrder.map(i => `- ${i.name} (x${i.quantity})`).join('%0D%0A');
+    const body = `Name: ${name}%0D%0APhone: ${phone}%0D%0AItems:%0D%0A${itemsList}%0D%0ATotal: ${total}`;
+    window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
+    showSuccessModal();
+}
             }
 
         })
-        .catch(error => {
-            console.error("Error saving order:", error);
-            // Alert the SPECIFIC error message from the server
-            // Use styled error modal instead of alert
-            showErrorModal("Submission Failed", error.message);
-        });
+        .catch (error => {
+    console.error("Error saving order:", error);
+    // Alert the SPECIFIC error message from the server
+    // Use styled error modal instead of alert
+    showErrorModal("Submission Failed", error.message);
+});
 }
 
 // --- Modals ---
