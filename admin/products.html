@@ -76,24 +76,14 @@
 
                     // Stock Logic (Default true if undefined)
                     const isInStock = p.inStock !== false;
-                    const stockBadge = p.inStock !== false
+                    const stockBadge = isInStock
                         ? `<button onclick="toggleStock(${p.id}, false)" class="badge" style="background:var(--green); border:none; cursor:pointer;">In Stock</button>`
                         : `<button onclick="toggleStock(${p.id}, true)" class="badge" style="background:var(--red); border:none; cursor:pointer;">Out of Stock</button>`;
 
-                    list.innerHTML += `
-                <tr data-id="${p.id}">
-                    <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
-                    <td><img src="${displayImg}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
-                    <td>
-                        <strong>${p.name}</strong><br>
-                        <small style="color:var(--gray)">${p.variants?.length || 0} variants</small>
-                    </td>
-                    <td>${stockBadge}</td>
                     // View in Index Logic
                     const isOnHome = p.viewInIndex === true || p.viewInIndex === "true";
-                    
                     const homeBtns = `
-                        < div style = "display:flex; gap:5px;" >
+                        <div style="display:flex; gap:5px;">
                             <button onclick="toggleHomeStatus(${p.id}, true)" 
                                 style="font-size:10px; padding:4px 8px; border-radius:4px; border:none; cursor:pointer; background:${isOnHome ? 'var(--green)' : '#334155'}; color:white; font-weight:${isOnHome ? 'bold' : 'normal'}">
                                 ON
@@ -102,11 +92,11 @@
                                 style="font-size:10px; padding:4px 8px; border-radius:4px; border:none; cursor:pointer; background:${!isOnHome ? 'var(--red)' : '#334155'}; color:white; font-weight:${!isOnHome ? 'bold' : 'normal'}">
                                 OFF
                             </button>
-                        </div >
-                        `;
+                        </div>
+                    `;
 
                     list.innerHTML += `
-                        < tr data - id="${p.id}" >
+                <tr data-id="${p.id}">
                     <td class="drag-col" style="display:none; cursor:grab; font-size:18px; color:var(--gray); text-align:center;">☰</td>
                     <td><img src="${displayImg}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
                     <td>
@@ -122,8 +112,8 @@
                         <button class="success-btn" onclick="editProduct('${p.id}')" style="margin-right:5px; background:var(--blue)">Edit</button>
                         <button class="delete-btn" onclick="deleteProduct(${p.id})" style="background:var(--red)">Delete</button>
                     </td>
-                </tr >
-                        `;
+                </tr>
+            `;
                 });
 
                 // Re-apply reorder state if active
@@ -133,12 +123,12 @@
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading products.</td></tr>";
+                list.innerHTML = "<tr><td colspan='7' style='text-align:center; color:red;'>Error loading products.</td></tr>";
             }
         }
 
         function editProduct(id) {
-            window.location.href = `add - product ? edit = ${ id } `;
+            window.location.href = `add - product ? edit = ${id} `;
         }
 
         // --- REORDER LOGIC ---
@@ -212,7 +202,7 @@
 
         async function confirmProductDelete(id) {
             try {
-                await fetch(`/ api / products / ${ id } `, {
+                await fetch(`/ api / products / ${id} `, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
@@ -223,10 +213,10 @@
             } catch (e) { showAlert("Error", "Delete failed", "error"); }
         }
         async function toggleStock(id, status) {
-            if (!confirm(`Mark product as ${ status ? 'IN STOCK' : 'OUT STOCK' }?`)) return;
+            if (!confirm(`Mark product as ${status ? 'IN STOCK' : 'OUT STOCK'}?`)) return;
 
             try {
-                const res = await fetch(`/ api / products / ${ id } `, {
+                const res = await fetch(`/ api / products / ${id} `, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -247,7 +237,7 @@
         async function toggleHomeStatus(id, isChecked) {
             // Optimistic UI update could be done here, but reload ensures sync
             try {
-                const res = await fetch(`/ api / products / ${ id }`, {
+                const res = await fetch(`/ api / products / ${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
