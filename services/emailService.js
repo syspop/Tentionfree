@@ -208,7 +208,7 @@ async function sendOrderStatusEmail(order, updates) {
         }
 
         // --- Final HTML Construction ---
-        // Dark Theme Implementation
+        // Dark Theme Implementation with Table-based Layout for Email Compatibility
         const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -216,61 +216,95 @@ async function sendOrderStatusEmail(order, updates) {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+            <style>
+                body { margin: 0; padding: 0; background-color: #0f172a; font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; color: #f8fafc; }
+                a { color: #3b82f6; text-decoration: none; }
+                .wrapper { width: 100%; table-layout: fixed; background-color: #0f172a; padding-bottom: 40px; }
+                .main { background-color: #1e293b; margin: 0 auto; width: 100%; max-width: 600px; border-radius: 12px; border: 1px solid #334155; overflow: hidden; }
+            </style>
         </head>
-        <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Outfit', 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; color: #f8fafc;">
-            <div style="max-width: 600px; margin: 40px auto; background: #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); border: 1px solid #334155;">
-                
-                <!-- Header -->
-                <div style="background: #020617; padding: 30px 20px; text-align: center; border-bottom: 1px solid #334155;">
-                    <div style="font-size: 24px; font-weight: 800; color: white; letter-spacing: -0.5px;">
-                        Tention<span style="color: #3b82f6;">Free</span>
-                    </div>
-                </div>
-
-                <!-- Status Banner -->
-                <div style="background: ${headerBg}; padding: 30px 40px; text-align: center; border-bottom: 1px solid ${themeColor}30;">
-                    <div style="width: 60px; height: 60px; background: ${themeColor}20; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; box-shadow: 0 0 15px ${themeColor}40; border: 1px solid ${themeColor}40;">
-                        <span style="font-size: 28px; line-height: 1; color: ${themeColor};">${status === 'Completed' ? '✓' : (status === 'Cancelled' ? '✕' : '↩')}</span>
-                    </div>
-                    <h2 style="margin: 0; color: ${themeColor}; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; text-shadow: 0 0 20px ${themeColor}40;">${status.toUpperCase()}</h2>
-                    <p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 15px;">Order #${order.id}</p>
-                </div>
-
-                <!-- Body -->
-                <div style="padding: 40px;">
-                    <p style="font-size: 16px; color: #e2e8f0; margin-top: 0; line-height: 1.6;">
-                        Hi <strong>${order.customer || 'Customer'}</strong>,<br><br>
-                        ${statusMessage}
-                    </p>
-
-                    ${additionalContent}
-
-                    <!-- Items Section -->
-                    <div style="margin-top: 30px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 20px; border: 1px solid #334155;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Order Summary</h3>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            ${itemsRows}
-                        </table>
-                        
-                        <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 1px solid #334155;">
-                            <span style="color: #94a3b8; margin-right: 15px; font-size: 15px;">Total Amount</span>
-                            <span style="color: ${themeColor}; font-size: 24px; font-weight: 800;">${isUSD ? '$' : '৳'}${isUSD ? totalOrderPrice.toFixed(2) : totalOrderPrice}</span>
-                        </div>
-                    </div>
-
-                    ${paymentInfo}
+        <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Outfit', 'Segoe UI', sans-serif; color: #f8fafc;">
+            <center class="wrapper" style="width: 100%; table-layout: fixed; background-color: #0f172a; padding-bottom: 40px;">
+                <table class="main" width="100%" cellpadding="0" cellspacing="0" style="background-color: #1e293b; margin: 0 auto; width: 100%; max-width: 600px; border-radius: 12px; border: 1px solid #334155; border-spacing: 0;">
                     
-                    <div style="margin-top: 40px; text-align: center;">
-                        <a href="${SITE_URL}/profile.html" style="background: #3b82f6; color: white; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">View Order History</a>
-                    </div>
-                </div>
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: #020617; padding: 30px 20px; text-align: center; border-bottom: 1px solid #334155;">
+                             <div style="font-size: 24px; font-weight: 800; color: white; letter-spacing: -0.5px;">
+                                Tention<span style="color: #3b82f6;">Free</span>
+                            </div>
+                        </td>
+                    </tr>
 
-                <!-- Footer -->
-                <div style="background: #020617; padding: 25px; text-align: center; border-top: 1px solid #334155;">
-                    <p style="margin: 0; color: #64748b; font-size: 12px;">&copy; 2025 Tention Free. All rights reserved.</p>
-                    <p style="margin: 8px 0 0 0; color: #475569; font-size: 12px;">Dhaka, Bangladesh</p>
-                </div>
-            </div>
+                    <!-- Status Banner -->
+                    <tr>
+                        <td style="background: ${headerBg}; padding: 40px 20px; text-align: center; border-bottom: 1px solid ${themeColor}30;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center">
+                                        <div style="width: 64px; height: 64px; background: ${themeColor}20; border-radius: 50%; padding: 0; margin-bottom: 15px; border: 1px solid ${themeColor}40; box-shadow: 0 0 20px ${themeColor}20; display: inline-block; line-height: 64px;">
+                                            <span style="font-size: 32px; color: ${themeColor}; line-height: 64px; display: block;">${status === 'Completed' ? '✓' : (status === 'Cancelled' ? '✕' : '↩')}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <h2 style="margin: 0; color: ${themeColor}; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 10px ${themeColor}40;">${status.toUpperCase()}</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                         <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 15px;">Order #${order.id}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                             <p style="font-size: 16px; color: #e2e8f0; margin-top: 0; line-height: 1.6;">
+                                Hi <strong>${order.customer || 'Customer'}</strong>,<br><br>
+                                ${statusMessage}
+                            </p>
+
+                            ${additionalContent}
+
+                            <!-- Items Section -->
+                            <div style="margin-top: 30px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 20px; border: 1px solid #334155;">
+                                <h3 style="margin: 0 0 15px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Order Summary</h3>
+                                <table width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+                                    ${itemsRows}
+                                </table>
+                                
+                                <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 1px solid #334155;">
+                                    <span style="color: #94a3b8; margin-right: 15px; font-size: 15px;">Total Amount</span>
+                                    <span style="color: ${themeColor}; font-size: 24px; font-weight: 800;">${isUSD ? '$' : '৳'}${isUSD ? totalOrderPrice.toFixed(2) : totalOrderPrice}</span>
+                                </div>
+                            </div>
+
+                            ${paymentInfo}
+                            
+                            <table width="100%" style="margin-top: 40px;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="${SITE_URL}/profile.html" style="background: #3b82f6; color: white; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">View Order History</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: #020617; padding: 25px; text-align: center; border-top: 1px solid #334155;">
+                            <p style="margin: 0; color: #64748b; font-size: 12px;">&copy; 2025 Tention Free. All rights reserved.</p>
+                            <p style="margin: 8px 0 0 0; color: #475569; font-size: 12px;">Dhaka, Bangladesh</p>
+                        </td>
+                    </tr>
+                </table>
+            </center>
         </body>
         </html>
         `;
