@@ -1417,6 +1417,11 @@ function renderHomeProducts() {
         const badge = document.getElementById(`h - badge - ${ id } `);
         if (badge) badge.innerText = `${ discount }% OFF`;
     }
+
+    function updatePaymentInfo() {
+        const method = document.getElementById('payment').value;
+        const instructionBox = document.getElementById('payment-instruction');
+        
     const instructions = {
         bkash: `
                 < div class="space-y-2" >
