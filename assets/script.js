@@ -1311,7 +1311,12 @@ function updatePaymentInfo() {
         if (!grid) return;
 
         if (!products || products.length === 0) {
-            // Retry if products not loaded yet (should be covered by fetch promise though)
+            // Fallback: If products empty, show message after distinct clear, NOT loading forever
+            grid.innerHTML = `
+                <div class="col-span-full text-center py-10">
+                    <p class="text-slate-500 text-sm">No products available at the moment.</p>
+                </div>
+            `;
             return;
         }
 
