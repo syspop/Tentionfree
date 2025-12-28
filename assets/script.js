@@ -1369,8 +1369,7 @@ function renderHomeProducts() {
         }
 
         card.innerHTML = `
-        card.innerHTML = `
-            < div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer ${opacityClass}" onclick = "openDetails(${product.id})" >
+            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer ${opacityClass}" onclick="openDetails(${product.id})">
                 <img src="${product.image}" alt="${product.name}" loading="lazy" width="200" height="200"
                     class="h-full max-w-full object-contain drop-shadow-2xl transform group-hover:scale-110 transition duration-500 aspect-square"
                     onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
@@ -1408,17 +1407,17 @@ function renderHomeProducts() {
 
 function updateCardPriceHome(id) {
     const product = products.find(p => p.id === id);
-    const select = document.getElementById(`h - variant - select - ${ id } `);
+    const select = document.getElementById(`h-variant-select-${id}`);
     if (!select) return;
     const index = select.value;
     const variant = product.variants[index];
 
-    document.getElementById(`h - price - current - ${ id } `).innerText = `৳${ variant.price } `;
-    document.getElementById(`h - price - original - ${ id } `).innerText = `৳${ variant.originalPrice } `;
+    document.getElementById(`h-price-current-${id}`).innerText = `৳${variant.price}`;
+    document.getElementById(`h-price-original-${id}`).innerText = `৳${variant.originalPrice}`;
 
     const discount = Math.round(((variant.originalPrice - variant.price) / variant.originalPrice) * 100);
-    const badge = document.getElementById(`h - badge - ${ id } `);
-    if (badge) badge.innerText = `${ discount }% OFF`;
+    const badge = document.getElementById(`h-badge-${id}`);
+    if (badge) badge.innerText = `${discount}% OFF`;
 }
 
 function updatePaymentInfo() {
@@ -1636,7 +1635,7 @@ async function submitOrder() {
             if (!input.value.trim()) {
                 missingUid = true;
             } else {
-                collectedIds.push(`${ input.getAttribute('data-item-name') }: ${ input.value.trim() } `);
+                collectedIds.push(`${input.getAttribute('data-item-name')}: ${input.value.trim()} `);
             }
         });
         gameUidString = collectedIds.join('\n');
@@ -1742,7 +1741,7 @@ async function submitOrder() {
         phone: phone,
         email: customerEmail,
         gameUid: gameUid || 'N/A',
-        product: itemsToOrder.map(i => `${ i.name } (x${ i.quantity })`).join(', '),
+        product: itemsToOrder.map(i => `${i.name} (x${i.quantity})`).join(', '),
         price: finalTotal.toFixed(2), // Store converted price
         currency: currency, // Store Currency
         originalPriceBDT: total, // Store original if needed
@@ -1803,52 +1802,52 @@ async function submitOrder() {
                 // Pay Later: Redirect to WhatsApp/Email
                 // Construct Message JUST IN TIME
                 let message = `*🔥 New Order - Tention Free *\n\n`;
-                message += `👤 * Customer:* ${ name } \n`;
-                message += `📱 * Phone:* ${ phone } \n`;
-                message += `📧 * Email:* ${ customerEmail } \n`;
+                message += `👤 * Customer:* ${name} \n`;
+                message += `📱 * Phone:* ${phone} \n`;
+                message += `📧 * Email:* ${customerEmail} \n`;
                 if (hasGamingItem && gameUid) {
-                    message += `🎮 * Game UID:* ${ gameUid } \n`;
+                    message += `🎮 * Game UID:* ${gameUid} \n`;
                 }
 
                 // Message format depending on payment
                 if (paymentType === 'later') {
                     message += `💳 * Payment Status:* Pay Later(Discussion Pending) \n`;
                 } else {
-                    message += `💳 * Payment:* ${ payment.toUpperCase() } \n`;
-                    message += `🧾 * TrxID:* ${ trxid } \n`;
+                    message += `💳 * Payment:* ${payment.toUpperCase()} \n`;
+                    message += `🧾 * TrxID:* ${trxid} \n`;
                 }
 
                 message += `\n🛒 * Items:*\n`;
                 itemsToOrder.forEach(item => {
-                    message += `• ${ item.name } x${ item.quantity } = ৳${ item.price * item.quantity } \n`;
+                    message += `• ${item.name} x${item.quantity} = ৳${item.price * item.quantity} \n`;
                 });
 
-                message += `\n💰 * Total Bill:* ৳${ total } `;
+                message += `\n💰 * Total Bill:* ৳${total} `;
                 message += `\n\n_Please confirm this order._`;
 
                 if (platform === 'whatsapp') {
                     const waNumber = "8801869895549";
                     const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-    showSuccessModal(); // Also show success modal for visual confirmation
+                    window.open(url, '_blank');
+                    showSuccessModal(); // Also show success modal for visual confirmation
 
-} else if (platform === 'email') {
-    const adminEmail = "kaziemdadul4@gmail.com";
-    const subject = `New Order from ${name}`;
-    const itemsList = itemsToOrder.map(i => `- ${i.name} (x${i.quantity})`).join('%0D%0A');
-    const body = `Name: ${name}%0D%0APhone: ${phone}%0D%0AItems:%0D%0A${itemsList}%0D%0ATotal: ${total}`;
-    window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
-    showSuccessModal();
-}
+                } else if (platform === 'email') {
+                    const adminEmail = "kaziemdadul4@gmail.com";
+                    const subject = `New Order from ${name}`;
+                    const itemsList = itemsToOrder.map(i => `- ${i.name} (x${i.quantity})`).join('%0D%0A');
+                    const body = `Name: ${name}%0D%0APhone: ${phone}%0D%0AItems:%0D%0A${itemsList}%0D%0ATotal: ${total}`;
+                    window.location.href = `mailto:${adminEmail}?subject=${subject}&body=${body}`;
+                    showSuccessModal();
+                }
             }
 
         })
-        .catch (error => {
-    console.error("Error saving order:", error);
-    // Alert the SPECIFIC error message from the server
-    // Use styled error modal instead of alert
-    showErrorModal("Submission Failed", error.message);
-});
+        .catch(error => {
+            console.error("Error saving order:", error);
+            // Alert the SPECIFIC error message from the server
+            // Use styled error modal instead of alert
+            showErrorModal("Submission Failed", error.message);
+        });
 }
 
 // --- Modals ---
