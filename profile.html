@@ -596,7 +596,7 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-white text-sm">Order #${o.id}</h3>
-                                    <p class="text-[10px] text-slate-500 font-mono">${new Date(o.createdAt || o.date).toLocaleDateString()}</p>
+                                    <p class="text-[10px] text-slate-500 font-mono">${new Date(parseInt(o.id)).toLocaleDateString()}</p>
                                 </div>
                             </div>
                             <div class="text-right">
@@ -721,7 +721,7 @@
             else if (order.status === 'Refunded') statusBadge = '<span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-bold"><i class="fa-solid fa-rotate-left mr-1"></i> Refunded</span>';
 
             document.getElementById('vo-status').innerHTML = statusBadge;
-            document.getElementById('vo-date').innerText = order.date;
+            document.getElementById('vo-date').innerText = new Date(parseInt(order.id)).toLocaleDateString();
             document.getElementById('vo-method').innerText = order.paymentMethod || 'Unknown';
             document.getElementById('vo-trx').innerText = order.trx || order.transactionId || 'N/A';
 
