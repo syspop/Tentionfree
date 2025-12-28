@@ -6,7 +6,7 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
-const { sendOrderEmail } = require('./services/emailService');
+const { sendOrderStatusEmail } = require('./services/emailService');
 
 const helmet = require('helmet'); // Secure Headers
 const rateLimit = require('express-rate-limit'); // Rate Limiting
@@ -345,7 +345,8 @@ app.post('/api/orders', async (req, res) => {
         await writeLocalJSON('orders.json', allOrders);
 
         // Send Email Notification in Background
-        sendOrderEmail(newOrder).catch(err => console.error("Email Error:", err));
+        // Email removed as per user request (only on status update)
+        // sendOrderStatusEmail(newOrder, { status: 'Received' });
 
         res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
     } catch (err) {
@@ -385,6 +386,30 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
         allOrders[orderIndex] = updatedOrder;
 
         await writeLocalJSON('orders.json', allOrders);
+
+        // [NEW] Send Status Email if status changed to critical states
+        if (updates.status && ['Completed', 'Cancelled', 'Refunded'].includes(updates.status)) {
+            try {
+                // Enrich items with images from products.json
+                const allProducts = await readLocalJSON('products.json');
+                const enrichedOrder = { ...updatedOrder };
+
+                if (enrichedOrder.items && Array.isArray(enrichedOrder.items)) {
+                    enrichedOrder.items = enrichedOrder.items.map(item => {
+                        // Find product by name (best effort) since ID might be variant specific or not in item
+                        const p = allProducts.find(prod => prod.name === item.name);
+                        return {
+                            ...item,
+                            image: p ? p.image : (item.image || null)
+                        };
+                    });
+                }
+
+                sendOrderStatusEmail(enrichedOrder, updates).catch(e => console.error("Email Error:", e));
+            } catch (e) {
+                console.error("Failed to prepare email data:", e);
+            }
+        }
 
         res.json({ success: true, message: "Order updated successfully" });
     } catch (err) {
