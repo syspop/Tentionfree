@@ -1346,6 +1346,9 @@ function renderHomeProducts() {
         card.style.animationDelay = `${index * 100}ms`;
         card.className = 'glass-card rounded-2xl overflow-hidden product-card flex flex-col animate-[fadeIn_0.5s_ease-out_forwards]';
 
+        const isOutOfStock = product.stock === false || product.stock === "false";
+        const opacityClass = isOutOfStock ? 'opacity-70 grayscale' : '';
+
         // Stock Logic
         const badgeHtml = isOutOfStock
             ? `<span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20">Out of Stock</span>`
