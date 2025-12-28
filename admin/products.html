@@ -128,7 +128,7 @@
         }
 
         function editProduct(id) {
-            window.location.href = `add - product ? edit = ${id} `;
+            window.location.href = `add-product.html?edit=${id}`;
         }
 
         // --- REORDER LOGIC ---
@@ -202,7 +202,7 @@
 
         async function confirmProductDelete(id) {
             try {
-                await fetch(`/ api / products / ${id} `, {
+                await fetch(`/api/products/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
@@ -216,7 +216,7 @@
             if (!confirm(`Mark product as ${status ? 'IN STOCK' : 'OUT STOCK'}?`)) return;
 
             try {
-                const res = await fetch(`/ api / products / ${id} `, {
+                const res = await fetch(`/api/products/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -237,7 +237,7 @@
         async function toggleHomeStatus(id, isChecked) {
             // Optimistic UI update could be done here, but reload ensures sync
             try {
-                const res = await fetch(`/ api / products / ${id}`, {
+                const res = await fetch(`/api/products/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
