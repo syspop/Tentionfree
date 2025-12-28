@@ -211,6 +211,25 @@ app.post('/api/categories', authenticateAdmin, async (req, res) => {
     }
 });
 
+// PUT Update Category (Admin)
+app.put('/api/categories/:id', authenticateAdmin, async (req, res) => {
+    const id = req.params.id;
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: "Name is required" });
+
+    try {
+        let categories = await readLocalJSON('categories.json');
+        const index = categories.findIndex(c => c.id === id);
+        if (index === -1) return res.status(404).json({ success: false, message: "Category not found" });
+
+        categories[index].name = name; // Only name update allowed for now, ID is key
+        await writeLocalJSON('categories.json', categories);
+        res.json({ success: true, message: "Category updated" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to update category" });
+    }
+});
+
 // DELETE Category (Admin)
 app.delete('/api/categories/:id', authenticateAdmin, async (req, res) => {
     const id = req.params.id;

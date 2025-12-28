@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="add-product" class="nav-link ${window.location.pathname.includes('add-product') ? 'active' : ''}">
                 <i class="fa-solid fa-plus-circle"></i> Add Product
             </a>
+            <a href="manage-categories" class="nav-link ${window.location.pathname.includes('manage-categories') ? 'active' : ''}">
+                <i class="fa-solid fa-tags"></i> Categories
+            </a>
             <a href="products" class="nav-link ${window.location.pathname.includes('products') ? 'active' : ''}">
                 <i class="fa-solid fa-box-open"></i> Products
             </a>

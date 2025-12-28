@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Categories - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="admin-box">
+        <nav id="admin-nav"></nav>
+
+        <div class="section active" style="display:block;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h3>🏷️ Manage Categories</h3>
+                <button onclick="openAddModal()" class="action-btn">
+                    <i class="fa-solid fa-plus"></i> Add Category
+                </button>
+            </div>
+
+            <div style="background:var(--bg-card); padding:20px; border-radius:15px; border:1px solid var(--border);">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="text-align:left; border-bottom:1px solid var(--border);">
+                            <th style="padding:15px; color:var(--gray);">Name</th>
+                            <th style="padding:15px; color:var(--gray);">ID (Key)</th>
+                            <th style="padding:15px; color:var(--gray); text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="category-list">
+                        <!-- Dynamic Categories Here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="category-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center;">
+            <h3 id="modal-title" style="color:var(--blue); margin-top:0;">Add Category</h3>
+            <input type="text" id="cat-name" class="input-box" placeholder="Name (e.g. Software)"
+                style="margin-bottom:10px;">
+            <input type="text" id="cat-id" class="input-box" placeholder="ID (e.g. software) - unique"
+                style="margin-bottom:20px;">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="closeModal()" class="tab-btn" style="background:var(--bg-input);">Cancel</button>
+                <button onclick="saveCategory()" class="action-btn">Save Category</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal (Optional, reusing generic confirm logic if available, but let's be explicit for consistency) -->
+    <!-- We will use the generic confirm modal from script.js if possible, or custom here? script.js has window.showConfirm. Let's use that one to avoid duplicates. -->
+
+    <script src="script.js"></script>
+    <script>
+        let allCategories = [];
+        let isEditing = false;
+        let editTargetId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+        });
+
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                allCategories = await res.json();
+                renderCategories();
+            } catch (e) {
+                console.error("Failed to load categories", e);
+                window.showAlert("Error", "Failed to load categories", "error");
+            }
+        }
+
+        function renderCategories() {
+            const tbody = document.getElementById('category-list');
+            tbody.innerHTML = allCategories.map(c => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:15px;">
+                        <span style="font-weight:bold; color:white;">${c.name}</span>
+                    </td>
+                    <td style="padding:15px;">
+                        <span style="font-family:monospace; color:var(--blue); background:rgba(59,130,246,0.1); padding:2px 6px; rounded:4px;">${c.id}</span>
+                    </td>
+                    <td style="padding:15px; text-align:right;">
+                        <button onclick="openEditModal('${c.id}', '${c.name}')" style="background:none; border:none; color:var(--gray); cursor:pointer; margin-right:10px; transition:color 0.2s;" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--gray)'">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="confirmDelete('${c.id}')" style="background:none; border:none; color:var(--gray); cursor:pointer; transition:color 0.2s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--gray)'">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddModal() {
+            isEditing = false;
+            editTargetId = null;
+            document.getElementById('modal-title').innerText = "Add Category";
+            document.getElementById('cat-name').value = '';
+            document.getElementById('cat-id').value = '';
+            document.getElementById('cat-id').disabled = false; // ID editable only on create
+            document.getElementById('category-modal').style.display = 'flex';
+        }
+
+        function openEditModal(id, name) {
+            isEditing = true;
+            editTargetId = id;
+            document.getElementById('modal-title').innerText = "Edit Category";
+            document.getElementById('cat-name').value = name;
+            document.getElementById('cat-id').value = id;
+            document.getElementById('cat-id').disabled = true; // Cannot change ID
+            document.getElementById('category-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('category-modal').style.display = 'none';
+        }
+
+        async function saveCategory() {
+            const name = document.getElementById('cat-name').value;
+            const id = document.getElementById('cat-id').value.toLowerCase().replace(/\s+/g, '-');
+
+            if (!name || (!isEditing && !id)) {
+                return window.showAlert("Missing Info", "Name and ID are required!", "error");
+            }
+
+            try {
+                if (isEditing) {
+                    // Update (PUT) - Wait, I haven't implemented PUT in server.js yet. I will do that next.
+                    // Assuming endpoint /api/categories/:id
+                    const res = await fetch(`/api/categories/${editTargetId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify({ name })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.showAlert("Success", "Category updated!", "success");
+                        closeModal();
+                        loadCategories();
+                    } else {
+                        window.showAlert("Error", data.message || "Update failed", "error");
+                    }
+                } else {
+                    // Create (POST)
+                    const res = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify({ name, id })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.showAlert("Success", "Category added!", "success");
+                        closeModal();
+                        loadCategories();
+                    } else {
+                        window.showAlert("Error", data.message || "Creation failed", "error");
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                window.showAlert("Error", "Network error", "error");
+            }
+        }
+
+        function confirmDelete(id) {
+            window.showConfirm("Delete Category", `Are you sure you want to delete '${id}'? This might affect products using this category.`, () => {
+                deleteCategory(id);
+            });
+        }
+
+        async function deleteCategory(id) {
+            try {
+                const res = await fetch(`/api/categories/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.showAlert("Deleted", "Category has been removed.", "success");
+                    loadCategories();
+                } else {
+                    window.showAlert("Error", data.message || "Delete failed", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                window.showAlert("Error", "Network error", "error");
+            }
+        }
+    </script>
+</body>
+
+</html>
