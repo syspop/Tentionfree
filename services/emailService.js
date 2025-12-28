@@ -21,7 +21,14 @@ const resolveImage = (img) => {
     if (!img) return null;
     if (img.startsWith('http')) return img;
     if (img.startsWith('data:image')) return img; // Base64
-    return `${SITE_URL}/${img.replace(/^\//, '')}`;
+
+    // Clean leading slash
+    const cleanPath = img.replace(/^\//, '');
+
+    // Enable this for debugging if needed, but for now just encode
+    // console.log('Resolving Image:', cleanPath);
+
+    return `${SITE_URL}/${cleanPath.split('/').map(encodeURIComponent).join('/')}`;
 };
 
 async function sendOrderStatusEmail(order, updates) {
