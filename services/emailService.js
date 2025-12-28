@@ -289,9 +289,10 @@ Track your order: ${SITE_URL}/profile.html
         `.trim();
 
         const { data, error } = await resend.emails.send({
-            from: 'TentionFree <noreply@tentionfree.store>',
+            from: 'TentionFree <support@tentionfree.store>',
             to: uniqueRecipients,
             bcc: [ADMIN_EMAIL],
+            reply_to: 'support@tentionfree.store',
             subject: subject,
             html: htmlContent,
             text: textContent
