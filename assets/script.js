@@ -1345,8 +1345,6 @@ function renderHomeProducts() {
         card.className = 'glass-card rounded-2xl overflow-hidden product-card flex flex-col animate-[fadeIn_0.5s_ease-out_forwards]';
 
         // Stock Logic
-        const isOutOfStock = product.inStock === false;
-        const opacityClass = isOutOfStock ? 'opacity-70 grayscale-[0.5]' : '';
         const badgeHtml = isOutOfStock
             ? `<span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20">Out of Stock</span>`
             : `<span id="h-badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg">${product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
@@ -1361,72 +1359,12 @@ function renderHomeProducts() {
         // Variant Selector HTML (Scoped to home grid to avoid ID collision)
         let variantSelectorHtml = '';
         if (product.variants && product.variants.length > 0) {
-            variantSelectorHtml = `
-    // --- HOME PAGE SPECIFIC RENDER ---
-    function renderHomeProducts() {
-        const grid = document.getElementById('home-product-grid');
-        if (!grid) return;
-
-        if (!products || products.length === 0) {
-            // Fallback: If products empty, show message after distinct clear, NOT loading forever
-            grid.innerHTML = `
-                < div class="col-span-full text-center py-10" >
-                    <p class="text-slate-500 text-sm">No products available at the moment.</p>
-                </div >
-                `;
-            return;
-        }
-
-        // Filter products with viewInIndex === true
-        // Also include default popular ones as fallback if none selected?
-        // User requested "aita theke product on korle sodo on kkora product gola index e dekha jabe" 
-        // -> ONLY enabled products.
-
-        // Explicitly check for true, or string "true" just in case.
-        const featured = products.filter(p => p.viewInIndex === true || p.viewInIndex === "true");
-
-        if (featured.length === 0) {
-            grid.innerHTML = `
-                < div class="col-span-full text-center py-10" >
-                    <p class="text-slate-500 text-sm">No featured products selected.</p>
-            </div >
-                `;
-            return;
-        }
-
-        grid.innerHTML = '';
-
-        featured.forEach((product, index) => {
-            const card = document.createElement('div');
-            // Use same styling as products page card
-            card.style.animationDelay = `${ index * 100 } ms`;
-            card.className = 'glass-card rounded-2xl overflow-hidden product-card flex flex-col animate-[fadeIn_0.5s_ease-out_forwards]';
-
-            // Stock Logic
-            const isOutOfStock = product.inStock === false;
-            const opacityClass = isOutOfStock ? 'opacity-70 grayscale-[0.5]' : '';
-            const badgeHtml = isOutOfStock
-                ? `< span class="absolute top-2 right-2 md:top-3 md:right-3 bg-red-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shadow-lg z-20" > Out of Stock</span > `
-                : `< span id = "h-badge-${product.id}" class="absolute top-2 right-2 md:top-3 md:right-3 bg-brand-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md uppercase tracking-wide shadow-lg" > ${ product.badge ? product.badge : Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF' }</span > `;
-
-            const buyButtonHtml = isOutOfStock
-                ? `< button class="z-10 bg-gray-700 text-gray-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium border border-gray-600 cursor-not-allowed" > Out of Stock</button > `
-                : `< button onclick = "buyNow(${product.id})" class="z-10 bg-white/5 hover:bg-brand-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all border border-white/10 hover:border-brand-400" > Buy Now</button > `;
-
-            const addCartAction = isOutOfStock ? '' : `onclick = "addToCart(${product.id})"`;
-            const addCartCursor = isOutOfStock ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-brand-500 hover:text-white';
-
-            // Variant Selector HTML (Scoped to home grid to avoid ID collision)
-            let variantSelectorHtml = '';
-            if (product.variants && product.variants.length > 0) {
-                variantSelectorHtml = `
-                < div class="mb-3" >
-                    <select id="h-variant-select-${product.id}" onchange="updateCardPriceHome(${product.id})" onclick="event.stopPropagation()"
-                        class="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer hover:bg-white/10 transition-colors" ${isOutOfStock ? 'disabled' : ''}>
-                        ${product.variants.map((v, i) => `<option value="${i}" class="bg-gray-900">${v.label}</option>`).join('')}
-                    </select>
-                </div >
-                `;
+            <div class="mb-2 md:mb-3">
+                <select id="h-variant-select-${product.id}" onchange="updateCardPriceHome(${product.id})"
+                    class="w-full bg-dark-bg border border-white/10 rounded-lg text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 text-gray-300 focus:outline-none focus:border-brand-500 transition-colors cursor-pointer appearance-none hover:bg-white/5">
+                    ${product.variants.map((v, i) => `<option value="${i}">${v.label}</option>`).join('')}
+                </select>
+            </div>`;
             }
 
             card.innerHTML = `
