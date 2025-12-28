@@ -268,12 +268,33 @@ async function sendOrderStatusEmail(order, updates) {
         </html>
         `;
 
+        // --- Plain Text Version (For Anti-Spam & Fallback) ---
+        const textContent = `
+TentionFree - Order ${status}
+
+Hi ${order.customer || 'Customer'},
+
+${statusMessage.replace(/<[^>]*>/g, '')}
+
+Order Details:
+${order.items.map(i => `${i.name} (x${i.quantity || 1}) - ${displayPrice(parseFloat(i.price) * (i.quantity || 1))}`).join('\n')}
+
+Total: ${isUSD ? '$' : '৳'}${isUSD ? totalOrderPrice.toFixed(2) : totalOrderPrice}
+
+${updates.deliveryInfo ? `Delivery Info:\n${updates.deliveryInfo}` : ''}
+${updates.cancelReason ? `Reason:\n${updates.cancelReason}` : ''}
+${updates.refundMethod ? `Refund: ${updates.refundMethod} (Trx: ${updates.refundTrx})` : ''}
+
+Track your order: ${SITE_URL}/profile.html
+        `.trim();
+
         const { data, error } = await resend.emails.send({
             from: 'TentionFree <noreply@tentionfree.store>',
             to: uniqueRecipients,
             bcc: [ADMIN_EMAIL],
             subject: subject,
-            html: htmlContent
+            html: htmlContent,
+            text: textContent
         });
 
         if (error) {
