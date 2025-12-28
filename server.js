@@ -177,6 +177,53 @@ app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- CATEGORIES ---
+// GET Categories
+app.get('/api/categories', async (req, res) => {
+    try {
+        const categories = await readLocalJSON('categories.json');
+        res.json(categories);
+    } catch (err) {
+        // Fallback if file missing (auto-create logic handled in readLocalJSON usually or init, but let's be safe)
+        res.json([
+            { "id": "streaming", "name": "Streaming" },
+            { "id": "gaming", "name": "Gaming" },
+            { "id": "tools", "name": "Tools & VPN" }
+        ]);
+    }
+});
+
+// POST Add Category (Admin)
+app.post('/api/categories', authenticateAdmin, async (req, res) => {
+    const { name, id } = req.body;
+    if (!name || !id) return res.status(400).json({ success: false, message: "Name and ID required" });
+
+    try {
+        const categories = await readLocalJSON('categories.json');
+        if (categories.find(c => c.id === id)) {
+            return res.status(400).json({ success: false, message: "Category ID already exists" });
+        }
+        categories.push({ id, name });
+        await writeLocalJSON('categories.json', categories);
+        res.json({ success: true, message: "Category added" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to add category" });
+    }
+});
+
+// DELETE Category (Admin)
+app.delete('/api/categories/:id', authenticateAdmin, async (req, res) => {
+    const id = req.params.id;
+    try {
+        let categories = await readLocalJSON('categories.json');
+        categories = categories.filter(c => c.id !== id);
+        await writeLocalJSON('categories.json', categories);
+        res.json({ success: true, message: "Category deleted" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to delete category" });
+    }
+});
+
 // --- DEBUG ENDPOINT ---
 app.get('/api/debug/db', async (req, res) => {
     try {

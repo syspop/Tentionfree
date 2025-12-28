@@ -27,11 +27,18 @@
                     <input type="text" id="p-badge" class="input-box" placeholder="e.g. HOT, 50% OFF, BEST SELLER">
 
                     <label>Category</label>
-                    <select id="p-category" class="input-box">
-                        <option value="streaming">Streaming</option>
-                        <option value="tools">Tools & VPN</option>
-                        <option value="gaming">Gaming</option>
-                    </select>
+                    <div style="display:flex; gap:5px;">
+                        <select id="p-category" class="input-box" style="flex:1;">
+                            <option value="streaming">Streaming</option>
+                            <option value="tools">Tools & VPN</option>
+                            <option value="gaming">Gaming</option>
+                        </select>
+                        <button onclick="openAddCategoryModal()"
+                            style="background:var(--bg-card); color:var(--blue); border:1px solid var(--border); padding:0 12px; border-radius:8px; cursor:pointer;"
+                            title="Add Component">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
 
                     <label>Stock Status</label>
                     <select id="p-stock" class="input-box">
@@ -81,6 +88,24 @@
         </div>
     </div>
 
+    <!-- Category Modal -->
+    <div id="category-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center;">
+            <h3 style="color:var(--blue); margin-top:0;">Add Category</h3>
+            <input type="text" id="cat-name" class="input-box" placeholder="Name (e.g. Software)"
+                style="margin-bottom:10px;">
+            <input type="text" id="cat-id" class="input-box" placeholder="ID (e.g. software) - unique, lowercase"
+                style="margin-bottom:20px;">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="document.getElementById('category-modal').style.display='none'" class="tab-btn"
+                    style="background:var(--bg-input);">Cancel</button>
+                <button onclick="addNewCategory()" class="action-btn">Add Service</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Success Modal -->
     <div id="save-success-modal"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
@@ -105,11 +130,9 @@
     <script src="script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            loadCategories(); // New: Load dynamic categories
             addVariantRow('1 Month', '', '');
 
-            // Check if editing (Logic for editing will be handled in products.html mainly, but if we want to share this page for edit, we need URL params. 
-            // For now, let's keep it simple: this is "Add Product". "Edit" might need to redirect here with ID. 
-            // Let's support URL param `?edit=ID`
             // Check if editing
             const urlParams = new URLSearchParams(window.location.search);
             const editId = urlParams.get('edit');
@@ -119,6 +142,54 @@
                 loadProductForEdit(editId);
             }
         });
+
+        // --- CATEGORY MANIPULATION ---
+        async function loadCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                const categories = await res.json();
+                const select = document.getElementById('p-category');
+                select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            } catch (e) {
+                console.error("Failed to load categories:", e);
+                // Fallback handled by static html initially or empty
+            }
+        }
+
+        function openAddCategoryModal() {
+            document.getElementById('category-modal').style.display = 'flex';
+        }
+
+        async function addNewCategory() {
+            const name = document.getElementById('cat-name').value;
+            const id = document.getElementById('cat-id').value.toLowerCase().replace(/\s+/g, '-');
+
+            if (!name || !id) return alert("Name and ID are required!");
+
+            try {
+                const res = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ name, id })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    alert("Category Added!");
+                    document.getElementById('category-modal').style.display = 'none';
+                    loadCategories(); // Refresh list
+                    document.getElementById('cat-name').value = '';
+                    document.getElementById('cat-id').value = '';
+                } else {
+                    alert(data.message || "Failed");
+                }
+            } catch (e) {
+                alert("Error adding category");
+            }
+        }
 
         // --- VARIANT LOGIC ---
         function addVariantRow(label = '', price = '', original = '') {

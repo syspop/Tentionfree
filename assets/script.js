@@ -375,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchProducts().then(() => {
         // Logic to run AFTER products are loaded
         handleUrlParams();
+        loadCategoryFilters(); // New: Load dynamic categories
     });
 
     // Navbar scroll effect
@@ -391,6 +392,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+async function loadCategoryFilters() {
+    const container = document.getElementById('category-filters');
+    if (!container) return;
+
+    try {
+        const res = await fetch('/api/categories');
+        const categories = await res.json();
+
+        // Keep "All" button, append others
+        // "All" is already static in HTML, or we can clear and rebuild.
+        // Let's just append to ensure "All" stays first.
+        // Actually, to avoid duplicates on re-run, let's clear except first child?
+        // Safest: Clear all, rebuild ALL.
+
+        let html = `<button onclick="filterProducts('all')" class="filter-btn ${currentFilter === 'all' ? 'active bg-brand-500 text-white shadow-lg shadow-brand-500/30' : 'bg-transparent text-gray-400 hover:text-white hover:bg-white/5'} px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap">All</button>`;
+
+        if (Array.isArray(categories)) {
+            categories.forEach(c => {
+                const isActive = currentFilter === c.id;
+                const activeClasses = 'active bg-brand-500 text-white shadow-lg shadow-brand-500/30';
+                const inactiveClasses = 'bg-transparent text-gray-400 hover:text-white hover:bg-white/5';
+
+                html += `<button onclick="filterProducts('${c.id}')" class="filter-btn ${isActive ? activeClasses : inactiveClasses} px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap">${c.name}</button>`;
+            });
+        }
+
+        container.innerHTML = html;
+
+    } catch (e) {
+        console.error("Failed to load category filters:", e);
+        // Fallback or leave as is (just 'All')
+    }
+}
 
 async function handleUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);

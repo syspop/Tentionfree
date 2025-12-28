@@ -1,0 +1,14 @@
+[
+    {
+        "id": "streaming",
+        "name": "Streaming"
+    },
+    {
+        "id": "gaming",
+        "name": "Gaming"
+    },
+    {
+        "id": "tools",
+        "name": "Tools & VPN"
+    }
+]
