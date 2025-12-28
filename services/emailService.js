@@ -28,7 +28,8 @@ const resolveImage = (img) => {
     // Enable this for debugging if needed, but for now just encode
     // console.log('Resolving Image:', cleanPath);
 
-    return `${SITE_URL}/${cleanPath.split('/').map(encodeURIComponent).join('/')}`;
+    // Append timestamp to bust email client caches (Gmail)
+    return `${SITE_URL}/${cleanPath.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`;
 };
 
 async function sendOrderStatusEmail(order, updates) {
