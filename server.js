@@ -6,7 +6,7 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
-const { sendOrderStatusEmail } = require('./services/emailService');
+const { sendOrderStatusEmail } = require('./backend_services/emailService');
 
 const helmet = require('helmet'); // Secure Headers
 const rateLimit = require('express-rate-limit'); // Rate Limiting
