@@ -314,6 +314,15 @@ async function fetchProducts() {
         console.warn("Server offline or error. Using defaults locally.", error);
         products = defaultProducts;
     } finally {
+        // Normalize image paths globally to avoid issues with trailing slashes (e.g. /services/)
+        if (Array.isArray(products)) {
+            products.forEach(p => {
+                if (p.image && !p.image.startsWith('/') && !p.image.startsWith('http')) {
+                    p.image = '/' + p.image;
+                }
+            });
+        }
+
         // Always render, whether success or error
         if (document.getElementById('product-grid')) {
             renderProducts();
@@ -336,6 +345,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedCart) {
         try {
             cart = JSON.parse(savedCart);
+            // Fix legacy relative paths in cart
+            let cartUpdated = false;
+            cart.forEach(item => {
+                if (item.image && !item.image.startsWith('/') && !item.image.startsWith('http')) {
+                    item.image = '/' + item.image;
+                    cartUpdated = true;
+                }
+            });
+            if (cartUpdated) {
+                localStorage.setItem('tentionfree_cart', JSON.stringify(cart));
+            }
         } catch (e) {
             console.error('Error parsing cart from localStorage', e);
             cart = [];
