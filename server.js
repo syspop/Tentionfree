@@ -81,6 +81,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Explicitly serve services.html for /services route to fix "Cannot GET" error
+app.get(['/services', '/services/'], (req, res) => {
+    res.sendFile(__dirname + '/services.html');
+});
+
 // Serve static files (try .html automatically)
 app.use(express.static(__dirname, { extensions: ['html', 'htm'] }));
 
