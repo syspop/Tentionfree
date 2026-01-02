@@ -140,53 +140,11 @@
     </div>
 
     <!-- Custom Alert Modal -->
-    <div id="custom-alert-modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
-        <div
-            style="background:var(--bg-card); width:320px; padding:30px; border-radius:20px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out;">
-            <div id="alert-icon-container"
-                style="margin:0 auto 20px auto; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                <i id="alert-icon" class="fa-solid" style="font-size:28px;"></i>
-            </div>
-            <h3 id="alert-title" style="color:white; margin-top:0; font-size:20px; margin-bottom:10px;">Alert</h3>
-            <p id="alert-message" style="color:var(--gray); font-size:14px; margin-bottom:25px; line-height:1.5;">
-                Message goes here</p>
-            <button onclick="closeCustomAlert()" class="btn-main" style="width:100%; padding:10px;">Okay</button>
-        </div>
-    </div>
+    <!-- Custom Alert Modal (Removed - using Global) -->
 
     <script src="script.js?v=5"></script>
     <script>
-        // Custom Alert Function
-        function showCustomAlert(title, message, type = 'info') {
-            const modal = document.getElementById('custom-alert-modal');
-            const iconContainer = document.getElementById('alert-icon-container');
-            const icon = document.getElementById('alert-icon');
-            const titleEl = document.getElementById('alert-title');
-            const msgEl = document.getElementById('alert-message');
-
-            titleEl.innerText = title;
-            msgEl.innerText = message;
-            modal.style.display = 'flex';
-
-            if (type === 'success') {
-                iconContainer.style.background = 'rgba(16,185,129,0.15)';
-                icon.className = 'fa-solid fa-check';
-                icon.style.color = '#10b981';
-            } else if (type === 'error') {
-                iconContainer.style.background = 'rgba(239,68,68,0.15)';
-                icon.className = 'fa-solid fa-xmark';
-                icon.style.color = '#ef4444';
-            } else {
-                iconContainer.style.background = 'rgba(59,130,246,0.15)';
-                icon.className = 'fa-solid fa-info';
-                icon.style.color = '#3b82f6';
-            }
-        }
-
-        function closeCustomAlert() {
-            document.getElementById('custom-alert-modal').style.display = 'none';
-        }
+        // Custom Alert functions removed (using global showAlert)
 
         document.addEventListener('DOMContentLoaded', () => {
             loadCategories(); // New: Load dynamic categories
@@ -378,7 +336,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                showCustomAlert("Upload Failed", "Could not upload image.", "error");
+                showAlert("Upload Failed", "Could not upload image.", "error");
                 previewContainer.innerHTML = `<span style="color:red;">Upload Failed</span>`;
                 // Reset upload box preview on failure?
                 document.getElementById('preview-img').style.display = 'none';
@@ -401,7 +359,7 @@
                     }
                 } catch (e) {
                     console.error(e);
-                    showCustomAlert("Upload Failed", "Could not upload image.", "error");
+                    showAlert("Upload Failed", "Could not upload image.", "error");
                     previewContainer.innerHTML = `<span style="color:red;">Upload Failed</span>`;
                 }
             }
