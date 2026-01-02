@@ -277,8 +277,28 @@
         </div>
     </nav>
 
+    <!-- Banner Slider -->
+    <section id="banner-slider" class="relative w-full h-[250px] md:h-[400px] overflow-hidden mt-20">
+        <div class="swiper-wrapper flex transition-transform duration-500 ease-in-out h-full" id="banner-wrapper">
+            <!-- Banners will be injected here -->
+        </div>
+        <!-- Slider Controls -->
+        <button id="prev-banner"
+            class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition z-10">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button id="next-banner"
+            class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition z-10">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <!-- Pagination Dots -->
+        <div id="banner-pagination" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+            <!-- Dots injected by script -->
+        </div>
+    </section>
+
     <!-- Hero Section -->
-    <section id="home" class="pt-40 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative overflow-hidden">
+    <section id="home" class="pt-10 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative overflow-hidden">
         <div class="text-center relative z-10">
             <div
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-sm font-medium mb-8 animate-fade-in-up">

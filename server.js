@@ -1130,6 +1130,67 @@ app.post('/api/admin-login', (req, res) => {
     }
 });
 
+
+// --- Banner Management Routes ---
+
+// Get all banners
+app.get('/api/banners', async (req, res) => {
+    try {
+        const banners = await readLocalJSON('banners.json');
+        res.json(banners);
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to load banners" });
+    }
+});
+
+// Add a new banner (Admin Only)
+app.post('/api/banners', authenticateAdmin, async (req, res) => {
+    try {
+        const { image, link, active } = req.body;
+        if (!image) {
+            return res.status(400).json({ success: false, message: "Image is required" });
+        }
+
+        const banners = await readLocalJSON('banners.json');
+        const newBanner = {
+            id: Date.now(),
+            image,
+            link: link || '#', // Default to # if no link
+            active: active !== undefined ? active : true,
+            createdAt: new Date()
+        };
+
+        banners.push(newBanner);
+        await writeLocalJSON('banners.json', banners);
+
+        res.json({ success: true, message: "Banner added successfully", banner: newBanner });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to add banner" });
+    }
+});
+
+// Delete a banner (Admin Only)
+app.delete('/api/banners/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        let banners = await readLocalJSON('banners.json');
+
+        const initialLength = banners.length;
+        banners = banners.filter(b => b.id !== id);
+
+        if (banners.length === initialLength) {
+            return res.status(404).json({ success: false, message: "Banner not found" });
+        }
+
+        await writeLocalJSON('banners.json', banners);
+        res.json({ success: true, message: "Banner deleted successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to delete banner" });
+    }
+});
+
 // --- GLOBAL ERROR HANDLER ---
 // (Must be the last middleware)
 app.use((err, req, res, next) => {

@@ -6,9 +6,10 @@ const DATA_DIR = path.join(__dirname);
 // --- GLOBAL IN-MEMORY CACHE ---
 const CACHE = {
     products: null,
-    orders: null,
-    customers: null,
-    tickets: null
+    'orders.json': [],
+    'customers.json': [],
+    'tickets.json': [],
+    'banners.json': []
 };
 
 // Helper to write data to JSON file (and update Cache)

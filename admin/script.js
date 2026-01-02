@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="customers" class="nav-link ${window.location.pathname.includes('customers') ? 'active' : ''}">
                 <i class="fa-solid fa-users"></i> Customers
             </a>
+            <a href="manage-banners" class="nav-link ${window.location.pathname.includes('manage-banners') ? 'active' : ''}">
+                <i class="fa-solid fa-images"></i> Banners
+            </a>
             <a href="tickets" class="nav-link ${window.location.pathname.includes('tickets') ? 'active' : ''}" style="color:${window.location.pathname.includes('tickets') ? 'white' : '#fab1a0'}">
                 <i class="fa-solid fa-headset"></i> Tickets
             </a>

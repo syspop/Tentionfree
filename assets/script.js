@@ -400,6 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handleUrlParams();
         loadCategoryFilters(); // New: Load dynamic categories
         renderHomeProducts(); // New: Render home page products
+        initBannerSlider(); // New: Initialize Banner Slider (Homepage)
     });
 
     // Navbar scroll effect
@@ -449,6 +450,87 @@ async function loadCategoryFilters() {
         console.error("Failed to load category filters:", e);
         // Fallback or leave as is (just 'All')
     }
+}
+
+// --- BANNER SLIDER LOGIC ---
+async function initBannerSlider() {
+    const wrapper = document.getElementById('banner-wrapper');
+    if (!wrapper) return; // Not on homepage
+
+    try {
+        const res = await fetch('/api/banners');
+        const banners = await res.json();
+
+        if (!Array.isArray(banners) || banners.length === 0) {
+            document.getElementById('banner-slider').style.display = 'none';
+            document.getElementById('home').classList.remove('pt-10'); // Restore logging padding if no banner
+            document.getElementById('home').classList.add('pt-40');
+            return;
+        }
+
+        wrapper.innerHTML = banners.map(b => `
+            <a href="${b.link || '#'}" class="swiper-slide w-full h-full flex-shrink-0 relative block">
+                <img src="${b.image}" alt="Banner" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+            </a>
+        `).join('');
+
+        // Pagination
+        const pagination = document.getElementById('banner-pagination');
+        pagination.innerHTML = banners.map((_, i) => `
+            <button onclick="goToSlide(${i})" class="w-3 h-3 rounded-full transition-all ${i === 0 ? 'bg-brand-500 w-6' : 'bg-white/50 hover:bg-white'}"></button>
+        `).join('');
+
+        startSliderAutoPlay(banners.length);
+
+    } catch (err) {
+        console.error("Failed to load banners:", err);
+        document.getElementById('banner-slider').style.display = 'none';
+    }
+}
+
+let currentSlide = 0;
+let slideInterval;
+
+function startSliderAutoPlay(totalSlides) {
+    const wrapper = document.getElementById('banner-wrapper');
+    const dots = document.getElementById('banner-pagination').children;
+
+    function updateSlider() {
+        wrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+        Array.from(dots).forEach((dot, i) => {
+            dot.className = `w-3 h-3 rounded-full transition-all ${i === currentSlide ? 'bg-brand-500 w-6' : 'bg-white/50 hover:bg-white'}`;
+        });
+    }
+
+    window.goToSlide = (index) => {
+        currentSlide = index;
+        updateSlider();
+        resetInterval();
+    };
+
+    document.getElementById('next-banner').onclick = () => {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        updateSlider();
+        resetInterval();
+    };
+
+    document.getElementById('prev-banner').onclick = () => {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+        updateSlider();
+        resetInterval();
+    };
+
+    function resetInterval() {
+        clearInterval(slideInterval);
+        slideInterval = setInterval(() => {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateSlider();
+        }, 4000);
+    }
+
+    resetInterval();
+}
 }
 
 async function handleUrlParams() {
