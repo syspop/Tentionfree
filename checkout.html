@@ -113,6 +113,7 @@
                 </div>
 
                 <form id="checkout-form" onsubmit="event.preventDefault(); submitOrder();">
+                    <input type="hidden" id="is-free-order" value="false">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
                         <!-- Left Column: Customer Details -->
@@ -189,7 +190,7 @@
 
 
                         <!-- Payment Method -->
-                        <div class="space-y-5">
+                        <div id="payment-method-toggle" class="space-y-5">
                             <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Payment Method
                             </h4>
 

@@ -758,6 +758,36 @@ function initCheckoutPage() {
         }
     }
 
+    // --- FREE ORDER CHECK ---
+    // Calculate total from items again just to be sure or use the one from above if scoped correctly
+    // efficient way: calculate total above is local to block? no it was let total=0 inside if(summaryContainer).
+    // Let's re-calculate or just use the summary total logic availability.
+    // Actually, calculate total again to be safe and clean.
+    let currentTotal = 0;
+    itemsToCheckout.forEach(item => currentTotal += item.price * item.quantity);
+
+    if (currentTotal === 0) {
+        // 1. Set Hidden Flag
+        const freeInput = document.getElementById('is-free-order');
+        if (freeInput) freeInput.value = "true";
+
+        // 2. Hide Payment Method Toggle
+        const methodToggle = document.getElementById('payment-method-toggle');
+        if (methodToggle) methodToggle.classList.add('hidden');
+
+        // 3. Hide Payment Details Section (bKash/Transaction ID)
+        const detailsSection = document.getElementById('payment-details-section');
+        if (detailsSection) detailsSection.classList.add('hidden');
+
+        // 4. Hide Confirmation Section (Pay Later options)
+        const confirmSection = document.getElementById('confirmation-method-section');
+        if (confirmSection) confirmSection.classList.add('hidden');
+
+        // 5. Update Submit Button Text
+        const submitBtnSpan = document.querySelector('button[type="submit"] span');
+        if (submitBtnSpan) submitBtnSpan.innerText = "Get for Free";
+    }
+
     // 4. Populate Dynamic Game UIDs
     const gamingItems = itemsToCheckout.filter(item => item.category === 'gaming');
     const uidContainer = document.getElementById('game-uid-field');
@@ -1449,7 +1479,7 @@ function updatePaymentInfo() {
 
     const instructions = {
         bkash: `
-            < div class="space-y-2" >
+            <div class="space-y-2">
                 <p class="text-brand-400 font-bold border-b border-white/10 pb-1 mb-2">📱 1. bKash Payment (USSD Method)</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*247#</span></li>
@@ -1462,9 +1492,9 @@ function updatePaymentInfo() {
                     <li>Enter Reference (optional)</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div > `,
+            </div>`,
         nagad: `
-            < div class="space-y-2" >
+            <div class="space-y-2">
                 <p class="text-orange-400 font-bold border-b border-white/10 pb-1 mb-2">📱 2. Nagad Payment (USSD Method)</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*167#</span></li>
@@ -1477,9 +1507,9 @@ function updatePaymentInfo() {
                     <li>Enter Reference</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div > `,
+            </div>`,
         rocket: `
-            < div class="space-y-2" >
+            <div class="space-y-2">
                 <p class="text-purple-400 font-bold border-b border-white/10 pb-1 mb-2">📱 3. Rocket Payment (DBBL)</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*322#</span></li>
@@ -1492,9 +1522,9 @@ function updatePaymentInfo() {
                     <li>Enter Reference</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div > `,
+            </div>`,
         upay: `
-            < div class="space-y-2" >
+            <div class="space-y-2">
                 <p class="text-blue-400 font-bold border-b border-white/10 pb-1 mb-2">📱 4. Upay Payment</p>
                 <ul class="list-disc list-inside text-gray-300 space-y-1">
                     <li>Dial <span class="text-white font-mono">*268#</span></li>
@@ -1506,9 +1536,9 @@ function updatePaymentInfo() {
                     <li>Enter Amount</li>
                     <li>Confirm with PIN</li>
                 </ul>
-            </div > `,
+            </div>`,
         binance: `
-            < div class="space-y-2" >
+            <div class="space-y-2">
                 <p class="text-yellow-400 font-bold border-b border-white/10 pb-1 mb-2">💰 5. Binance USDT (Crypto)</p>
                 <p class="text-gray-300 mb-2">You can send USDT directly using Binance.</p>
                 <div class="flex items-center flex-wrap gap-2 mb-2">
@@ -1525,7 +1555,7 @@ function updatePaymentInfo() {
                     <li>Enter Amount</li>
                     <li>Confirm transfer</li>
                 </ul>
-            </div > `
+            </div>`
     };
 
     instructionBox.innerHTML = instructions[method] || '<p class="text-gray-400">Select a payment method to see instructions.</p>';
