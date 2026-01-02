@@ -299,13 +299,13 @@
                 if (result.success) {
                     closeEditModal();
                     loadCustomers(); // Reload list
-                    showCustomAlert("Customer updated successfully!", "success");
+                    showAlert("Success", "Customer updated successfully!", "success");
                 } else {
-                    showCustomAlert(result.message || "Failed to update", "error");
+                    showAlert("Error", result.message || "Failed to update", "error");
                 }
             } catch (e) {
                 console.error(e);
-                showCustomAlert("Server Error", "error");
+                showAlert("Error", "Server Error", "error");
             } finally {
                 btn.innerText = original;
                 btn.disabled = false;
@@ -329,7 +329,7 @@
             if (!deleteUserId) return;
 
             const pass = document.getElementById('del-admin-pass').value;
-            if (!pass) return showCustomAlert("Please enter admin password", "error");
+            if (!pass) return showAlert("Required", "Please enter admin password", "error");
 
             const btn = document.getElementById('btn-del-cust');
             btn.innerText = "Deleting...";
@@ -349,13 +349,13 @@
                 if (result.success) {
                     closeDeleteModal();
                     loadCustomers();
-                    openSuccessModal("Account Deleted Successfully");
+                    showAlert("Success", "Account Deleted Successfully", "success");
                 } else {
-                    showCustomAlert(result.message || "Failed to delete", "error");
+                    showAlert("Error", result.message || "Failed to delete", "error");
                 }
             } catch (e) {
                 console.error(e);
-                showCustomAlert("Server Error", "error");
+                showAlert("Error", "Server Error", "error");
             } finally {
                 btn.innerText = "Delete";
                 btn.disabled = false;
@@ -363,47 +363,7 @@
         }
 
 
-        function openSuccessModal(msg) {
-            document.getElementById('success-msg').innerText = msg;
-            document.getElementById('success-modal').style.display = 'flex';
-        }
-
-        function closeSuccessModal() {
-            document.getElementById('success-modal').style.display = 'none';
-        }
-
-        // --- Custom Alert Logic ---
-        function showCustomAlert(msg, type = 'error') {
-            const modal = document.getElementById('custom-alert-modal');
-            const icon = document.getElementById('alert-icon');
-            const iconContainer = document.getElementById('alert-icon-container');
-            const title = document.getElementById('alert-title');
-            const message = document.getElementById('alert-message');
-
-            message.innerText = msg;
-            modal.style.display = 'flex';
-
-            if (type === 'error') {
-                title.innerText = "Error";
-                icon.className = "fa-solid fa-triangle-exclamation";
-                icon.style.color = "#ef4444";
-                iconContainer.style.background = "rgba(239, 68, 68, 0.15)";
-            } else if (type === 'success') {
-                title.innerText = "Success";
-                icon.className = "fa-solid fa-check";
-                icon.style.color = "#10b981";
-                iconContainer.style.background = "rgba(16, 185, 129, 0.15)";
-            } else {
-                title.innerText = "Alert";
-                icon.className = "fa-solid fa-circle-info";
-                icon.style.color = "#3b82f6";
-                iconContainer.style.background = "rgba(59, 130, 246, 0.15)";
-            }
-        }
-
-        function closeCustomAlert() {
-            document.getElementById('custom-alert-modal').style.display = 'none';
-        }
+        // Custom Alert/Success functions removed (using global showAlert from script.js)
 
     </script>
 
@@ -471,39 +431,7 @@
         </div>
     </div>
     <!-- Success Modal -->
-    <div id="success-modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2200; justify-content:center; align-items:center;">
-        <div
-            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out; position:relative;">
-            <div
-                style="margin:0 auto 20px auto; width:60px; height:60px; background:rgba(16, 185, 129, 0.15); border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                <i class="fa-solid fa-check" style="color:#10b981; font-size:24px;"></i>
-            </div>
-            <h3 style="color:white; margin-top:0;">Success!</h3>
-            <p style="color:var(--gray); font-size:14px; margin-bottom:25px;" id="success-msg">Action completed
-                successfully.</p>
-            <button onclick="closeSuccessModal()" class="action-btn" style="width:100%;">Okay, Got it</button>
-        </div>
-    </div>
-
-    <!-- Custom Alert Modal -->
-    <div id="custom-alert-modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; justify-content:center; align-items:center;">
-        <div
-            style="background:var(--bg-card); width:350px; padding:30px; border-radius:15px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out; position:relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-            <!-- Icon -->
-            <div id="alert-icon-container"
-                style="margin:0 auto 20px auto; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                <i id="alert-icon" class="fa-solid fa-triangle-exclamation" style="font-size:24px;"></i>
-            </div>
-            <!-- Title & Message -->
-            <h3 id="alert-title" style="color:white; margin-top:0;">Alert</h3>
-            <p id="alert-message" style="color:var(--gray); font-size:14px; margin-bottom:25px;">Message...</p>
-            <!-- Button -->
-            <button onclick="closeCustomAlert()" class="tab-btn"
-                style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:white; justify-content:center;">Okay</button>
-        </div>
-    </div>
+    <!-- Success Modal and Custom Alert removed - using Global -->
 </body>
 
 </html>
