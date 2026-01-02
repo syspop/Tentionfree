@@ -314,40 +314,75 @@
             checkPriceForAutoDelivery();
         }
 
-        // --- IMAGE LOGIC ---
-        let uploadedImageBase64 = null;
-        let autoDeliveryImageBase64 = null;
+        // --- IMAGE LOGIC (Updated for File Upload) ---
+        // We now upload immediately or on save? Let's upload immediately for preview & URL generation.
 
-        function handleImageUpload() {
+        async function uploadImageToServer(file) {
+            if (!file) return null;
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Show loading state if possible
+            const loadingHtml = `<div style="color:var(--blue);"><i class="fa-solid fa-spinner fa-spin"></i> Uploading...</div>`;
+            return fetch('/api/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) return data.url;
+                    else throw new Error(data.message);
+                });
+        }
+
+        async function handleImageUpload() {
             const fileInput = document.getElementById('p-img-file');
             if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    uploadedImageBase64 = e.target.result;
-                    document.getElementById('p-img').value = ""; // Clear URL if file uploaded
-                    updatePreview(uploadedImageBase64);
+                const previewContainer = document.getElementById('img-preview-container');
+                previewContainer.innerHTML = `<span style="color:var(--blue);">Uploading...</span>`;
+
+                try {
+                    const url = await uploadImageToServer(fileInput.files[0]);
+                    if (url) {
+                        // Fix path for frontend: prepend nothing, server serves relative to root or we handle it.
+                        // Server returns 'assets/uploads/filename'.
+                        document.getElementById('p-img').value = url;
+                        updatePreview(url);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showCustomAlert("Upload Failed", "Could not upload image.", "error");
+                    previewContainer.innerHTML = `<span style="color:red;">Upload Failed</span>`;
                 }
-                reader.readAsDataURL(fileInput.files[0]);
             }
         }
 
-        function handleAutoImgUpload() {
+        async function handleAutoImgUpload() {
             const fileInput = document.getElementById('p-auto-img-file');
             if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    autoDeliveryImageBase64 = e.target.result;
-                    document.getElementById('p-auto-img').value = "";
-                    document.getElementById('auto-img-preview').innerHTML = `<img src="${e.target.result}" style="height:100%; object-fit:contain;">`;
+                const previewContainer = document.getElementById('auto-img-preview');
+                previewContainer.innerHTML = `<span style="color:var(--blue);">Uploading...</span>`;
+
+                try {
+                    const url = await uploadImageToServer(fileInput.files[0]);
+                    if (url) {
+                        document.getElementById('p-auto-img').value = url;
+                        previewContainer.innerHTML = `<img src="${url}" style="height:100%; object-fit:contain;">`;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showCustomAlert("Upload Failed", "Could not upload image.", "error");
+                    previewContainer.innerHTML = `<span style="color:red;">Upload Failed</span>`;
                 }
-                reader.readAsDataURL(fileInput.files[0]);
             }
         }
 
         function handleUrlInput() {
             const url = document.getElementById('p-img').value;
             if (url) {
-                uploadedImageBase64 = null; // Clear file if URL provided
                 document.getElementById('p-img-file').value = "";
                 updatePreview(url);
             }
@@ -368,8 +403,8 @@
             const badge = document.getElementById('p-badge').value;
             const category = document.getElementById('p-category').value;
             const inStock = document.getElementById('p-stock').value === "true";
-            // Use uploaded image OR text input
-            const img = uploadedImageBase64 || document.getElementById('p-img').value;
+            // Image is now just the value of the text input (populated by upload or manual)
+            const img = document.getElementById('p-img').value;
             const desc = document.getElementById('p-desc').value;
             const longDesc = document.getElementById('p-long-desc').value;
             const features = document.getElementById('p-features').value.split('\n').filter(l => l.trim() !== '');
@@ -377,7 +412,7 @@
 
             // Auto Delivery
             const autoInfo = document.getElementById('p-auto-info').value;
-            const autoImg = autoDeliveryImageBase64 || document.getElementById('p-auto-img').value;
+            const autoImg = document.getElementById('p-auto-img').value;
 
 
             // Variants

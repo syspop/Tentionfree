@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const compression = require('compression');
+
 
 console.log("🚀 Starting Server...");
 
@@ -8,7 +10,11 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
+const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
 const { sendOrderStatusEmail } = require('./backend_services/emailService');
+const multer = require('multer'); // File Uploads
+const path = require('path');
+const fs = require('fs');
 
 // const helmet = require('helmet'); // Secure Headers (Removed for deployment fix)
 // const rateLimit = require('express-rate-limit'); // Rate Limiting (Removed for deployment fix)
@@ -69,6 +75,8 @@ app.use(cors({
 // app.use('/api/', apiLimiter);
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(compression()); // Compress all responses for speed
+
 
 // Automatic Redirect: .html -> clean URL
 // Explicit Root Route
@@ -135,7 +143,44 @@ const authenticateUser = (req, res, next) => {
 // where it has access to both the JSON files and the MONGO_URI.
 
 
+// --- MULTER STORAGE CONFIG ---
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, 'assets/uploads');
+        // Ensure directory exists
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        // Unique filename: fieldname-timestamp.ext
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
 // API Routes
+
+// --- UPLAOD ENDPOINT ---
+app.post('/api/upload', authenticateAdmin, upload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No file uploaded" });
+        }
+        // Return the relative URL
+        const fileUrl = `assets/uploads/${req.file.filename}`;
+        res.json({ success: true, url: fileUrl });
+    } catch (err) {
+        console.error("Upload Error:", err);
+        res.status(500).json({ success: false, message: "File upload failed" });
+    }
+});
 
 // --- PRODUCTS ---
 // GET Products (Hybrid: Read from JSON)
@@ -440,7 +485,7 @@ app.post('/api/orders', async (req, res) => {
                     const product = allProducts.find(p => p.id == item.id || p.name === item.name);
 
                     if (product && product.autoDeliveryInfo) {
-                        combinedDeliveryInfo += `[${item.name}]:\n${product.autoDeliveryInfo}\n\n`;
+                        combinedDeliveryInfo += `Product: ${item.name}\n${product.autoDeliveryInfo}\n\n`;
                         if (!deliveryImage && product.autoDeliveryImage) {
                             deliveryImage = product.autoDeliveryImage;
                         }
