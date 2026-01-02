@@ -10,7 +10,6 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
-const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
 const { sendOrderStatusEmail } = require('./backend_services/emailService');
 const multer = require('multer'); // File Uploads
 const path = require('path');
