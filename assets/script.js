@@ -1657,7 +1657,8 @@ async function submitOrder() {
     let trxid = "Pending";
 
     // Logic based on Payment Type
-    const isFreeOrder = document.getElementById('is-free-order');
+    const freeOrderEl = document.getElementById('is-free-order');
+    const isFreeOrder = freeOrderEl && freeOrderEl.value === 'true';
 
     if (isFreeOrder) {
         payment = "Free Order";
