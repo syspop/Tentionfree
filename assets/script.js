@@ -531,7 +531,7 @@ function startSliderAutoPlay(totalSlides) {
 
     resetInterval();
 }
-}
+
 
 async function handleUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);

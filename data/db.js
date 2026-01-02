@@ -6,10 +6,10 @@ const DATA_DIR = path.join(__dirname);
 // --- GLOBAL IN-MEMORY CACHE ---
 const CACHE = {
     products: null,
-    'orders.json': [],
-    'customers.json': [],
-    'tickets.json': [],
-    'banners.json': []
+    orders: [],
+    customers: [],
+    tickets: [],
+    banners: []
 };
 
 // Helper to write data to JSON file (and update Cache)
@@ -70,6 +70,8 @@ async function initializeDatabase() {
         await readLocalJSON('customers.json');
         console.log("   - Loading tickets.json...");
         await readLocalJSON('tickets.json');
+        console.log("   - Loading banners.json...");
+        await readLocalJSON('banners.json');
         console.log("✅ Inbuilt Database Cache Populated");
     } catch (error) {
         console.error("❌ Fatal Error in initializeDatabase:", error);
