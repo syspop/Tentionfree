@@ -109,8 +109,11 @@
                     </td>
                     <td><span class="badge" style="background:var(--blue)">${p.category}</span></td>
                     <td>
-                        <button class="success-btn" onclick="editProduct('${p.id}')" style="margin-right:5px; background:var(--blue)">Edit</button>
-                        <button class="delete-btn" onclick="deleteProduct(${p.id})" style="background:var(--red)">Delete</button>
+                        <button onclick="editProduct(${p.id})" class="action-btn edit-btn"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteProduct(${p.id})" class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="copyProductLink(${p.id})" class="action-btn" style="background:#0ea5e9; margin-left:5px;" title="Copy Product Link">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -125,6 +128,51 @@
                 console.error(err);
                 list.innerHTML = "<tr><td colspan='7' style='text-align:center; color:red;'>Error loading products.</td></tr>";
             }
+        }
+
+        // --- COPY LINK FUNCTION ---
+        function copyProductLink(id) {
+            // Construct the clean URL (e.g. https://domain.com/?id=123)
+            const url = `${window.location.origin}/?id=${id}`;
+
+            navigator.clipboard.writeText(url).then(() => {
+                showToast("Link Copied! 📋");
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showToast("Failed to copy link ❌");
+            });
+        }
+
+        function showToast(msg) {
+            // Check if toast container exists, else create it
+            let toast = document.getElementById('toast-notification');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-notification';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: var(--brand);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                    z-index: 3000;
+                    font-family: 'Poppins', sans-serif;
+                    font-size: 14px;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                `;
+                document.body.appendChild(toast);
+            }
+
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 3000);
         }
 
         function editProduct(id) {
