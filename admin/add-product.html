@@ -399,8 +399,8 @@
             }
 
             // Derive main Price and Original Price from the first variant
-            const mainPrice = variants.length > 0 ? parseInt(variants[0].price) : 0;
-            const mainOriginalPrice = variants.length > 0 ? parseInt(variants[0].originalPrice) : 0;
+            const mainPrice = variants.length > 0 ? variants[0].price : 0;
+            const mainOriginalPrice = variants.length > 0 ? variants[0].originalPrice : 0;
 
             try {
                 const productData = {

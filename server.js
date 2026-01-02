@@ -158,7 +158,7 @@ app.post('/api/products', authenticateAdmin, async (req, res) => {
 app.post('/api/products/add', authenticateAdmin, async (req, res) => {
     const newProduct = req.body;
 
-    if (!newProduct.name || !newProduct.price) {
+    if (!newProduct.name || newProduct.price === undefined || newProduct.price === null) {
         return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
