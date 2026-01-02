@@ -201,10 +201,12 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    uploadUrl = data.url;
+                    console.log("Upload success:", data);
+                    uploadUrl = data.url || data.imageUrl; // Fallback for safety
                     btn.innerText = 'Save Banner'; // Ready to save
                     btn.disabled = false;
                 } else {
+                    console.error("Upload failed:", data);
                     alert('Upload failed: ' + (data.message || 'Unknown error'));
                     btn.innerText = originalText;
                     btn.disabled = false;
@@ -218,7 +220,7 @@
 
         async function saveBanner() {
             if (!uploadUrl) {
-                alert('Please upload an image first.');
+                alert('No banner image detected. Please wait for upload to finish or try again.');
                 return;
             }
 
