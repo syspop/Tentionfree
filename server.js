@@ -72,8 +72,8 @@ app.use(cors({
 
 // Apply rate limiting to all API routes
 // app.use('/api/', apiLimiter);
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(compression()); // Compress all responses for speed
 
 
