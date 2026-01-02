@@ -348,24 +348,42 @@
         }
 
         async function handleImageUpload() {
-            const fileInput = document.getElementById('p-img-file');
-            if (fileInput.files && fileInput.files[0]) {
-                const previewContainer = document.getElementById('img-preview-container');
-                previewContainer.innerHTML = `<span style="color:var(--blue);">Uploading...</span>`;
+            // Legacy function - kept empty or redirecting to new logic if needed
+            // But simpler to just leave it as previous code path is gone.
+        }
 
-                try {
-                    const url = await uploadImageToServer(fileInput.files[0]);
-                    if (url) {
-                        // Fix path for frontend: prepend nothing, server serves relative to root or we handle it.
-                        // Server returns 'assets/uploads/filename'.
-                        document.getElementById('p-img').value = url;
-                        updatePreview(url);
-                    }
-                } catch (e) {
-                    console.error(e);
-                    showCustomAlert("Upload Failed", "Could not upload image.", "error");
-                    previewContainer.innerHTML = `<span style="color:red;">Upload Failed</span>`;
+        async function handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Local Preview in the upload box
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('preview-img').src = e.target.result;
+                document.getElementById('preview-img').style.display = 'block';
+                document.getElementById('upload-placeholder').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+
+            // Upload
+            const previewContainer = document.getElementById('img-preview-container');
+            previewContainer.innerHTML = `<span style="color:var(--blue);">Uploading...</span>`;
+
+            try {
+                const url = await uploadImageToServer(file);
+                if (url) {
+                    document.getElementById('p-img').value = url;
+                    // Also update the bottom preview container
+                    updatePreview(url);
                 }
+            } catch (e) {
+                console.error(e);
+                showCustomAlert("Upload Failed", "Could not upload image.", "error");
+                previewContainer.innerHTML = `<span style="color:red;">Upload Failed</span>`;
+                // Reset upload box preview on failure?
+                document.getElementById('preview-img').style.display = 'none';
+                document.getElementById('upload-placeholder').style.display = 'block';
+                input.value = "";
             }
         }
 
@@ -392,7 +410,14 @@
         function handleUrlInput() {
             const url = document.getElementById('p-img').value;
             if (url) {
-                document.getElementById('p-img-file').value = "";
+                // Clear the file input if URL is manually pasted
+                const fileInput = document.getElementById('p-image-file');
+                if (fileInput) fileInput.value = "";
+
+                // Hide the upload box preview if manual URL is entered (optional, but cleaner)
+                // document.getElementById('preview-img').style.display = 'none';
+                // document.getElementById('upload-placeholder').style.display = 'block';
+
                 updatePreview(url);
             }
         }
