@@ -118,10 +118,10 @@ async function sendOrderStatusEmail(order, updates) {
 
             if (updates.cancelReason) {
                 additionalContent += `
-                    < div style = "background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 20px; border-radius: 12px; margin: 25px 0;" >
+                    <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 20px; border-radius: 12px; margin: 25px 0;">
                         <h4 style="margin: 0 0 5px 0; color: #f87171; font-size: 14px; text-transform: uppercase;">⚠️ Cancellation Reason</h4>
                         <p style="margin: 0; color: #fca5a5; font-size: 15px;">${updates.cancelReason}</p>
-                    </div >
+                    </div>
                     `;
             }
             // Removed Cancellation Proof Image as requested
@@ -132,7 +132,7 @@ async function sendOrderStatusEmail(order, updates) {
             statusMessage = `A refund has been processed for your order.`;
 
             additionalContent += `
-                    < div style = "background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 20px; border-radius: 12px; margin: 25px 0;" >
+                    <div style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); padding: 20px; border-radius: 12px; margin: 25px 0;">
                     <h4 style="margin: 0 0 15px 0; color: #c084fc; font-size: 14px; text-transform: uppercase;">💰 Refund Details</h4>
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
@@ -148,7 +148,7 @@ async function sendOrderStatusEmail(order, updates) {
                             <td colspan="2" style="padding-top: 10px; color: #d8b4fe; font-style: italic; font-size: 13px;">"${updates.refundNote}"</td>
                         </tr>` : ''}
                     </table>
-                </div >
+                </div>
                     `;
             // Removed Refund Proof Image as requested
         }
@@ -160,7 +160,7 @@ async function sendOrderStatusEmail(order, updates) {
             const imgUrl = resolveImage(item.image) || 'https://placehold.co/100x100/334155/FFF?text=Item';
 
             return `
-                    < tr >
+                    <tr>
                 <td style="padding: 15px 0; border-bottom: 1px solid #334155; width: 70px; vertical-align: top;">
                     <img src="${imgUrl}" alt="${item.name}" width="60" height="60" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 1px solid #475569; background: #334155;">
                 </td>
@@ -172,7 +172,7 @@ async function sendOrderStatusEmail(order, updates) {
                     <div style="font-weight: 700; color: #f8fafc; font-size: 14px;">${priceFormatted}</div>
                     <div style="color: #94a3b8; font-size: 11px;">x${item.quantity || 1}</div>
                 </td>
-            </tr >
+            </tr>
                     `;
         }).join('');
 
@@ -181,12 +181,12 @@ async function sendOrderStatusEmail(order, updates) {
         let paymentInfo = '';
         if (order.trx) {
             paymentInfo = `
-                    < div style = "margin-top: 30px; background: rgba(51, 65, 85, 0.5); border: 1px dashed #475569; border-radius: 12px; padding: 15px;" >
+                    <div style="margin-top: 30px; background: rgba(51, 65, 85, 0.5); border: 1px dashed #475569; border-radius: 12px; padding: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Your Payment Info</span>
                             <span style="font-family: monospace; font-size: 12px; color: #cbd5e1; background: #334155; padding: 2px 6px; border-radius: 4px; border: 1px solid #475569;">TRX: ${order.trx}</span>
                         </div>
-                </div >
+                </div>
                     `;
         }
         // Removed order.proof image block
@@ -194,7 +194,7 @@ async function sendOrderStatusEmail(order, updates) {
         // --- Final HTML Construction ---
         // Dark Theme Implementation with Table-based Layout for Email Compatibility
         const htmlContent = `
-                    < !DOCTYPE html >
+                    <!DOCTYPE html>
                         <html>
                             <head>
                                 <meta charset="utf-8">
