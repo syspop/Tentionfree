@@ -260,9 +260,13 @@
                 loadProducts();
             } catch (e) { showAlert("Error", "Delete failed", "error"); }
         }
-        async function toggleStock(id, status) {
-            if (!confirm(`Mark product as ${status ? 'IN STOCK' : 'OUT STOCK'}?`)) return;
+        function toggleStock(id, status) {
+            showConfirm("Update Stock?", `Mark product as ${status ? 'IN STOCK' : 'OUT STOCK'}?`, async () => {
+                await performStockUpdate(id, status);
+            });
+        }
 
+        async function performStockUpdate(id, status) {
             try {
                 const res = await fetch(`/api/products/${id}`, {
                     method: 'PUT',
@@ -274,11 +278,13 @@
                 });
                 if (res.ok) {
                     loadProducts();
+                    showToast("Stock updated!", "success");
                 } else {
-                    alert("Update failed");
+                    showAlert("Error", "Update failed", "error");
                 }
             } catch (e) {
                 console.error(e);
+                showAlert("Error", "Connection error", "error");
             }
         }
 

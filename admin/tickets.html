@@ -161,11 +161,17 @@
 
         function resolveTicket(id) {
             showConfirm("Resolve Ticket?", "Mark this ticket as Solved? It will be removed.", () => {
-                deleteTicket(id);
+                performDeleteTicket(id);
             });
         }
 
-        async function deleteTicket(id) {
+        function deleteTicket(id) {
+            showConfirm("Delete Ticket?", "Are you sure you want to delete this ticket?", () => {
+                performDeleteTicket(id);
+            });
+        }
+
+        async function performDeleteTicket(id) {
             try {
                 // Adjusted path to ../api/tickets
                 const res = await fetch('../api/tickets/' + id, {
@@ -175,6 +181,7 @@
                 const result = await res.json();
                 if (result.success) {
                     loadTickets();
+                    showToast("Ticket deleted", "success");
                 } else {
                     showAlert("Error", "Failed to delete ticket.", "error");
                 }
