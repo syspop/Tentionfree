@@ -10,8 +10,8 @@ const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
 const { sendOrderStatusEmail } = require('./backend_services/emailService');
 
-const helmet = require('helmet'); // Secure Headers
-const rateLimit = require('express-rate-limit'); // Rate Limiting
+// const helmet = require('helmet'); // Secure Headers (Removed for deployment fix)
+// const rateLimit = require('express-rate-limit'); // Rate Limiting (Removed for deployment fix)
 
 const app = express();
 
@@ -49,23 +49,23 @@ app.use(cors({
     credentials: true
 }));
 
-// Security Middleware (Helmet)
-app.use(helmet({
-    contentSecurityPolicy: false, // Disabled to prevent breakage of images/scripts
-    crossOriginEmbedderPolicy: false
-}));
+// Security Middleware (Helmet) -- DISABLED
+// app.use(helmet({
+//     contentSecurityPolicy: false, // Disabled to prevent breakage of images/scripts
+//     crossOriginEmbedderPolicy: false
+// }));
 
-// Rate Limiting (100 requests per 15 minutes)
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 1000 requests per windowMs (Increased for better UX)
-    message: { success: false, message: "Too many requests, please try again later." },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
+// Rate Limiting -- DISABLED
+// const apiLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 1000, // Limit each IP to 1000 requests per windowMs (Increased for better UX)
+//     message: { success: false, message: "Too many requests, please try again later." },
+//     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+//     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+// });
 
 // Apply rate limiting to all API routes
-app.use('/api/', apiLimiter);
+// app.use('/api/', apiLimiter);
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
