@@ -24,7 +24,8 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // Initialize Database on Start
-initializeDatabase();
+// Initialize Database on Start (Moved to listen callback)
+// initializeDatabase();
 
 
 // Middleware
@@ -70,6 +71,11 @@ app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // Automatic Redirect: .html -> clean URL
+// Explicit Root Route
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
 // Automatic Redirect: .html -> clean URL
 app.use((req, res, next) => {
     if (req.path === '/index' || req.path === '/index.html') {
@@ -1089,4 +1095,5 @@ app.use((err, req, res, next) => {
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
+    initializeDatabase();
 });
