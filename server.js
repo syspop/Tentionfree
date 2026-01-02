@@ -15,6 +15,9 @@ const rateLimit = require('express-rate-limit'); // Rate Limiting
 
 const app = express();
 
+// Health Check (Critical for Deployments)
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 // Trust Proxy (Required for Rate Limiting behind Load Balancers like Heroku/Render)
 app.set('trust proxy', 1);
 
