@@ -471,7 +471,6 @@ async function initBannerSlider() {
         wrapper.innerHTML = banners.map(b => `
             <a href="${b.link || '#'}" class="swiper-slide w-full h-full flex-shrink-0 relative block">
                 <img src="${b.image}" alt="Banner" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
             </a>
         `).join('');
 
