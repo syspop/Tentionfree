@@ -59,12 +59,20 @@ async function readLocalJSON(filename) {
 
 // Initialize Database (Load all into RAM)
 async function initializeDatabase() {
-    console.log("📥 Loading Data into RAM...");
-    await readLocalJSON('products.json');
-    await readLocalJSON('orders.json');
-    await readLocalJSON('customers.json');
-    await readLocalJSON('tickets.json');
-    console.log("✅ Inbuilt Database Ready (RAM Cached)");
+    console.log("📥 initializeDatabase called...");
+    try {
+        console.log("   - Loading products.json...");
+        await readLocalJSON('products.json');
+        console.log("   - Loading orders.json...");
+        await readLocalJSON('orders.json');
+        console.log("   - Loading customers.json...");
+        await readLocalJSON('customers.json');
+        console.log("   - Loading tickets.json...");
+        await readLocalJSON('tickets.json');
+        console.log("✅ Inbuilt Database Cache Populated");
+    } catch (error) {
+        console.error("❌ Fatal Error in initializeDatabase:", error);
+    }
 }
 
 module.exports = {
