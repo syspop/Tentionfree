@@ -2,7 +2,8 @@ const { Resend } = require('resend');
 
 // Initialize Resend with the provided API Key
 // Initialize Resend with API Key from env
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend with API Key from env
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Admin email
 const ADMIN_EMAIL = 'kaziemdadul4@gmail.com';
