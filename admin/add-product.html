@@ -79,6 +79,30 @@
                 </button>
             </div>
 
+            <!-- Auto Delivery Settings (Hidden by default, shown if price is 0) -->
+            <div id="auto-delivery-section"
+                style="background:rgba(16, 185, 129, 0.05); padding:15px; border-radius:10px; margin-bottom:20px; border:1px dashed var(--green); display:none;">
+                <h4 style="margin-top:0; color:var(--green)">⚡ Auto Delivery Settings (Free Product)</h4>
+                <p style="font-size:12px; color:var(--gray); margin-bottom:10px;">These details will be emailed
+                    automatically when a user "purchases" this item for 0.00.</p>
+
+                <label>Delivery Text (Credentials/Code)</label>
+                <textarea id="p-auto-info" class="input-box" rows="3"
+                    placeholder="e.g. Secret Code: XYZ-123"></textarea>
+
+                <label>Delivery Image (Optional)</label>
+                <div style="display:flex; gap:5px; margin-bottom:5px;">
+                    <input type="file" id="p-auto-img-file" accept="image/*" class="input-box"
+                        style="padding:5px; font-size:12px; margin:0;" onchange="handleAutoImgUpload()">
+                </div>
+                <!-- Hidden input for base64 storage/url -->
+                <input type="hidden" id="p-auto-img">
+                <div id="auto-img-preview"
+                    style="width:100%; height:100px; background:var(--bg-main); border-radius:8px; display:flex; align-items:center; justify-content:center; margin-top:5px; border:1px solid var(--border);">
+                    <span style="font-size:10px; color:var(--gray);">No Image</span>
+                </div>
+            </div>
+
             <button class="btn-main" onclick="saveProduct()">Save Product</button>
         </div>
     </div>
@@ -233,6 +257,13 @@
                 document.getElementById('p-features').value = p.features ? p.features.join('\n') : '';
                 document.getElementById('p-instructions').value = p.instructions || '';
 
+                // Populate Auto Delivery
+                document.getElementById('p-auto-info').value = p.autoDeliveryInfo || '';
+                document.getElementById('p-auto-img').value = p.autoDeliveryImage || '';
+                if (p.autoDeliveryImage) {
+                    document.getElementById('auto-img-preview').innerHTML = `<img src="${p.autoDeliveryImage}" style="height:100%; object-fit:contain;">`;
+                }
+
                 const container = document.getElementById('variants-container');
                 container.innerHTML = '';
                 if (p.variants && p.variants.length > 0) {
@@ -243,6 +274,9 @@
                     addVariantRow('1 Month', '', '');
                 }
 
+                // Trigger check after population
+                setTimeout(checkPriceForAutoDelivery, 100);
+
                 document.querySelector('.btn-main').innerText = "Update Product";
             } catch (e) {
                 console.error("Error loading product for edit:", e);
@@ -250,8 +284,39 @@
             }
         }
 
+        // --- AUTO-DELIVERY LOGIC (Toggle visibility based on price) ---
+        function checkPriceForAutoDelivery() {
+            // Check if any variant price is 0 OR if main price implies 0 (though mainly driven by variants in this UI)
+            const rows = document.querySelectorAll('#variants-container > div');
+            let hasFreeVariant = false;
+
+            rows.forEach(row => {
+                const priceInput = row.querySelectorAll('input')[1]; // 2nd input is Price
+                if (priceInput && parseFloat(priceInput.value) === 0) {
+                    hasFreeVariant = true;
+                }
+            });
+
+            const section = document.getElementById('auto-delivery-section');
+            if (hasFreeVariant) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // Hook into inputs
+        document.getElementById('variants-container').addEventListener('input', checkPriceForAutoDelivery);
+        // Also check on load/add row
+        const originalAddVariantRow = addVariantRow;
+        addVariantRow = function (l, p, o) {
+            originalAddVariantRow(l, p, o);
+            checkPriceForAutoDelivery();
+        }
+
         // --- IMAGE LOGIC ---
         let uploadedImageBase64 = null;
+        let autoDeliveryImageBase64 = null;
 
         function handleImageUpload() {
             const fileInput = document.getElementById('p-img-file');
@@ -261,6 +326,19 @@
                     uploadedImageBase64 = e.target.result;
                     document.getElementById('p-img').value = ""; // Clear URL if file uploaded
                     updatePreview(uploadedImageBase64);
+                }
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        }
+
+        function handleAutoImgUpload() {
+            const fileInput = document.getElementById('p-auto-img-file');
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    autoDeliveryImageBase64 = e.target.result;
+                    document.getElementById('p-auto-img').value = "";
+                    document.getElementById('auto-img-preview').innerHTML = `<img src="${e.target.result}" style="height:100%; object-fit:contain;">`;
                 }
                 reader.readAsDataURL(fileInput.files[0]);
             }
@@ -297,6 +375,11 @@
             const features = document.getElementById('p-features').value.split('\n').filter(l => l.trim() !== '');
             const instructions = document.getElementById('p-instructions').value;
 
+            // Auto Delivery
+            const autoInfo = document.getElementById('p-auto-info').value;
+            const autoImg = autoDeliveryImageBase64 || document.getElementById('p-auto-img').value;
+
+
             // Variants
             const rows = document.querySelectorAll('#variants-container > div');
             const variants = [];
@@ -323,7 +406,9 @@
                 const productData = {
                     name, badge, category, inStock, image: img, desc, longDesc, features, instructions, variants,
                     price: mainPrice,
-                    originalPrice: mainOriginalPrice
+                    originalPrice: mainOriginalPrice,
+                    autoDeliveryInfo: autoInfo,
+                    autoDeliveryImage: autoImg
                 };
 
                 let res;

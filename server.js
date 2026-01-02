@@ -412,12 +412,49 @@ app.post('/api/orders', async (req, res) => {
             newOrder.id = maxId + 1;
         }
 
+        // --- AUTO-DELIVERY LOGIC ---
+        // Check if price is 0 (Free Order)
+        if (parseFloat(newOrder.price) === 0) {
+            newOrder.status = 'Completed';
+
+            // Fetch delivery content from Products
+            const allProducts = await readLocalJSON('products.json');
+
+            let combinedDeliveryInfo = "";
+            let deliveryImage = null; // Use first image found
+
+            if (newOrder.items && Array.isArray(newOrder.items)) {
+                newOrder.items.forEach(item => {
+                    // Find product by ID or Name
+                    const product = allProducts.find(p => p.id == item.id || p.name === item.name);
+
+                    if (product && product.autoDeliveryInfo) {
+                        combinedDeliveryInfo += `[${item.name}]:\n${product.autoDeliveryInfo}\n\n`;
+                        if (!deliveryImage && product.autoDeliveryImage) {
+                            deliveryImage = product.autoDeliveryImage;
+                        }
+                    }
+                });
+            }
+
+            if (!combinedDeliveryInfo) combinedDeliveryInfo = "Thank you for your free order! Your product is activated.";
+            newOrder.deliveryInfo = combinedDeliveryInfo.trim();
+
+            // Send Completed Email Immediately
+            const emailUpdates = {
+                status: 'Completed',
+                deliveryInfo: newOrder.deliveryInfo
+            };
+            if (deliveryImage) emailUpdates.deliveryImage = deliveryImage; // Extend email service to handle this if needed or embedded in info? 
+            // Email Service handles updates.deliveryInfo. Image support might need update if we want separate attachment visual, 
+            // but for now we can rely on text. If user wants image, we might need to update emailService.js to handle `updates.deliveryImage`.
+            // Let's pass it.
+
+            sendOrderStatusEmail(newOrder, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
+        }
+
         allOrders.push(newOrder);
         await writeLocalJSON('orders.json', allOrders);
-
-        // Send Email Notification in Background
-        // Email removed as per user request (only on status update)
-        // sendOrderStatusEmail(newOrder, { status: 'Received' });
 
         res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
     } catch (err) {

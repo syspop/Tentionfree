@@ -1627,7 +1627,13 @@ async function submitOrder() {
     let trxid = "Pending";
 
     // Logic based on Payment Type
-    if (paymentType === 'now') {
+    const isFreeOrder = document.getElementById('is-free-order');
+
+    if (isFreeOrder) {
+        payment = "Free Order";
+        trxid = "FREE";
+        // Bypass Pay Now validation
+    } else if (paymentType === 'now') {
         // --- LOGIN REQUIREMENT FOR PAY NOW ---
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -1672,7 +1678,7 @@ async function submitOrder() {
     // Assign to legacy variable for compatibility if needed, or just use the new string
     const gameUid = gameUidString;
 
-    const platform = document.querySelector('input[name="orderMethod"]:checked').value;
+    const platform = !isFreeOrder ? document.querySelector('input[name="orderMethod"]:checked').value : 'Web';
 
     // Basic Validation
     if (!name || !phone || !customerEmail) {
@@ -1687,7 +1693,7 @@ async function submitOrder() {
     // --- DUPLICATE TRANSACTION CHECK & PROOF VALIDATION ---
     let proofBase64 = null;
 
-    if (paymentType === 'now') {
+    if (paymentType === 'now' && !isFreeOrder) {
         // Validate Proof
         const fileInput = document.getElementById('payment-proof');
         if (!fileInput || !fileInput.files || !fileInput.files[0]) {
@@ -1745,7 +1751,11 @@ async function submitOrder() {
     let paymentMethodShort = 'Pay Later';
 
     // Determine detailed payment method name
-    if (paymentType === 'now') {
+    // Determine detailed payment method name
+    if (isFreeOrder) {
+        paymentMethodShort = "Free / Auto-Delivery";
+        finalTotal = 0;
+    } else if (paymentType === 'now') {
         const pVal = document.getElementById('payment').value;
         if (pVal === 'binance') {
             paymentMethodShort = 'Binance Pay';
