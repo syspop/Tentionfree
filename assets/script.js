@@ -541,7 +541,8 @@ async function handleUrlParams() {
     if (idParam) {
         // If ID is present, try to open that product details
         const id = parseInt(idParam);
-        const product = products.find(p => p.id === id);
+        const product = products.find(p => p.id == id); // Loose equality for safety
+        console.log("Checking URL ID:", id, "Found:", product);
         if (product) {
             openDetails(id);
             // Optional: Filter grid to this product too?
