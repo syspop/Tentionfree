@@ -759,14 +759,11 @@ function initCheckoutPage() {
     }
 
     // --- FREE ORDER CHECK ---
-    // Calculate total from items again just to be sure or use the one from above if scoped correctly
-    // efficient way: calculate total above is local to block? no it was let total=0 inside if(summaryContainer).
-    // Let's re-calculate or just use the summary total logic availability.
-    // Actually, calculate total again to be safe and clean.
+    // Calculate total explicitly
     let currentTotal = 0;
-    itemsToCheckout.forEach(item => currentTotal += item.price * item.quantity);
+    itemsToCheckout.forEach(item => currentTotal += Number(item.price) * Number(item.quantity));
 
-    if (currentTotal === 0) {
+    if (currentTotal <= 0) {
         // 1. Set Hidden Flag
         const freeInput = document.getElementById('is-free-order');
         if (freeInput) freeInput.value = "true";
