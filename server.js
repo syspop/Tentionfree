@@ -107,27 +107,63 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
     let productId = null;
     let isSSR = false;
 
+    // SSR Logic
     if (req.path.startsWith('/product/')) {
-        productId = req.params.id; // Correctly get ID from route param
+        productId = req.params.id;
         isSSR = true;
     } else if (req.path === '/products.html' || req.path === '/product-details.html') {
-        // If accessing via legacy query params, let client-side handle it OR redirect?
-        // For now, let static middleware handle .html unless we want to intercept.
-        // Actually, if user visits product-details.html?id=123, we can't easily SSR it here without complex logic.
-        // Let's STICK to the new route /product/:id for SSR.
         return next();
     }
 
     if (!isSSR || !productId) return next();
 
+    console.log(`[SSR] Request for product: ${productId}`);
+
     try {
         const products = await readLocalJSON('products.json');
 
-        const product = products.find(p => p.id == productId || (p.name && p.name.toLowerCase().replace(/ /g, '-') === productId.toLowerCase()));
+        // Robust Lookup: Match ID or Slug
+        const targetSlug = productId.toLowerCase().trim();
+
+        const product = products.find(p => {
+            // 1. Check ID
+            if (p.id == targetSlug) return true;
+
+            // 2. Check Name as Slug (flexible)
+            // Strategy: Remove content in parentheses, trim, then slugify
+            const cleanName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase();
+            const nameSlug = cleanName.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+            // Also check the simple replace we had before for backward compat:
+            const nameSimple = p.name.toLowerCase().replace(/ /g, '-');
+
+            return nameSlug === targetSlug || nameSimple === targetSlug;
+        });
 
         if (!product) {
-            return res.status(404).send('<h1>Product not found</h1><a href="/products">Back to Shop</a>');
+            console.log(`[SSR] Product not found for: ${productId}`);
+            // Return 404 with basic HTML
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Product Not Found - Tention Free</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                </head>
+                <body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+                    <div class="text-center">
+                        <h1 class="text-4xl font-bold mb-4">Product Not Found</h1>
+                        <p class="mb-6 text-slate-400">The product you are looking for does not exist.</p>
+                        <a href="/products" class="px-6 py-3 bg-blue-600 rounded-full font-bold hover:bg-blue-500 transition">Back to Products</a>
+                    </div>
+                </body>
+                </html>
+            `);
         }
+
+        console.log(`[SSR] Found product: ${product.name} (ID: ${product.id})`);
 
         // Read Template
         let html = fs.readFileSync(path.join(__dirname, 'product-details.html'), 'utf8');
