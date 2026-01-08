@@ -10,28 +10,7 @@ function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inject Sidebar & Main Layout
-    // We need to move the existing .admin-box content into the new .admin-main wrapper
-    // But since the pages have .admin-box hardcoded in HTML, we can leave them but wrap them or just let the script restructure?
-    // Actually, simpler: The HTML pages have `<div class="admin-box"> <nav id="admin-nav"></nav> ...content... </div>`
-    // We will target #admin-nav to inject the SIDEBAR relative to the body (fixed), and we need to wrap the REST of the content in .admin-main.
-
-    // Better approach without rewriting all HTML files: 
-    // 1. Identify .admin-box.
-    // 2. Prepend sidebar to body.
-    // 3. Add class .admin-main to .admin-box (or wrap it).
-
-    // Let's rewrite the navHTML to be the Sidebar, and since .admin-sidebar is fixed, it can live inside or outside .admin-box.
-    // To make it easiest: append sidebar to body, and add margin to .admin-box via JS or CSS class.
-
-    // Wait, the CSS change makes .admin-main have margin-left. 
-    // The current HTML structure is: <body> <div class="admin-box"> <nav id="admin-nav"></nav> ... </div> </body>
-    // We can hide #admin-nav (or make it empty) and inject the REAL sidebar directly into body.
-    // Then add .admin-main class to .admin-box.
-
-    const box = document.querySelector('.admin-box');
-    if (box) box.classList.add('admin-main');
-
+    // Inject Sidebar at start of body
     const sidebarHTML = `
     <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
     <div class="admin-sidebar" id="sidebar">
@@ -53,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </a>
             <a href="manage-orders" class="nav-link ${window.location.pathname.includes('manage-orders') ? 'active' : ''}">
                 <i class="fa-solid fa-clipboard-list"></i> Orders
+            </a>
+            <a href="manage-coupons" class="nav-link ${window.location.pathname.includes('manage-coupons') ? 'active' : ''}">
+                <i class="fa-solid fa-ticket"></i> Coupons
             </a>
             <a href="order-history" class="nav-link ${window.location.pathname.includes('order-history') ? 'active' : ''}">
                 <i class="fa-solid fa-clock-rotate-left"></i> History
@@ -76,14 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="custom-modal-overlay" onclick="toggleSidebar()"></div> 
     `;
 
-    // Inject sidebar at start of body
     document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
 
     // Remove old nav placeholder content if any
     const oldNav = document.getElementById('admin-nav');
     if (oldNav) oldNav.style.display = 'none';
 
-    // Inject Custom Modal HTML (keep this)
+    // Inject Custom Modal HTML
     const modalHTML = `
     <div id="custom-modal" class="custom-modal-overlay">
         <div class="custom-modal-card">
@@ -93,14 +74,22 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="modal-actions" class="modal-actions"></div>
         </div>
     </div>
+    <div id="toast-container" class="toast-container"></div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Add Main Layout Class if not present
+    const box = document.querySelector('.admin-box');
+    if (box) box.classList.add('admin-main');
 });
 
 // Sidebar Toggle (Mobile)
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('active');
+    const sidebar = document.querySelectorAll('.admin-sidebar')[0];
+    // Fix: querySelectorAll returns NodeList, earlier referenced id 'sidebar' but injected HTML has id 'sidebar' too.
+    // Ideally use id directly.
+    const sb = document.getElementById('sidebar');
+    if (sb) sb.classList.toggle('active');
 }
 
 // --- GLOBAL MODAL FUNCTIONS ---
@@ -155,6 +144,26 @@ window.showAlert = function (title, msg, type = 'success') {
 window.closeCustomModal = function () {
     document.getElementById('custom-modal').style.display = 'none';
 };
+
+// --- TOAST NOTIFICATIONS ---
+window.showToast = function (msg, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    let icon = '<i class="fa-solid fa-check-circle"></i>';
+    if (type === 'error') icon = '<i class="fa-solid fa-circle-xmark"></i>';
+
+    toast.innerHTML = `${icon} <span>${msg}</span>`;
+
+    container.appendChild(toast);
+
+    // Remove after 3s
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 // Start Helper: Read File as Base64 (Missing Fix)
 window.readFileAsBase64 = function (file) {

@@ -9,7 +9,8 @@ const CACHE = {
     orders: [],
     customers: [],
     tickets: [],
-    banners: []
+    banners: [],
+    coupons: []
 };
 
 // Helper to write data to JSON file (and update Cache)
@@ -72,6 +73,8 @@ async function initializeDatabase() {
         await readLocalJSON('tickets.json');
         console.log("   - Loading banners.json...");
         await readLocalJSON('banners.json');
+        console.log("   - Loading coupons.json...");
+        await readLocalJSON('coupons.json');
         console.log("✅ Inbuilt Database Cache Populated");
     } catch (error) {
         console.error("❌ Fatal Error in initializeDatabase:", error);
@@ -83,3 +86,5 @@ module.exports = {
     readLocalJSON,
     initializeDatabase
 };
+
+

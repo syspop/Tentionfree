@@ -348,6 +348,44 @@
                                 <p class="text-xs text-slate-400 leading-relaxed" id="modal-instructions">Instruction
                                     text...</p>
                             </div>
+
+                            <!-- Reviews Section -->
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="text-slate-200 font-semibold text-xs flex items-center">
+                                        <i class="fa-solid fa-comments text-brand-500 mr-2"></i> Reviews <span
+                                            id="modal-rating-summary"
+                                            class="ml-2 text-yellow-400 text-xs text-yellow-500"></span>
+                                    </h4>
+                                    <button onclick="toggleReviewForm()"
+                                        class="text-[10px] text-brand-400 hover:text-white underline">Write
+                                        Review</button>
+                                </div>
+
+                                <!-- Review Form (Hidden) -->
+                                <div id="review-form-container"
+                                    class="hidden mb-3 bg-slate-800 p-3 rounded-lg border border-slate-700">
+                                    <input type="text" id="review-name" placeholder="Your Name"
+                                        class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white mb-2">
+                                    <select id="review-rating"
+                                        class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white mb-2">
+                                        <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                                        <option value="4">⭐⭐⭐⭐ (Good)</option>
+                                        <option value="3">⭐⭐⭐ (Average)</option>
+                                        <option value="2">⭐⭐ (Poor)</option>
+                                        <option value="1">⭐ (Bad)</option>
+                                    </select>
+                                    <textarea id="review-comment" placeholder="Your comment..."
+                                        class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white mb-2"
+                                        rows="2"></textarea>
+                                    <button onclick="submitReview()"
+                                        class="w-full bg-brand-600 text-white text-xs font-bold py-2 rounded hover:bg-brand-500">Submit</button>
+                                </div>
+
+                                <div id="modal-reviews-list" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                    <p class="text-xs text-slate-500 italic">Loading reviews...</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Bottom Action Area -->

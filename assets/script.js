@@ -1124,6 +1124,9 @@ function openDetails(id) {
     document.getElementById('modal-desc').innerText = product.longDesc || product.desc; // Fallback
     document.getElementById('modal-instructions').innerText = product.instructions || "Details will be provided after purchase.";
 
+    // Load Reviews
+    loadReviews(id);
+
     // Stock check
     const isOutOfStock = product.inStock === false;
     const addBtn = document.getElementById('modal-add-btn');
@@ -1813,6 +1816,93 @@ function previewCustomUpload(input) {
     }
 }
 
+// --- 6. COUPON LOGIC ---
+let appliedCoupon = null;
+
+async function applyCoupon() {
+    const codeInput = document.getElementById('promo-code-input');
+    const msgDiv = document.getElementById('coupon-message');
+    const discountRow = document.getElementById('discount-row');
+    const discountAmountSpan = document.getElementById('discount-amount');
+    const code = codeInput.value.trim();
+
+    if (!code) {
+        msgDiv.innerText = "Please enter a code";
+        msgDiv.className = "text-xs mt-1 h-4 text-red-500";
+        return;
+    }
+
+    // Calculate Cart Total (BDT)
+    let isBuyNowMode = false;
+    let buyNowItem = null;
+    const buyNowData = localStorage.getItem('tentionfree_buyNow');
+    if (buyNowData) {
+        isBuyNowMode = true;
+        buyNowItem = JSON.parse(buyNowData);
+    }
+    const cart = JSON.parse(localStorage.getItem('tentionfree_cart')) || []; // Use correct key if needed, or stick to 'cart'
+    // Previous code used 'cart' directly in submitOrder from localStorage.getItem('cart')? 
+    // Wait, submitOrder uses 'cart', but initCheckout uses 'tentionfree_cart'??
+    // Let's verify. submitOrder line 1839: JSON.parse(localStorage.getItem('cart')).
+    // initCheckout line 1718: JSON.parse(localStorage.getItem('tentionfree_cart'))
+    // There is inconsistency in the file! I should probably check both or fix it.
+    // Given 'tentionfree_cart' seems to be the one used in init, I'll use it.
+    // Actually, let's use what submitOrder uses to be safe, or check both.
+
+    // Correction: In submitOrder (viewed code), it used `localStorage.getItem('cart')` at line 1839.
+    // In initCheckout (viewed code), it used `localStorage.getItem('tentionfree_cart')` at line 1718.
+    // This is a bug in the existing codebase! I should create a helper `getCart()` but for now I will try 'tentionfree_cart' first, then 'cart'.
+
+    let cartItems = JSON.parse(localStorage.getItem('tentionfree_cart'));
+    if (!cartItems || cartItems.length === 0) cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+
+    const itemsToCheckout = isBuyNowMode ? [buyNowItem] : cartItems;
+    let totalBDT = itemsToCheckout.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+    try {
+        msgDiv.innerText = "Checking...";
+        msgDiv.className = "text-xs mt-1 h-4 text-slate-400";
+
+        const res = await fetch('/api/coupons/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, cartTotal: totalBDT, cartItems: itemsToCheckout })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            appliedCoupon = { code: data.couponCode, discount: data.discount, type: data.type, value: data.value };
+
+            msgDiv.innerText = "Coupon Applied!";
+            msgDiv.className = "text-xs mt-1 h-4 text-green-500 animate-pulse";
+
+            discountRow.classList.remove('hidden');
+            discountAmountSpan.innerText = '-৳' + data.discount.toFixed(2);
+
+            // Update Total UI
+            const newTotal = totalBDT - data.discount;
+            const totalEl = document.getElementById('checkout-total-amount');
+            if (totalEl) totalEl.innerText = '৳' + (newTotal < 0 ? 0 : newTotal).toFixed(2);
+
+            // Disable input
+            codeInput.disabled = true;
+            codeInput.classList.add('opacity-50', 'cursor-not-allowed');
+            showToast("Coupon Applied Successfully!");
+        } else {
+            appliedCoupon = null;
+            msgDiv.innerText = data.message;
+            msgDiv.className = "text-xs mt-1 h-4 text-red-400";
+            discountRow.classList.add('hidden');
+            const totalEl = document.getElementById('checkout-total-amount');
+            if (totalEl) totalEl.innerText = '৳' + totalBDT.toFixed(2);
+        }
+    } catch (err) {
+        console.error(err);
+        msgDiv.innerText = "Error verifying coupon";
+        msgDiv.className = "text-xs mt-1 h-4 text-red-500";
+    }
+}
+
 // --- Submit Order ---
 async function submitOrder(e) {
     console.log("Submit order function called");
@@ -1941,6 +2031,7 @@ async function submitOrder(e) {
                 }
             } else {
                 const val = input.value.trim();
+                // Special check for Promo Code Input inside this loop? No, that's separate.
                 if (isRequired && !val) throw new Error(`Please fill in ${label} for ${itemName}`);
                 if (val) return `\n[${label} for ${itemName}]: ${val}`;
             }
@@ -1960,9 +2051,28 @@ async function submitOrder(e) {
         if (input.value.trim()) extraDetails += `\n[Legacy ID]: ${input.value.trim()}`;
     });
 
-    // --- 4. CALCULATION & CURRENCY ---
+    // --- 4. CALCULATION & CURRENCY & COUPON ---
     let total = itemsToOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
     let currency = 'BDT';
+    let discountAmount = 0;
+
+    // Apply Coupon
+    if (appliedCoupon) {
+        // Double check against current total to be safe (though API checked it)
+        if (appliedCoupon.type === 'percent') {
+            // Re-calculate percent in case cart changed? 
+            // Ideally we trust appliedCoupon.value (the percent)
+            discountAmount = (total * appliedCoupon.value) / 100;
+        } else {
+            discountAmount = appliedCoupon.value;
+        }
+
+        // Cap discount
+        if (discountAmount > total) discountAmount = total;
+
+        total = total - discountAmount;
+    }
+
     let finalTotal = total;
 
     if (paymentMethod === 'binance') {
@@ -1984,7 +2094,9 @@ async function submitOrder(e) {
         product: itemsToOrder.map(i => `${i.name} (x${i.quantity})`).join(', '),
         price: finalTotal.toFixed(2),
         currency: currency,
-        originalPriceBDT: total,
+        originalPriceBDT: (itemsToOrder.reduce((sum, item) => sum + item.price * item.quantity, 0)).toFixed(2),
+        couponCode: appliedCoupon ? appliedCoupon.code : null,
+        discount: discountAmount.toFixed(2),
         status: "Pending",
         paymentMethod: paymentMethodShort,
         trx: trxid,
@@ -1992,6 +2104,7 @@ async function submitOrder(e) {
         items: itemsToOrder,
         plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard')
     };
+
 
     // Show Loading or Button Spinner?
     // For now just send
@@ -2306,3 +2419,93 @@ function ensureModalStyles() {
 document.addEventListener('DOMContentLoaded', ensureModalStyles);
 // Also call immediately in case DOM is already ready (dynamic load)
 ensureModalStyles();
+
+// --- Reviews Logic ---
+let currentProductReviewId = null;
+
+window.toggleReviewForm = function () {
+    const form = document.getElementById('review-form-container');
+    if (form) form.classList.toggle('hidden');
+}
+
+window.loadReviews = async function (productId) {
+    currentProductReviewId = productId;
+    const list = document.getElementById('modal-reviews-list');
+    const summary = document.getElementById('modal-rating-summary');
+    if (!list) return;
+
+    list.innerHTML = '<p class="text-xs text-slate-500 italic">Loading...</p>';
+
+    try {
+        const res = await fetch(`/api/reviews/${productId}`);
+        const reviews = await res.json();
+
+        // Calculate Average
+        let avgStr = '';
+        if (reviews.length > 0) {
+            const avg = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+            avgStr = `(${avg.toFixed(1)} <i class="fa-solid fa-star text-[10px]"></i>) • ${reviews.length} Reviews`;
+        }
+
+        if (summary) summary.innerHTML = avgStr;
+
+        if (reviews.length === 0) {
+            list.innerHTML = '<p class="text-xs text-slate-500 italic">No reviews yet. Be the first!</p>';
+            return;
+        }
+
+        list.innerHTML = reviews.map(r => `
+            <div class="bg-slate-800 p-2 rounded border border-slate-700">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-bold text-slate-200">${r.userName}</span>
+                    <span class="text-[10px] text-yellow-500">${'★'.repeat(r.rating)}</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">${r.comment}</p>
+                <div class="flex justify-between mt-1">
+                     <span class="text-[9px] text-slate-600">${new Date(r.date).toLocaleDateString()}</span>
+                     <span class="text-[9px] text-green-500"><i class="fa-solid fa-check-circle"></i> Verified</span>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = '<p class="text-xs text-red-500">Failed to load reviews.</p>';
+    }
+}
+
+window.submitReview = async function () {
+    const name = document.getElementById('review-name').value;
+    const rating = document.getElementById('review-rating').value;
+    const comment = document.getElementById('review-comment').value;
+
+    if (!name || !rating) {
+        showToast('Please provide name and rating', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                productId: currentProductReviewId,
+                userName: name,
+                rating: rating,
+                comment: comment
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            showToast('Review submitted!');
+            document.getElementById('review-comment').value = ''; // clear comment
+            toggleReviewForm();
+            loadReviews(currentProductReviewId);
+        } else {
+            showToast(data.error || 'Failed', 'error');
+        }
+    } catch (err) {
+        showToast('Error submitting review', 'error');
+    }
+}

@@ -781,6 +781,136 @@ app.delete('/api/tickets/:id', authenticateAdmin, async (req, res) => {
 });
 
 
+// --- COUPONS SYSTEM ---
+
+// Verify Coupon (Public)
+// Verify Coupon (Public)
+app.post('/api/coupons/verify', async (req, res) => {
+    const { code, cartTotal, cartItems } = req.body;
+    if (!code) return res.json({ success: false, message: "Code required" });
+
+    try {
+        const coupons = await readLocalJSON('coupons.json') || [];
+        const coupon = coupons.find(c => c.code === code.trim().toUpperCase() && c.isActive);
+
+        if (!coupon) {
+            return res.json({ success: false, message: "Invalid or inactive coupon." });
+        }
+
+        // Check Minimum Spend (on total cart value usually)
+        if (coupon.minSpend && cartTotal < coupon.minSpend) {
+            return res.json({ success: false, message: `Minimum spend of ৳${coupon.minSpend} required.` });
+        }
+
+        // Product Specificity Check
+        let applicableTotal = cartTotal;
+        let isApplicable = true;
+
+        if (coupon.applicableProducts && coupon.applicableProducts.length > 0 && !coupon.applicableProducts.includes('all')) {
+            if (!cartItems || !Array.isArray(cartItems)) {
+                // Should not happen if frontend sends it, but safe fallback:
+                // If no items are sent, we can't verify product specific coupons.
+                return res.json({ success: false, message: "Unable to verify product eligibility." });
+            }
+
+            // Filter items that match the coupon's products
+            // cartItems have 'id' (int/string) or maybe 'cartId'
+            // coupon.applicableProducts has IDs (strings usually from select value)
+
+            // Ensure IDs are compared as strings
+            const validProductIds = coupon.applicableProducts.map(id => String(id));
+
+            const validItems = cartItems.filter(item => validProductIds.includes(String(item.id)));
+
+            if (validItems.length === 0) {
+                return res.json({ success: false, message: "This coupon is not applicable for the products in your cart." });
+            }
+
+            // Calculate total of ONLY the valid items for discount calculation
+            applicableTotal = validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        }
+
+        let discountAmount = 0;
+        if (coupon.type === 'percent') {
+            discountAmount = (applicableTotal * coupon.discount) / 100;
+        } else {
+            // Flat discount
+            // If flat discount is 500, but valid items total is 200, discount should be 200? 
+            // Or discount should be 500 spread across metadata? Simpler: Cap at applicableTotal.
+            discountAmount = coupon.discount;
+        }
+
+        // Prevent negative total logic (Cap at applicableTotal)
+        if (discountAmount > applicableTotal) discountAmount = applicableTotal;
+
+        res.json({
+            success: true,
+            discount: discountAmount,
+            couponCode: coupon.code,
+            type: coupon.type,
+            value: coupon.discount
+        });
+
+    } catch (err) {
+        console.error("Coupon verify error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+// Admin: Get All Coupons
+app.get('/api/coupons', authenticateAdmin, async (req, res) => {
+    try {
+        const coupons = await readLocalJSON('coupons.json') || [];
+        res.json(coupons);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load coupons" });
+    }
+});
+
+// Admin: Create Coupon
+app.post('/api/coupons', authenticateAdmin, async (req, res) => {
+    const { code, discount, type, minSpend, isActive, applicableProducts } = req.body;
+    if (!code || !discount || !type) return res.status(400).json({ error: "Missing fields" });
+
+    try {
+        const coupons = await readLocalJSON('coupons.json') || [];
+
+        // Check duplicate
+        if (coupons.find(c => c.code === code.toUpperCase())) {
+            return res.status(400).json({ error: "Coupon code already exists!" });
+        }
+
+        const newCoupon = {
+            id: Date.now(),
+            code: code.toUpperCase(),
+            discount: parseFloat(discount),
+            type, // 'percent' or 'flat'
+            minSpend: parseFloat(minSpend) || 0,
+            applicableProducts: Array.isArray(applicableProducts) ? applicableProducts : ['all'],
+            isActive: isActive !== false, // default true
+            createdAt: new Date().toISOString()
+        };
+
+        coupons.push(newCoupon);
+        await writeLocalJSON('coupons.json', coupons);
+        res.json({ success: true, coupon: newCoupon });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to save coupon" });
+    }
+});
+
+// Admin: Delete Coupon
+app.delete('/api/coupons/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        let coupons = await readLocalJSON('coupons.json') || [];
+        coupons = coupons.filter(c => c.id !== id);
+        await writeLocalJSON('coupons.json', coupons);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete coupon" });
+    }
+});
 
 // --- AUTHENTICATION ---
 
@@ -1199,6 +1329,51 @@ app.use((err, req, res, next) => {
         success: false,
         message: "Something went wrong! Please try again later."
     });
+});
+
+// --- REVIEWS SYSTEM ---
+app.get('/api/reviews/:productId', async (req, res) => {
+    const pId = req.params.productId;
+    const reviews = await readLocalJSON('reviews.json') || [];
+    const productReviews = reviews.filter(r => String(r.productId) === String(pId));
+    res.json(productReviews);
+});
+
+app.post('/api/reviews', async (req, res) => {
+    const { productId, rating, comment, userName } = req.body;
+    if (!productId || !rating || !userName) return res.status(400).json({ error: "Missing fields" });
+
+    try {
+        const reviews = await readLocalJSON('reviews.json') || [];
+        const newReview = {
+            id: Date.now(),
+            productId,
+            rating: parseInt(rating),
+            comment: comment || "",
+            userName,
+            date: new Date().toISOString(),
+            status: 'approved' // auto-approve for now
+        };
+        reviews.unshift(newReview);
+        await writeLocalJSON('reviews.json', reviews);
+
+        // Update Product Average
+        const productReviews = reviews.filter(r => String(r.productId) === String(productId));
+        const avg = productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length;
+
+        const products = await readLocalJSON('products.json') || [];
+        const product = products.find(p => String(p.id) === String(productId));
+        if (product) {
+            product.rating = avg.toFixed(1); // e.g. 4.5
+            product.ratingCount = productReviews.length;
+            await writeLocalJSON('products.json', products);
+        }
+
+        res.json({ success: true, newReview, newAverage: product.rating, newCount: product.ratingCount });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to save review" });
+    }
 });
 
 // Start Server
