@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Reviews | AdminPanel</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .review-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .review-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+        }
+
+        .review-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .review-content {
+            flex: 1;
+        }
+
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .reviewer-name {
+            font-weight: bold;
+            color: white;
+            font-size: 15px;
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .review-product {
+            font-size: 12px;
+            color: var(--brand-400);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .star-rating {
+            color: #fbbf24;
+            font-size: 14px;
+        }
+
+        .review-text {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin-left: 15px;
+        }
+
+        .delete-btn:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .filter-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .filter-select option {
+            background: #1e293b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="admin-box">
+        <!-- Sidebar injected by script.js -->
+        <nav id="admin-nav"></nav>
+
+        <div class="header-flex">
+            <h1><i class="fa-solid fa-star"></i> Manage Reviews</h1>
+        </div>
+
+        <div class="filter-bar">
+            <span style="color:var(--gray);">Filter by:</span>
+            <select id="rating-filter" class="filter-select" onchange="renderReviews()">
+                <option value="all">All Ratings</option>
+                <option value="5">5 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="2">2 Stars</option>
+                <option value="1">1 Star</option>
+            </select>
+        </div>
+
+        <div id="reviews-container" class="review-list">
+            <div style="color:var(--gray); text-align:center;">Loading reviews...</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let allReviews = [];
+        let productsMap = {}; // ID -> Name
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts(); // Load products first for name mapping
+            loadReviews();
+        });
+
+        async function loadProducts() {
+            try {
+                const res = await fetch('/api/products');
+                const products = await res.json();
+                products.forEach(p => {
+                    productsMap[p.id] = p.name;
+                });
+            } catch (err) {
+                console.error("Failed to load products for mapping", err);
+            }
+        }
+
+        async function loadReviews() {
+            try {
+                const res = await fetch('/api/all-reviews', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+
+                if (!res.ok) throw new Error("Failed to load");
+
+                allReviews = await res.json();
+                renderReviews();
+            } catch (err) {
+                console.error(err);
+                showAlert("Error", "Failed to load reviews", "error");
+            }
+        }
+
+        function renderReviews() {
+            const container = document.getElementById('reviews-container');
+            const filter = document.getElementById('rating-filter').value;
+
+            let filtered = allReviews;
+            if (filter !== 'all') {
+                filtered = allReviews.filter(r => r.rating == filter);
+            }
+
+            // Sort by newest first
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--gray);">No reviews found.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(r => {
+                const productName = productsMap[r.productId] || 'Unknown Product';
+                const date = new Date(r.date).toLocaleDateString() + ' ' + new Date(r.date).toLocaleTimeString();
+
+                return `
+                <div class="review-card">
+                    <div class="review-content">
+                        <div class="review-header">
+                            <span class="reviewer-name">${r.userName}</span>
+                            <span class="star-rating">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                            <span class="review-product"><i class="fa-solid fa-box"></i> ${productName}</span>
+                        </div>
+                        <div class="review-text">
+                            ${r.comment || '<span style="opacity:0.5; font-style:italic;">No comment text</span>'}
+                        </div>
+                        <div class="review-date" style="margin-top:10px;">
+                            ${date}
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteReview(${r.id})" title="Delete Review">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function deleteReview(id) {
+            showConfirm("Delete Review?", "This action cannot be undone.", async () => {
+                try {
+                    const res = await fetch(`/api/reviews/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast("Review Deleted");
+                        loadReviews(); // Reload to refresh list and averages
+                    } else {
+                        showAlert("Error", "Failed to delete", "error");
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

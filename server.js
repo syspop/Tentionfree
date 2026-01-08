@@ -463,6 +463,24 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
 app.post('/api/orders', async (req, res) => {
     const newOrder = req.body;
     try {
+        // Strict Ban Check
+        const customers = await readLocalJSON('customers.json') || [];
+
+        // 1. Check by User ID if logged in
+        if (newOrder.userId && !newOrder.userId.startsWith('guest')) {
+            const user = customers.find(c => c.id === newOrder.userId);
+            if (user && user.isBanned) {
+                return res.json({ success: false, message: "Your account is banned. Cannot place order." });
+            }
+        }
+
+        // 2. Check by Email/Phone (Guest or User)
+        // Even if guest, if email/phone matches a banned user, block it.
+        const bannedUser = customers.find(c => c.isBanned && (c.email === newOrder.email || c.phone === newOrder.phone));
+        if (bannedUser) {
+            return res.json({ success: false, message: "This email or phone is associated with a banned account." });
+        }
+
         const allOrders = await readLocalJSON('orders.json');
 
         // Ensure ID
@@ -1139,6 +1157,25 @@ app.delete('/api/customers/:id', async (req, res) => {
     }
 });
 
+// Admin: Ban/Unban Customer
+app.put('/api/customers/:id/ban', authenticateAdmin, async (req, res) => {
+    const id = req.params.id;
+    const { isBanned } = req.body; // true or false
+
+    try {
+        const customers = await readLocalJSON('customers.json');
+        const index = customers.findIndex(c => c.id === id);
+        if (index === -1) return res.status(404).json({ error: "Customer not found" });
+
+        customers[index].isBanned = isBanned;
+        await writeLocalJSON('customers.json', customers);
+
+        res.json({ success: true, isBanned: customers[index].isBanned });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update ban status" });
+    }
+});
+
 // POST Change Password
 // POST Change Password
 // POST Change Password (Inbuilt)
@@ -1211,6 +1248,13 @@ app.post('/api/register', async (req, res) => {
         if (emailExists) {
             return res.json({ success: false, message: "Email already registered" });
         }
+
+        // Check Banned Email/Phone (prevent re-registration)
+        const bannedUser = allCustomers.find(c => (c.email === email.toLowerCase().trim() || (phone && c.phone === phone)) && c.isBanned);
+        if (bannedUser) {
+            return res.status(403).json({ success: false, message: "This account has been banned." });
+        }
+
         if (phone) {
             const phoneExists = allCustomers.find(c => c.phone === phone);
             if (phoneExists) {
@@ -1225,7 +1269,8 @@ app.post('/api/register', async (req, res) => {
             phone: phone || '',
             dob: req.body.dob || '',
             password: bcrypt.hashSync(password, 10),
-            joined: new Date().toISOString()
+            joined: new Date().toISOString(),
+            isBanned: false
         };
 
         allCustomers.push(newCustomer);
@@ -1259,6 +1304,10 @@ app.post('/api/login', async (req, res) => {
         console.log(`[LOGIN ATTEMPT] Email: ${email}, Found: ${!!user}`);
 
         if (user) {
+            if (user.isBanned) {
+                return res.status(403).json({ success: false, message: "Your account has been banned. Contact support." });
+            }
+
             let isMatch = false;
             let needsUpgrade = false;
 
@@ -1404,6 +1453,55 @@ app.get('/api/reviews/:productId', async (req, res) => {
     const reviews = await readLocalJSON('reviews.json') || [];
     const productReviews = reviews.filter(r => String(r.productId) === String(pId));
     res.json(productReviews);
+});
+
+// Admin: Get All Reviews
+app.get('/api/all-reviews', authenticateAdmin, async (req, res) => {
+    try {
+        const reviews = await readLocalJSON('reviews.json') || [];
+        res.json(reviews);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load reviews" });
+    }
+});
+
+// Admin: Delete Review
+app.delete('/api/reviews/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        let reviews = await readLocalJSON('reviews.json') || [];
+        const review = reviews.find(r => r.id === id);
+
+        if (!review) return res.status(404).json({ error: "Review not found" });
+
+        const productId = review.productId;
+
+        // Remove Review
+        reviews = reviews.filter(r => r.id !== id);
+        await writeLocalJSON('reviews.json', reviews);
+
+        // Recalculate Product Rating
+        if (productId) {
+            const productReviews = reviews.filter(r => String(r.productId) === String(productId));
+            let avg = 0;
+            if (productReviews.length > 0) {
+                avg = productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length;
+            }
+
+            const products = await readLocalJSON('products.json') || [];
+            const product = products.find(p => String(p.id) === String(productId));
+            if (product) {
+                product.rating = avg > 0 ? avg.toFixed(1) : 0;
+                product.ratingCount = productReviews.length;
+                await writeLocalJSON('products.json', products);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to delete review" });
+    }
 });
 
 app.post('/api/reviews', authenticateUser, async (req, res) => {

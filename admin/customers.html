@@ -34,6 +34,7 @@
                             <th>User ID</th>
                             <th>Full Name</th>
                             <th>Contact Info</th>
+                            <th>Status</th>
                             <th>Joined Date</th>
                             <th>Action</th>
                         </tr>
@@ -47,6 +48,13 @@
     <!-- Customer Profile Modal -->
     <div id="customer-profile-modal"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <!-- ... (skipping unchanged modal content for brevity in replacement, but wait, replace_file_content needs context) ... -->
+        <!-- Actually, better to just target the header, then the render function, then add the new function. -->
+
+        <!-- Let's do Header first -->
+
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8);
+        z-index:2000; justify-content:center; align-items:center;">
         <div
             style="background:var(--bg-card); width:600px; max-height:90vh; overflow-y:auto; padding:30px; border-radius:15px; border:1px solid var(--border); box-shadow:0 20px 50px rgba(0,0,0,0.5); animation:fadeIn 0.3s ease-out; position:relative;">
 
@@ -145,24 +153,62 @@
             }
 
             filtered.forEach(u => {
+                const isBanned = u.isBanned === true;
+                const statusBadge = isBanned
+                    ? `<span style="background:rgba(239,68,68,0.2); color:#ef4444; padding:2px 6px; border-radius:4px; font-size:11px;">BANNED</span>`
+                    : `<span style="background:rgba(16,185,129,0.2); color:#10b981; padding:2px 6px; border-radius:4px; font-size:11px;">ACTIVE</span>`;
+
+                const banBtn = isBanned
+                    ? `<button onclick="toggleBan('${u.id}', false)" title="Unban User" style="background:rgba(16,185,129,0.2); color:#10b981; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-unlock"></i></button>`
+                    : `<button onclick="toggleBan('${u.id}', true)" title="Ban User" style="background:rgba(239,68,68,0.2); color:#ef4444; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-ban"></i></button>`;
+
                 list.innerHTML += `
-                    <tr>
+                    <tr style="${isBanned ? 'opacity:0.6' : ''}">
                         <td><code style="background:#0f172a; padding:2px 4px; border-radius:4px; font-size:11px;">${u.id}</code></td>
                         <td><b>${u.name}</b></td>
                         <td>
                             <div style="font-size:12px;">${u.email}</div>
                             <div style="font-size:11px; color:var(--gray);">${u.phone || '-'}</div>
                         </td>
+                        <td>${statusBadge}</td>
                         <td>${new Date(u.joined).toLocaleDateString()}</td>
                          <td>
                             <div style="display:flex; gap:5px;">
                                 <button onclick="viewCustomer('${u.id}')" title="View Profile" style="background:rgba(59, 130, 246, 0.2); color:#3b82f6; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-eye"></i></button>
                                 <button onclick="editCustomer('${u.id}')" title="Edit Customer" style="background:rgba(245, 158, 11, 0.2); color:#f59e0b; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-pen"></i></button>
+                                ${banBtn}
                                 <button onclick="deleteCustomer('${u.id}')" title="Delete Account" style="background:rgba(239, 68, 68, 0.2); color:#ef4444; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </td>
                     </tr>
                 `;
+            });
+        }
+
+        async function toggleBan(id, shouldBan) {
+            const action = shouldBan ? "Ban" : "Unban";
+            showConfirm(`${action} Customer?`, `Are you sure you want to ${action.toLowerCase()} this customer?`, async () => {
+                try {
+                    const res = await fetch(`../api/customers/${id}/ban`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify({ isBanned: shouldBan })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        showToast(`Customer ${shouldBan ? 'Banned' : 'Unbanned'}`);
+                        loadCustomers();
+                    } else {
+                        showAlert("Error", data.error || "Failed", "error");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showAlert("Error", "Server Error", "error");
+                }
             });
         }
 
@@ -185,7 +231,8 @@
 
             try {
                 let url = '../api/orders?limit=100&t=' + Date.now();
-                if (user.email) url += `&email=${encodeURIComponent(user.email)}`;
+                if (user.email) url += `& email=${encodeURIComponent(user.email)
+                    }`;
                 else url += '&limit=1000'; // Fallback for no-email users to scan everything
 
                 const res = await fetch(url, {
@@ -221,7 +268,7 @@
                         if (o.status === 'Refunded') statusColor = "#a855f7";
 
                         container.innerHTML += `
-                            <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    < div style = "background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;" >
                                 <div>
                                     <div style="font-weight:bold; font-size:13px;">#${o.id}</div>
                                     <div style="font-size:11px; color:var(--gray);">${o.date}</div>
@@ -230,7 +277,7 @@
                                     <div style="font-weight:bold; font-size:13px;">৳${o.totalAmount || o.price}</div>
                                     <span style="font-size:10px; color:${statusColor}; border:1px solid ${statusColor}; padding:1px 4px; border-radius:4px;">${o.status}</span>
                                 </div>
-                            </div>
+                            </div >
                         `;
                     });
                 }
