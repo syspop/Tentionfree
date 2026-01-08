@@ -957,6 +957,28 @@ app.delete('/api/coupons/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// Admin: Update Coupon (Limits/Status)
+app.put('/api/coupons/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const updates = req.body; // Expects maxUsage, maxUserUsage, isActive
+
+    try {
+        let coupons = await readLocalJSON('coupons.json') || [];
+        const index = coupons.findIndex(c => c.id === id);
+        if (index === -1) return res.status(404).json({ error: "Coupon not found" });
+
+        // Update fields if provided
+        if (updates.maxUsage !== undefined) coupons[index].maxUsage = parseInt(updates.maxUsage);
+        if (updates.maxUserUsage !== undefined) coupons[index].maxUserUsage = parseInt(updates.maxUserUsage);
+        if (updates.isActive !== undefined) coupons[index].isActive = updates.isActive;
+
+        await writeLocalJSON('coupons.json', coupons);
+        res.json({ success: true, coupon: coupons[index] });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update coupon" });
+    }
+});
+
 // --- AUTHENTICATION ---
 
 

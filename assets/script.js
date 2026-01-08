@@ -1911,7 +1911,7 @@ async function applyCoupon() {
 // --- Submit Order ---
 async function submitOrder(e) {
     console.log("Submit order function called");
-    e.preventDefault();
+    if (e) e.preventDefault();
 
     // --- 1. SETUP & BASIC DATA ---
     const customerName = document.getElementById('name').value.trim();
@@ -2505,7 +2505,7 @@ window.submitReview = async function () {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + localStorage.getItem('token') // Send token
+                'Authorization': 'Bearer ' + localStorage.getItem('userToken') // Send token
             },
             body: JSON.stringify({
                 productId: currentProductReviewId,
