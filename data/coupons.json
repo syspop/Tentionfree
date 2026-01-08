@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1767888232175,
+    "code": "0",
+    "discount": 100,
+    "type": "flat",
+    "minSpend": 0,
+    "applicableProducts": [
+      "all"
+    ],
+    "maxUsage": 1,
+    "maxUserUsage": 1,
+    "usageCount": 0,
+    "usageByUsers": {},
+    "isActive": true,
+    "createdAt": "2026-01-08T16:03:52.175Z",
+    "expiryDate": "2026-02-07T16:03:52.174Z"
+  }
+]

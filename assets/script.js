@@ -1666,6 +1666,7 @@ function togglePaymentSection() {
     if (paymentType === 'now') {
         // Pay Now: SHOW Payment Details (Method/TrxID), HIDE Confirmation Method (WhatsApp/Email)
         detailsSection.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
+        updatePaymentInfo(); // Force update instructions
         if (confirmationSection) confirmationSection.classList.add('hidden');
     } else {
         // Pay Later: HIDE Payment Details, SHOW Confirmation Method
@@ -1856,29 +1857,29 @@ function updatePaymentInfo() {
                     <li>Enter Amount</li>
                     <li>Confirm with PIN</li>
                 </ul>
+                </ul>
             </div>`,
         binance: `
             <div class="space-y-2">
                 <p class="text-yellow-400 font-bold border-b border-white/10 pb-1 mb-2">💰 5. Binance USDT (Crypto)</p>
-                <p class="text-gray-300 mb-2">You can send USDT directly using Binance.</p>
-                <div class="flex items-center flex-wrap gap-2 mb-2">
-                    <span class="text-gray-300">Binance UID:</span>
-                    <span class="text-white font-mono font-bold">577126624</span>
-                    <button type="button" onclick="copyToClipboard('577126624')" class="text-[10px] bg-white/10 hover:bg-brand-500 text-white px-2 py-0.5 rounded transition">Copy</button>
+                <div class="bg-white/5 p-2 rounded border border-white/10 mb-2 flex justify-between items-center">
+                    <span class="text-gray-400 text-xs">Binance UID:</span>
+                    <div class="flex items-center gap-2">
+                         <span class="text-white font-mono font-bold">577126624</span>
+                         <button type="button" onclick="copyToClipboard('577126624')" class="text-[10px] bg-brand-600 hover:bg-brand-500 text-white px-2 py-0.5 rounded transition">Copy</button>
+                    </div>
                 </div>
-                <p class="text-gray-400 text-xs font-bold mb-1">Steps:</p>
-                <ul class="list-decimal list-inside text-gray-300 space-y-1 text-xs">
-                    <li>Open Binance</li>
-                    <li>Go to Send / Transfer</li>
-                    <li>Choose USDT</li>
-                    <li>Enter UID: <span class="text-white">577126624</span></li>
-                    <li>Enter Amount</li>
-                    <li>Confirm transfer</li>
+                <ul class="list-decimal list-inside text-gray-300 text-xs space-y-1">
+                    <li>Open Binance App</li>
+                    <li>Go to Pay / Send</li>
+                    <li>Select USDT</li>
+                    <li>Enter UID & Amount</li>
                 </ul>
             </div>`
     };
 
-    instructionBox.innerHTML = instructions[method] || '<p class="text-gray-400">Select a payment method to see instructions.</p>';
+    instructionBox.innerHTML = instructions[method] || '<p class="text-gray-400">Select a payment method.</p>';
+
     // --- PRICE CONVERSION LOGIC ---
     // Recalculate Total
     let isBuyNowMode = false;
@@ -1910,6 +1911,18 @@ function updatePaymentInfo() {
             totalElement.classList.remove('text-green-400');
             totalElement.classList.add('text-brand-500');
         }
+    }
+}
+
+function prefillCheckout() {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            if (document.getElementById('name')) document.getElementById('name').value = user.name || '';
+            if (document.getElementById('phone')) document.getElementById('phone').value = user.mobile || '';
+            if (document.getElementById('customer_email')) document.getElementById('customer_email').value = user.email || '';
+        } catch (e) { console.error("Error parsing user data", e); }
     }
 }
 
@@ -2196,8 +2209,9 @@ async function submitOrder(e) {
     }
 
     let paymentMethod = 'Pay Later';
+    let paymentSelect = null; // Declare paymentSelect here for broader scope
     if (paymentTypeInput.value === 'now') {
-        const paymentSelect = document.getElementById('payment');
+        paymentSelect = document.getElementById('payment');
         if (paymentSelect) {
             paymentMethod = paymentSelect.value;
         }
@@ -2397,6 +2411,8 @@ async function submitOrder(e) {
             showErrorModal("Network Error", "Failed to submit order.");
         });
 }
+
+
 
 // Helper for Promisified File Reading
 function readFileAsBase64(file) {
@@ -2789,29 +2805,7 @@ window.submitReview = async function () {
 
 // --- 7. UTILITIES & MODALS ---
 
-function togglePaymentSection() {
-    const type = document.querySelector('input[name="paymentType"]:checked');
-    const details = document.getElementById('payment-details-section');
-    const confirm = document.getElementById('confirmation-method-section');
 
-    if (type && type.value === 'now') {
-        if (details) details.classList.remove('hidden');
-        if (confirm) confirm.classList.add('hidden');
-    } else {
-        if (details) details.classList.add('hidden');
-        if (confirm) confirm.classList.remove('hidden');
-    }
-}
-
-function updatePaymentInfo() {
-    // Logic to update displayed number based on selected wallet (bkash/nagad)
-    // For now just placeholder or simple logic if needed
-    // This was likely used to show "Send money to: 01xxx"
-    // If not critical, keep empty or simple.
-    const select = document.getElementById('payment');
-    if (!select) return;
-    // Implementation depends on HTML structure for showing number.
-}
 
 function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
@@ -2859,7 +2853,8 @@ window.showToast = function (message, type = 'success') {
 // --- PRODUCT DETAILS PAGE LOGIC ---
 
 window.addEventListener('DOMContentLoaded', () => {
-    if (window.location.pathname.includes('product-details.html')) {
+    // Check if we are on the product details page (either via cleaner URL or direct HTML file)
+    if (window.location.pathname.includes('product-details.html') || window.location.pathname.includes('/product/')) {
         loadProductDetailsPage();
     }
 });
@@ -2883,8 +2878,14 @@ async function loadProductDetailsPage() {
 
     if (!searchId) {
         console.warn("No Product ID/Slug found.");
-        // Redirect only if absolutely no ID found
-        window.location.href = 'products.html';
+        // STOP REDIRECT LOOP: Just show error
+        document.body.innerHTML = `
+            <div style="color:white; padding:50px; text-align:center;">
+                <h1>Debug: No ID Found</h1>
+                <p>Path: ${window.location.pathname}</p>
+                <p><a href="/products" style="color:#3b82f6">Go to Products</a></p>
+            </div>
+        `;
         return;
     }
 
@@ -3179,5 +3180,48 @@ function submitReview() {
     commentInput.value = '';
     loadReviews(productId);
 }
+
+// --- Page Specific Button Handlers ---
+function addToCartPage(id) {
+    addToCart(id, true, 'page');
+}
+
+function buyNowPage(id) {
+    buyNow(id, 'page');
+}
+
+// Update Price on Page (Variant Change)
+function updatePagePrice(id) {
+    const product = products.find(p => p.id === id);
+    const select = document.getElementById('page-variant-select');
+    if (!select || !product) return;
+
+    const index = select.value;
+    const variant = product.variants[index];
+
+    if (variant) {
+        document.getElementById('page-display-price').innerText = `৳${variant.price}`;
+        document.getElementById('page-display-org-price').innerText = `৳${variant.originalPrice}`;
+    }
+}
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Payment Section on Checkout Page
+    if (document.querySelector('input[name="paymentType"]')) {
+        console.log("Initializing Checkout Payment Section...");
+        togglePaymentSection();
+    }
+
+    // Initialize Home Page Products
+    if (document.getElementById('home-product-grid')) {
+        renderHomeProducts();
+    }
+
+    // Initialize Cart Badge
+    updateCartCount();
+});
+
+
 
 

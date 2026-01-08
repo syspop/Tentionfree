@@ -199,6 +199,10 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
         // Category Badge: <span id="modal-category" ...>Category</span>
         html = html.replace(/(<[^>]*id="modal-category"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1${product.category}$3`);
 
+        // Update Button Onclick Handlers
+        html = html.replace(/onclick="addToCartPage\(0\)"/g, `onclick="addToCartPage(${product.id})"`);
+        html = html.replace(/onclick="buyNowPage\(0\)"/g, `onclick="buyNowPage(${product.id})"`);
+
         // Send Hydrated HTML
         res.send(html);
 

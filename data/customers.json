@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "usr_mk5myiki",
+    "name": "Kazi",
+    "email": "kaziemdadul4@gmail.com",
+    "phone": "+8801869895549",
+    "dob": "2000-01-07",
+    "password": "$2a$10$L7reWfPyngabIysZ76kwCuUAZbVMGgmh.V2jwRqO3sPVt26MTU1la",
+    "joined": "2026-01-08T16:02:29.830Z",
+    "isBanned": false
+  }
+]
