@@ -1053,7 +1053,7 @@ function openDetails(id) {
     document.getElementById('modal-img').src = product.image;
     document.getElementById('modal-img').alt = product.name; // SEO: Set alt text
     document.getElementById('modal-category').innerText = product.category;
-    document.getElementById('modal-title').innerText = product.name;
+    document.getElementById('product-modal-title').innerText = product.name;
     document.getElementById('modal-desc').innerText = product.longDesc || product.desc; // Fallback
     document.getElementById('modal-instructions').innerText = product.instructions || "Details will be provided after purchase.";
 
