@@ -617,11 +617,20 @@ async function loadProductDetailsPage() {
     }
 
     // Use searchId for lookup (handles both number and string slugs)
-    const product = products.find(p =>
-        p.id == searchId ||
-        (p.name && p.name.toLowerCase().replace(/ /g, '-') === searchId) ||
-        (p.name && p.name.toLowerCase().replace(/ /g, '%20') === searchId.replace(/-/g, '%20'))
-    );
+    // Use searchId for lookup (handles both number and string slugs)
+    const product = products.find(p => {
+        // 1. Direct ID match
+        if (p.id == searchId) return true;
+
+        // 2. Name match (Legacy: spaces to dashes)
+        if (p.name && p.name.toLowerCase().replace(/ /g, '-') === searchId) return true;
+
+        // 3. Robust Slug Match (Ignore parentheses, same as server)
+        const cleanName = p.name ? p.name.replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase() : '';
+        const nameSlug = cleanName.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+        return nameSlug === searchId;
+    });
     if (!product) {
         document.getElementById('product-details-container').innerHTML = `
             <div class="col-span-full text-center py-20">
@@ -2857,28 +2866,47 @@ window.addEventListener('DOMContentLoaded', () => {
 
 async function loadProductDetailsPage() {
     console.log("Loading Product Details Page...");
-    const params = new URLSearchParams(window.location.search);
-    const id = parseInt(params.get('id'));
 
-    if (!id) {
+    // 1. Get ID/Slug from URL (support both query param & path)
+    const params = new URLSearchParams(window.location.search);
+    let searchId = params.get('id');
+
+    if (!searchId) {
+        // Try extracting from pathname (e.g. /product/slug)
+        const path = window.location.pathname;
+        const parts = path.split('/').filter(p => p.length > 0);
+        // If path is like /product/slug, take the last part
+        if (parts.length > 0) {
+            searchId = parts[parts.length - 1];
+        }
+    }
+
+    if (!searchId) {
+        console.warn("No Product ID/Slug found.");
+        // Redirect only if absolutely no ID found
         window.location.href = 'products.html';
         return;
     }
 
     // Wait for products to load if they are not yet available
     if (typeof products === 'undefined' || products.length === 0) {
-        // Wait 500ms and try again or rely on fetchProducts if available
-        // Assuming products are global or fetched. 
-        // If fetchProducts exists:
         if (typeof fetchProducts === 'function') {
             await fetchProducts();
         } else {
-            // Simple wait if products are hardcoded at top of script but maybe not INIT yet (unlikely if script loaded)
             await new Promise(r => setTimeout(r, 500));
         }
     }
 
-    const product = products.find(p => p.id === id);
+    // Robust Look up
+    const product = products.find(p => {
+        // 1. Direct ID match
+        if (p.id == searchId) return true;
+        // 2. Slug Match
+        const cleanName = p.name ? p.name.replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase() : '';
+        const nameSlug = cleanName.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        return nameSlug === searchId;
+    });
+
     if (!product) {
         document.getElementById('product-details-container').innerHTML = `
             <div class="col-span-full text-center py-20">
