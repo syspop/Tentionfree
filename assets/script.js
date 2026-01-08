@@ -3134,3 +3134,8 @@ function submitReview() {
     commentInput.value = '';
     loadReviews(productId);
 }
+
+// Auto-run on details page
+if (window.location.pathname.includes('product-details.html') || window.location.search.includes('id=')) {
+    document.addEventListener('DOMContentLoaded', loadProductDetailsPage);
+}
