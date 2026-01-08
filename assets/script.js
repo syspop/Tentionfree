@@ -401,6 +401,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loadCategoryFilters(); // New: Load dynamic categories
         renderHomeProducts(); // New: Render home page products
         initBannerSlider(); // New: Initialize Banner Slider (Homepage)
+
+        // Auto-run on details page
+        if (window.location.pathname.includes('product-details.html') || window.location.search.includes('id=')) {
+            loadProductDetailsPage();
+        }
     });
 
     // Navbar scroll effect
@@ -3135,7 +3140,4 @@ function submitReview() {
     loadReviews(productId);
 }
 
-// Auto-run on details page
-if (window.location.pathname.includes('product-details.html') || window.location.search.includes('id=')) {
-    document.addEventListener('DOMContentLoaded', loadProductDetailsPage);
-}
+
