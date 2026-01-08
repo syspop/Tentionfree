@@ -121,8 +121,9 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
     if (!isSSR || !productId) return next();
 
     try {
-        const products = await readLocalJSON('products');
-        const product = products.find(p => p.id == productId || p.name.toLowerCase().replace(/ /g, '-') === productId.toLowerCase());
+        const products = await readLocalJSON('products.json');
+
+        const product = products.find(p => p.id == productId || (p.name && p.name.toLowerCase().replace(/ /g, '-') === productId.toLowerCase()));
 
         if (!product) {
             return res.status(404).send('<h1>Product not found</h1><a href="/products">Back to Shop</a>');
@@ -131,38 +132,43 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
         // Read Template
         let html = fs.readFileSync(path.join(__dirname, 'product-details.html'), 'utf8');
 
-        // INJECT DATA (Simple Replace)
-        // Meta Tags
-        html = html.replace(/<title>.*<\/title>/, `<title>${product.name} | Tention Free</title>`);
-        html = html.replace(/content="Browse our catalog.*"/, `content="${product.desc || product.name}"`);
+        // INJECT DATA (Robust Regex Replace)
 
-        // Open Graph
-        html = html.replace(/property="og:title" content=".*"/, `property="og:title" content="${product.name}"`);
-        html = html.replace(/property="og:description" content=".*"/, `property="og:description" content="${product.desc}"`);
-        html = html.replace(/property="og:image" content=".*"/, `property="og:image" content="${'https://tentionfree.store/' + product.image}"`);
+        // 1. Meta Title & Description
+        html = html.replace(/<title>.*<\/title>/i, `<title>${product.name} | Tention Free</title>`);
+        html = html.replace(/content="Browse our catalog[^"]*"/i, `content="${product.desc || product.name}"`);
 
-        // CONTENT INJECTION MARKERS
-        // We will add specific comments in HTML to target replacements safely, 
-        // OR we can rely on DOM hydration for detailed interactivity and just pre-fill key visuals.
+        // 2. Open Graph Tags
+        html = html.replace(/property="og:title" content="[^"]*"/i, `property="og:title" content="${product.name}"`);
+        html = html.replace(/property="og:description" content="[^"]*"/i, `property="og:description" content="${product.desc}"`);
+        html = html.replace(/property="og:image" content="[^"]*"/i, `property="og:image" content="${'https://tentionfree.store/' + product.image}"`);
 
-        // For "Instant Load", we need to pre-fill the visible parts:
-        // 1. Image
-        html = html.replace('src="" alt="Product"', `src="${product.image}" alt="${product.name}"`);
-        // 2. Title
-        html = html.replace('id="product-modal-title">Product Title', `id="product-modal-title">${product.name}`);
-        // 3. Price
-        html = html.replace('id="page-display-price">৳0', `id="page-display-price">৳${product.price}`);
-        // 4. Description
-        html = html.replace('id="modal-desc">Description goes here...', `id="modal-desc">${product.longDesc ? product.longDesc.replace(/\n/g, '<br>') : product.desc}`);
-        // 5. Category Badge
-        html = html.replace('id="modal-category" class="', `id="modal-category" class="">${product.category}</span><span style="display:none;" class="`);
+        // 3. Visible Content (Robust ID targeting)
 
+        // Title: <h1 ... id="product-modal-title" ...>OLD</h1> -> <h1 ...>NEW</h1>
+        html = html.replace(/(<[^>]*id="product-modal-title"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1${product.name}$3`);
+
+        // Price: <span ... id="page-display-price">OLD</span>
+        html = html.replace(/(<[^>]*id="page-display-price"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1৳${product.price}$3`);
+
+        // Description: <p ... id="modal-desc">OLD</p>
+        const safeDesc = product.longDesc ? product.longDesc.replace(/\n/g, '<br>') : product.desc;
+        html = html.replace(/(<[^>]*id="modal-desc"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1${safeDesc}$3`);
+
+        // Image: <img ... src="" ... alt="Product">
+        // We look for src="" inside an img tag, or specifically the one with alt="Product" placeholder if unique.
+        // In file: <img src="" alt="Product" ...>
+        html = html.replace(/src=""\s+alt="Product"/i, `src="${product.image}" alt="${product.name}"`);
+
+        // Category Badge: <span id="modal-category" ...>Category</span>
+        html = html.replace(/(<[^>]*id="modal-category"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1${product.category}$3`);
 
         // Send Hydrated HTML
         res.send(html);
 
     } catch (err) {
         console.error("SSR Error:", err);
+        // Fallback to static file if SSR fails
         res.status(500).send("Server Error");
     }
 });
