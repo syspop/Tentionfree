@@ -1384,9 +1384,18 @@ app.get('/api/reviews/:productId', async (req, res) => {
     res.json(productReviews);
 });
 
-app.post('/api/reviews', async (req, res) => {
-    const { productId, rating, comment, userName } = req.body;
-    if (!productId || !rating || !userName) return res.status(400).json({ error: "Missing fields" });
+app.post('/api/reviews', authenticateUser, async (req, res) => {
+    const { productId, rating, comment } = req.body;
+    // const userName = req.body.userName; // We can trust token for ID, but let user send display name or use DB name?
+    // Let's use name from body if provided, else from token (safeUser). 
+    // Wait, authenticateUser puts req.user = decoded token (id, email, role). Name isn't in token usually.
+    // Ideally we fetch user from DB to get real name, or trust frontend. 
+    // For simplicity, let's allow frontend to send userName, but we enforce Login.
+
+    const userName = req.body.userName || "Customer";
+    const userId = req.user.id;
+
+    if (!productId || !rating) return res.status(400).json({ error: "Missing fields" });
 
     try {
         const reviews = await readLocalJSON('reviews.json') || [];

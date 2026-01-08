@@ -2480,24 +2480,39 @@ window.loadReviews = async function (productId) {
 }
 
 window.submitReview = async function () {
-    const name = document.getElementById('review-name').value;
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        showLoginRequiredModal(); // Use existing modal if available, or just toast
+        return;
+    }
+    const user = JSON.parse(userStr);
+
+    // Auto-fill name if empty but user exists (though UI has input, maybe we force user.name or allow alias?)
+    // User wants "must login".
+    // Let's rely on the input for display name, but ensure we have a user.
+
+    const name = document.getElementById('review-name').value || user.name;
     const rating = document.getElementById('review-rating').value;
     const comment = document.getElementById('review-comment').value;
 
-    if (!name || !rating) {
-        showToast('Please provide name and rating', 'error');
+    if (!rating) {
+        showToast('Please select a rating', 'error');
         return;
     }
 
     try {
         const res = await fetch('/api/reviews', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token') // Send token
+            },
             body: JSON.stringify({
                 productId: currentProductReviewId,
                 userName: name,
                 rating: rating,
-                comment: comment
+                comment: comment,
+                userId: user.id // Send ID too
             })
         });
 
