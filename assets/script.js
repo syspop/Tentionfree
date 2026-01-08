@@ -1940,12 +1940,20 @@ async function submitOrder(e) {
     }
 
     // --- 2. PAYMENT & VALIDATION ---
-    const selectedMethod = document.querySelector('input[name="payment"]:checked');
-    if (!selectedMethod) {
-        showErrorModal("Payment Required", "Please select a payment method.");
+    const paymentTypeInput = document.querySelector('input[name="paymentType"]:checked');
+    if (!paymentTypeInput) {
+        showErrorModal("Payment Required", "Please select a payment method (Pay Now or Pay Later).");
         return;
     }
-    const paymentMethod = selectedMethod.value;
+
+    let paymentMethod = 'Pay Later';
+    if (paymentTypeInput.value === 'now') {
+        const paymentSelect = document.getElementById('payment');
+        if (paymentSelect) {
+            paymentMethod = paymentSelect.value;
+        }
+    }
+
     const freeOrderEl = document.getElementById('is-free-order');
     const isFreeOrder = freeOrderEl && freeOrderEl.value === 'true';
 
