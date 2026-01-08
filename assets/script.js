@@ -1851,7 +1851,7 @@ function renderCheckoutItems() {
         items = [JSON.parse(buyNowData)];
         isBuyNow = true;
     } else {
-        items = JSON.parse(localStorage.getItem('cart')) || [];
+        items = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
     }
 
     if (items.length === 0) {
@@ -2010,7 +2010,7 @@ async function submitOrder(e) {
         isBuyNowMode = true;
         buyNowItem = JSON.parse(buyNowData);
     }
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const cart = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
     const itemsToOrder = isBuyNowMode ? [buyNowItem] : cart;
 
     if (itemsToOrder.length === 0) {
@@ -2652,82 +2652,7 @@ function readFileAsBase64(file) {
     });
 }
 
-// --- Dynamic Modal / Alert Logic ---
-function ensureModalExists() {
-    if (!document.getElementById('custom-alert')) {
-        const modalHTML = `
-        <div id="custom-alert" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
-            <div class="glass-card w-[400px] max-w-[90%] p-6 rounded-2xl shadow-2xl transform scale-95 transition-transform duration-300" id="custom-alert-box">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4" id="alert-icon-bg">
-                        <i class="fa-solid fa-triangle-exclamation text-2xl text-red-500" id="alert-icon"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2" id="alert-title">Attention</h3>
-                    <div class="text-slate-300 text-sm leading-relaxed mb-6" id="alert-msg">Message</div>
-                    <button onclick="closeCustomAlert()" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]" id="alert-btn">Understood</button>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-}
 
-window.showErrorModal = function (title, msg) {
-    ensureModalExists();
-    const modal = document.getElementById('custom-alert');
-    if (!modal) { alert(title + "\n" + msg); return; } // Fallback
-
-    document.getElementById('alert-title').innerText = title;
-    document.getElementById('alert-msg').innerText = msg;
-
-    // Style for Error
-    document.getElementById('alert-icon-bg').className = "w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
-    document.getElementById('alert-icon').className = "fa-solid fa-triangle-exclamation text-2xl text-red-500";
-    const btn = document.getElementById('alert-btn');
-    btn.className = "w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]";
-    btn.innerText = "Close";
-
-    // Show
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    document.getElementById('custom-alert-box').classList.remove('scale-95');
-    document.getElementById('custom-alert-box').classList.add('scale-100');
-}
-
-window.showSuccessModal = function (title = "Success", msg = "Operation completed successfully.") {
-    ensureModalExists();
-    const modal = document.getElementById('custom-alert');
-    if (!modal) { alert(msg); return; }
-
-    document.getElementById('alert-title').innerText = title;
-    document.getElementById('alert-msg').innerText = msg;
-
-    // Style for Success
-    document.getElementById('alert-icon-bg').className = "w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
-    document.getElementById('alert-icon').className = "fa-solid fa-check text-2xl text-green-500";
-    const btn = document.getElementById('alert-btn');
-    btn.className = "w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]";
-    btn.innerText = "Continue";
-
-    // Show
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    document.getElementById('custom-alert-box').classList.remove('scale-95');
-    document.getElementById('custom-alert-box').classList.add('scale-100');
-}
-
-window.showLoginRequiredModal = function () {
-    showErrorModal("Login Required", "You must be logged in to perform this action.");
-    // Optionally redirect to login on close?
-    // For now simple alert
-}
-
-window.closeCustomAlert = function () {
-    const modal = document.getElementById('custom-alert');
-    if (modal) {
-        modal.classList.add('opacity-0', 'pointer-events-none');
-        document.getElementById('custom-alert-box').classList.add('scale-95');
-        document.getElementById('custom-alert-box').classList.remove('scale-100');
-    }
-}
 window.showToast = function (message, type = 'success') {
     let toast = document.getElementById('toast');
     if (!toast) {
