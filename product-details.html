@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - Tention Free</title>
+    <meta name="description" content="Product Details">
+
+    <!-- Meta content similar to index/products -->
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <meta name="theme-color" content="#2563eb">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#0f172a', 100: '#1e293b', 400: '#3b82f6', 500: '#2563eb', 600: '#1d4ed8', 800: '#3b82f6', 900: '#60a5fa', glow: '#3b82f6',
+                        },
+                        dark: { bg: '#0f172a', card: 'rgba(30, 41, 59, 0.7)', text: '#f1f5f9' }
+                    },
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards' }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="assets/script.js?v=1.2" defer></script>
+</head>
+
+<body
+    class="antialiased min-h-screen flex flex-col relative text-slate-100 bg-slate-950 pb-24 md:pb-0 safe-area-bottom">
+
+    <!-- Navbar -->
+    <nav class="glass-nav fixed w-full z-50 top-0 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex-shrink-0 flex items-center cursor-pointer group" onclick="window.location.href='/'">
+                    <img src="assets/images/logo.png" alt="TentionFree Logo"
+                        class="w-10 h-10 mr-3 object-contain filter drop-shadow-md">
+                    <span
+                        class="font-bold text-2xl tracking-tight text-slate-200 group-hover:text-brand-600 transition-colors">Tention<span
+                            class="text-brand-500">Free</span></span>
+                </div>
+                <div
+                    class="hidden md:flex space-x-1 items-center bg-slate-900 rounded-full px-2 py-1 border border-slate-800 shadow-sm">
+                    <a href="/"
+                        class="text-slate-300 hover:text-brand-600 hover:bg-slate-800 transition px-5 py-2 rounded-full text-sm font-medium">Home</a>
+                    <a href="products"
+                        class="text-slate-300 hover:text-brand-600 hover:bg-slate-800 transition px-5 py-2 rounded-full text-sm font-medium">Products</a>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <button onclick="toggleCart()" class="relative group" aria-label="View Cart">
+                        <div class="p-3 rounded-full bg-slate-900/50 transition duration-300">
+                            <i
+                                class="fa-solid fa-bag-shopping text-xl text-slate-300 group-hover:text-brand-600 transition"></i>
+                        </div>
+                        <span id="cart-count"
+                            class="absolute top-1 right-1 bg-brand-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center transform scale-0 transition-transform duration-300 shadow-lg shadow-brand-500/40">0</span>
+                    </button>
+                    <a href="login"
+                        class="hidden md:flex items-center text-slate-300 hover:text-brand-600 transition ml-4">
+                        <i class="fa-solid fa-user text-xl mr-2"></i>
+                        <span class="text-sm font-medium">Login</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Breadcrumb -->
+            <div class="flex items-center space-x-2 text-sm text-slate-400 mb-8">
+                <a href="/" class="hover:text-brand-500 transition">Home</a>
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+                <a href="products" class="hover:text-brand-500 transition">Products</a>
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+                <span class="text-slate-200 font-medium" id="page-product-name-crumb">Loading...</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-slate-900/50 rounded-3xl p-6 md:p-10 border border-slate-800 backdrop-blur-sm relative overflow-hidden"
+                id="product-details-container">
+
+                <!-- Loading State -->
+                <div class="col-span-full text-center py-20">
+                    <div
+                        class="spinner border-4 border-brand-500/30 border-t-brand-500 rounded-full w-12 h-12 animate-spin mx-auto mb-4">
+                    </div>
+                    <p class="text-slate-400">Loading product details...</p>
+                </div>
+
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="mt-12 max-w-4xl mx-auto hidden" id="reviews-section">
+                <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    Customer Reviews <span id="page-rating-summary"
+                        class="ml-3 text-lg text-yellow-500 font-normal"></span>
+                </h3>
+
+                <!-- Add Review -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-bold text-slate-200">Write a Review</h4>
+                        <button onclick="document.getElementById('page-review-form').classList.toggle('hidden')"
+                            class="text-brand-400 hover:text-brand-300 text-sm font-medium">Toggle Form</button>
+                    </div>
+
+                    <div id="page-review-form" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="review-name" placeholder="Your Name (Optional)"
+                                class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none">
+                            <select id="review-rating"
+                                class="bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none">
+                                <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                                <option value="4">⭐⭐⭐⭐ (Good)</option>
+                                <option value="3">⭐⭐⭐ (Average)</option>
+                                <option value="2">⭐⭐ (Poor)</option>
+                                <option value="1">⭐ (Bad)</option>
+                            </select>
+                        </div>
+                        <textarea id="review-comment" rows="3" placeholder="Share your experience..."
+                            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none"></textarea>
+                        <button onclick="submitReviewPage()"
+                            class="bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-brand-500/20">Submit
+                            Review</button>
+                    </div>
+                </div>
+
+                <!-- Reviews List -->
+                <div id="page-reviews-list" class="space-y-4">
+                    <!-- Reviews injected here -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-8 text-center text-slate-500 text-sm">
+        <p>&copy; 2025 Tention Free. All rights reserved.</p>
+    </footer>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="fixed inset-0 z-[99999] pointer-events-none">
+        <div id="cart-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0"
+            onclick="toggleCart()"></div>
+        <div id="cart-panel"
+            class="absolute inset-y-0 right-0 w-full max-w-md bg-slate-900 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col border-l border-slate-800">
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+                <h2 class="text-xl font-bold text-slate-200 flex items-center"><i
+                        class="fa-solid fa-cart-shopping mr-3 text-brand-600"></i> Your Cart</h2>
+                <button onclick="toggleCart()"
+                    class="text-slate-400 hover:text-slate-300 p-2 hover:bg-slate-200 rounded-full transition"><i
+                        class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex-1 py-6 overflow-y-auto px-6">
+                <ul id="cart-items-container" class="space-y-6"></ul>
+            </div>
+            <div class="border-t border-slate-800 bg-slate-900 px-6 py-6">
+                <div class="flex justify-between text-lg font-bold text-slate-200 mb-4">
+                    <p>Total</p>
+                    <p id="cart-total" class="text-brand-600">৳0.00</p>
+                </div>
+                <button onclick="openCheckout()"
+                    class="w-full flex justify-center items-center px-6 py-4 border border-transparent rounded-xl shadow-lg shadow-brand-500/20 text-base font-bold text-white bg-brand-600 hover:bg-brand-700 transition transform hover:scale-[1.02]">Checkout
+                    <i class="fa-solid fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal Container (loaded dynamically if needed or same structure) -->
+    <!-- We can reuse the checkout.html page or modal. For now, let's include the checkout URL redirect logic or same modal if essential. -->
+    <!-- Actually, cart logic opens checkout modal. Let's include the modal structure hidden. -->
+    <!-- Checkout Modal -->
+    <div id="checkout-modal" class="fixed inset-0 z-[110] overflow-y-auto hidden" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/60 transition-opacity" aria-hidden="true" onclick="closeCheckout()">
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div
+                class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full border border-slate-800">
+                <!-- Modal Header -->
+                <div class="bg-slate-900 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="text-lg leading-6 font-bold text-slate-200" id="modal-title">
+                        <i class="fa-solid fa-lock mr-2 text-brand-600"></i> Secure Checkout
+                    </h3>
+                    <button onclick="closeCheckout()" class="text-slate-400 hover:text-slate-300 transition-colors">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="px-6 py-6 sm:px-8">
+                    <form id="checkout-form" onsubmit="event.preventDefault(); submitOrder();">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Left Column: Customer Details -->
+                            <div class="space-y-6">
+                                <h4
+                                    class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
+                                    Customer Details</h4>
+                                <div>
+                                    <label for="name" class="block text-xs font-medium text-slate-400 mb-1">Full
+                                        Name</label>
+                                    <input type="text" id="name" required
+                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
+                                        placeholder="Enter your full name">
+                                </div>
+                                <div>
+                                    <label for="phone" class="block text-xs font-medium text-slate-400 mb-1">Phone
+                                        Number</label>
+                                    <input type="tel" id="phone" required
+                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
+                                        placeholder="017xxxxxxxx">
+                                </div>
+                                <div>
+                                    <label for="customer_email"
+                                        class="block text-xs font-medium text-slate-400 mb-1">Email Address</label>
+                                    <input type="email" id="customer_email" required
+                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
+                                        placeholder="you@example.com">
+                                </div>
+                                <div id="game-uid-field" class="hidden animate-fade-in">
+                                    <label for="game_uid" class="block text-xs font-medium text-brand-600 mb-1">Player
+                                        ID / UID</label>
+                                    <input type="text" id="game_uid"
+                                        class="w-full bg-brand-50 border border-brand-200 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
+                                        placeholder="Enter Player ID">
+                                    <p class="text-[10px] text-slate-400 mt-1">Required for direct top-up.</p>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Payment & Summary -->
+                            <div class="space-y-6">
+                                <h4
+                                    class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
+                                    Payment & Order</h4>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-2">Payment
+                                        Preference</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="paymentType" value="now" class="peer sr-only"
+                                                checked onchange="togglePaymentSection()">
+                                            <div
+                                                class="text-center px-3 py-2 rounded-lg border border-slate-800 bg-slate-50 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-400 transition-all bg-slate-900/50">
+                                                <i class="fa-solid fa-credit-card mb-1 block text-sm"></i>
+                                                <span class="text-xs font-medium">Pay Now</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="paymentType" value="later" class="peer sr-only"
+                                                onchange="togglePaymentSection()">
+                                            <div
+                                                class="text-center px-3 py-2 rounded-lg border border-slate-800 bg-slate-50 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-400 transition-all bg-slate-900/50">
+                                                <i class="fa-solid fa-comments-dollar mb-1 block text-sm"></i>
+                                                <span class="text-xs font-medium">Pay Later</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="payment-details-section"
+                                    class="space-y-4 bg-slate-900 p-4 rounded-lg border border-slate-800">
+                                    <div>
+                                        <label for="payment"
+                                            class="block text-xs font-medium text-slate-400 mb-1">Select
+                                            Method</label>
+                                        <select id="payment" onchange="updatePaymentInfo()"
+                                            class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm focus:outline-none focus:border-brand-500">
+                                            <option value="bkash">Bkash</option>
+                                            <option value="nagad">Nagad</option>
+                                            <option value="rocket">Rocket</option>
+                                            <option value="binance">Binance Pay</option>
+                                        </select>
+                                    </div>
+                                    <div id="payment-instruction"
+                                        class="text-xs bg-slate-900 p-3 rounded border border-slate-800 text-slate-300">
+                                    </div>
+                                    <div>
+                                        <label for="trxid"
+                                            class="block text-xs font-medium text-slate-400 mb-1">Transaction ID
+                                            (TrxID)</label>
+                                        <input type="text" id="trxid"
+                                            class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm focus:outline-none focus:border-brand-500 placeholder-slate-400"
+                                            placeholder="e.g. 8JHS72...">
+                                    </div>
+                                </div>
+
+                                <div id="confirmation-method-section">
+                                    <label class="block text-xs font-medium text-slate-400 mb-2">Confirm Order
+                                        Via</label>
+                                    <div class="flex space-x-4">
+                                        <label class="flex items-center cursor-pointer group">
+                                            <input type="radio" name="orderMethod" value="whatsapp" checked
+                                                class="form-radio text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-300">
+                                            <span
+                                                class="ml-2 text-sm text-slate-300 group-hover:text-slate-100 transition"><i
+                                                    class="fa-brands fa-whatsapp text-green-500 mr-1"></i>
+                                                WhatsApp</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer group">
+                                            <input type="radio" name="orderMethod" value="email"
+                                                class="form-radio text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-300">
+                                            <span
+                                                class="ml-2 text-sm text-slate-300 group-hover:text-slate-100 transition"><i
+                                                    class="fa-regular fa-envelope text-blue-500 mr-1"></i> Email</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-900 rounded-lg p-4 border border-slate-800">
+                                    <h5 class="text-xs font-bold text-slate-400 uppercase mb-2">Order Summary</h5>
+                                    <div id="checkout-items-summary"
+                                        class="space-y-2 mb-3 max-h-32 overflow-y-auto pr-1"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2">
+                                        <span class="text-sm font-medium text-slate-400">Total Amount</span>
+                                        <span id="checkout-total-amount"
+                                            class="text-lg font-bold text-brand-600">৳0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 pt-4 border-t border-slate-800 flex justify-end space-x-3">
+                            <button type="button" onclick="closeCheckout()"
+                                class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 bg-slate-900/50 transition-colors">Cancel</button>
+                            <button type="submit"
+                                class="px-8 py-2.5 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-lg shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all">
+                                Confirm Order <i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

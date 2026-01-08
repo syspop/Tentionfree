@@ -563,17 +563,257 @@ async function handleUrlParams() {
     }
 }
 
+// --- PAGE LOAD CONTROLLER ---
 window.addEventListener('load', () => {
     const loader = document.getElementById('loader');
     if (loader) {
         loader.classList.add('loader-hidden');
         loader.addEventListener('transitionend', () => {
-            if (loader.parentNode) {
-                loader.parentNode.removeChild(loader);
-            }
+            if (loader.parentNode) loader.parentNode.removeChild(loader);
         });
     }
+
+    // Router Logic based on Path
+    const path = window.location.pathname;
+
+    // 1. Product Details Page
+    if (path.includes('product-details.html')) {
+        loadProductDetailsPage();
+    }
 });
+
+// --- NEW FUNCTION: Load Product Details Page ---
+async function loadProductDetailsPage() {
+    console.log("Loading Product Details Page...");
+    const params = new URLSearchParams(window.location.search);
+    const id = parseInt(params.get('id'));
+
+    if (!id) {
+        window.location.href = 'products.html';
+        return;
+    }
+
+    // Wait for products to load if empty (fetch first if needed)
+    if (!products || products.length === 0) {
+        await fetchProducts();
+    }
+
+    const product = products.find(p => p.id === id);
+    if (!product) {
+        document.getElementById('product-details-container').innerHTML = `
+            <div class="col-span-full text-center py-20">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-500 mb-4"></i>
+                <h2 class="text-2xl font-bold text-white">Product Not Found</h2>
+                <a href="products.html" class="inline-block mt-4 text-brand-400 hover:text-white underline">Back to Shop</a>
+            </div>`;
+        return;
+    }
+
+    // Update Page Title
+    document.title = `${product.name} - Tention Free`;
+    document.getElementById('page-product-name-crumb').innerText = product.name;
+
+    // Render logic (similar to modal but for page structure)
+    const container = document.getElementById('product-details-container');
+    const isOutOfStock = product.inStock === false;
+
+    // Determine Badge
+    const badgeHtml = isOutOfStock
+        ? `<span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Out of Stock</span>`
+        : `<span class="bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">${product.badge || Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
+
+    // Features List
+    const featuresHtml = product.features
+        ? `<ul class="space-y-3 mb-8">
+            ${product.features.map(f => `
+                <li class="flex items-start text-slate-300">
+                    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center mr-3 mt-0.5">
+                        <i class="fa-solid fa-check text-brand-500 text-xs"></i>
+                    </div>
+                    <span class="text-sm leading-relaxed">${f}</span>
+                </li>`).join('')}
+           </ul>`
+        : '';
+
+    // Instructions
+    const instructionsHtml = product.instructions
+        ? `<div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-8">
+                <h4 class="text-slate-200 font-bold mb-3 flex items-center">
+                    <i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> How to Use / Receive
+                </h4>
+                <div class="text-sm text-slate-400 leading-relaxed space-y-2">
+                    ${product.instructions.split('\n').map(line => `<p>${line}</p>`).join('')}
+                </div>
+           </div>`
+        : '';
+
+    // Variants & Price HTML Construction
+    let variantSectionHtml = '';
+    let priceSectionHtml = '';
+    let buttonsHtml = '';
+
+    if (product.variants && product.variants.length > 0) {
+        // Has Variants
+        const options = product.variants.map((v, i) => `<option value="${i}">${v.label} - ৳${v.price}</option>`).join('');
+
+        variantSectionHtml = `
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-400 mb-2">Select Option</label>
+                <div class="relative">
+                    <select id="page-variant-select" onchange="updatePagePrice(${product.id})" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-4 text-white appearance-none focus:outline-none focus:border-brand-500 transition-colors cursor-pointer text-base">
+                        ${options}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                        <i class="fa-solid fa-chevron-down text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Initial Price (First Variant)
+        const v0 = product.variants[0];
+        priceSectionHtml = `
+            <div>
+                <span class="text-sm text-slate-500 line-through block mb-1">৳${v0.originalPrice}</span>
+                <span class="text-4xl font-bold text-white tracking-tight" id="page-display-price">৳${v0.price}</span>
+            </div>
+        `;
+    } else {
+        // No Variants
+        priceSectionHtml = `
+            <div>
+                 <span class="text-sm text-slate-500 line-through block mb-1">৳${product.originalPrice}</span>
+                 <span class="text-4xl font-bold text-white tracking-tight" id="page-display-price">৳${product.price}</span>
+            </div>
+        `;
+    }
+
+    // Buttons
+    buttonsHtml = isOutOfStock
+        ? `<button class="w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl cursor-not-allowed border border-slate-700">Out of Stock</button>`
+        : `<div class="grid grid-cols-2 gap-4">
+                <button onclick="addToCartPage(${product.id})" class="flex items-center justify-center px-6 py-4 border border-brand-500 text-brand-500 rounded-xl font-bold hover:bg-brand-500/10 transition active:scale-95">
+                    <i class="fa-solid fa-cart-plus mr-2"></i> Add to Cart
+                </button>
+                <button onclick="buyNowPage(${product.id})" class="flex items-center justify-center px-6 py-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-500 shadow-lg shadow-brand-500/30 transition active:scale-95 transform hover:-translate-y-0.5">
+                    Buy Now <i class="fa-solid fa-bolt ml-2"></i>
+                </button>
+           </div>`;
+
+
+    // Final HTML Assembly
+    const content = `
+        <!-- Left: Image -->
+        <div class="relative group">
+            <div class="absolute inset-0 bg-brand-500/20 rounded-3xl blur-3xl group-hover:bg-brand-500/30 transition-all duration-500 -z-10"></div>
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 md:p-12 flex items-center justify-center border border-slate-700 h-full relative overflow-hidden">
+                <!-- Background Decoration -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                
+                <img src="${product.image}" alt="${product.name}" class="w-full max-w-sm object-contain drop-shadow-2xl z-10 transform group-hover:scale-105 transition duration-500">
+                
+                <div class="absolute top-6 left-6 z-20">
+                    ${badgeHtml}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Info -->
+        <div class="flex flex-col h-full animate-fade-in" style="animation-delay: 100ms;">
+            <div class="mb-1">
+                <span class="text-brand-400 font-bold tracking-wider text-xs uppercase bg-brand-500/10 px-3 py-1 rounded-full">${product.category}</span>
+            </div>
+            
+            <h1 class="text-3xl md:text-5xl font-bold text-white mb-4 mt-4 leading-tight">${product.name}</h1>
+            
+            <p class="text-slate-400 text-base leading-relaxed mb-8">${product.desc}</p>
+            
+            ${featuresHtml}
+            ${instructionsHtml}
+            
+            <div class="mt-auto bg-slate-950/50 rounded-2xl p-6 border border-slate-800 backdrop-blur-sm">
+                ${variantSectionHtml}
+                
+                <div class="flex items-end justify-between mb-8">
+                     ${priceSectionHtml}
+                     <!-- Rating Summary (Small) -->
+                     <div class="text-right">
+                         <div class="text-yellow-500 text-sm mb-1"><i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i></div>
+                         <p class="text-slate-500 text-xs text-right">Instant Delivery</p>
+                     </div>
+                </div>
+
+                ${buttonsHtml}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = content;
+
+    // Load Reviews
+    document.getElementById('reviews-section').classList.remove('hidden');
+    loadReviews(id);
+}
+
+// --- Helper Functions for Details Page ---
+function updatePagePrice(id) {
+    const product = products.find(p => p.id === id);
+    const select = document.getElementById('page-variant-select');
+    if (!product || !select) return;
+
+    const index = select.value;
+    const variant = product.variants[index];
+
+    document.getElementById('page-display-price').innerText = `৳${variant.price}`;
+
+    // Update Buy/Add handlers with Variant Index?
+    // The base buttons pass ID. logic needs to check select value.
+}
+
+function addToCartPage(id) {
+    const select = document.getElementById('page-variant-select');
+    const variantIndex = select ? select.value : 0;
+    addToCart(id, variantIndex); // Ensure addToCart supports index
+}
+
+function buyNowPage(id) {
+    const select = document.getElementById('page-variant-select');
+    let variantIndex = select ? select.value : 0;
+    // Overloaded logic: buyNow in script usually takes just ID and defaults to 0 or manual select?
+    // Let's modify buyNow to accept variant in global script OR call openCheckout directly.
+
+    // Direct logic:
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    let item = { ...product, quantity: 1 }; // Clone
+    if (product.variants && product.variants.length > 0) {
+        const v = product.variants[variantIndex];
+        item.price = v.price;
+        item.variant = v.label;
+        item.variantName = v.label;
+        item.originalPrice = v.originalPrice;
+    } else {
+        item.variant = 'Standard';
+        item.variantName = 'Standard';
+    }
+
+    localStorage.setItem('tentionfree_buyNow', JSON.stringify(item));
+    window.location.href = 'checkout.html';
+}
+
+function submitReviewPage() {
+    // Wrapper for verify
+    // Reuse window.submitReview logic but update ID references? 
+    // Actually window.submitReview relies on `currentProductReviewId` global.
+    // Ensure `loadProductDetailsPage` sets it?
+    // loadReviews(id) sets `currentProductReviewId`. So it should work if called.
+
+    // However, existing submitReview reads from 'review-name/comment' IDs which match page IDs.
+    // So calling global submitReview should work.
+    window.submitReview();
+}
+
 
 // --- Functions ---
 
@@ -1113,105 +1353,8 @@ function clearSearch() {
 // --- Product Details Modal Logic ---
 
 function openDetails(id) {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-
-    // Populate Modal Data
-    document.getElementById('modal-img').src = product.image;
-    document.getElementById('modal-img').alt = product.name; // SEO: Set alt text
-    document.getElementById('modal-category').innerText = product.category;
-    document.getElementById('product-modal-title').innerText = product.name;
-    document.getElementById('modal-desc').innerText = product.longDesc || product.desc; // Fallback
-    document.getElementById('modal-instructions').innerText = product.instructions || "Details will be provided after purchase.";
-
-    // Load Reviews
-    loadReviews(id);
-
-    // Stock check
-    const isOutOfStock = product.inStock === false;
-    const addBtn = document.getElementById('modal-add-btn');
-    const buyBtn = document.getElementById('modal-buy-btn');
-
-    if (isOutOfStock) {
-        if (addBtn) {
-            addBtn.disabled = true;
-            addBtn.innerHTML = '<i class="fa-solid fa-ban mr-2"></i> Out of Stock';
-            addBtn.className = 'flex items-center justify-center px-4 py-3 border border-red-500 text-red-500 rounded-xl font-bold cursor-not-allowed';
-            addBtn.onclick = null;
-        }
-
-        if (buyBtn) {
-            buyBtn.disabled = true;
-            buyBtn.innerText = 'Unavailable';
-            buyBtn.className = 'flex items-center justify-center px-4 py-3 bg-gray-700 text-gray-400 rounded-xl font-bold cursor-not-allowed';
-            buyBtn.onclick = null;
-        }
-    } else {
-        if (addBtn) {
-            addBtn.disabled = false;
-            addBtn.innerHTML = '<i class="fa-solid fa-cart-plus mr-2"></i> Add to Cart';
-            addBtn.className = 'flex items-center justify-center px-4 py-3 border border-brand-500 text-brand-600 rounded-xl font-bold hover:bg-brand-50 transition';
-            addBtn.onclick = () => { addToCart(product.id, true, 'modal'); };
-        }
-
-        if (buyBtn) {
-            buyBtn.disabled = false;
-            buyBtn.innerText = 'Buy Now';
-            buyBtn.className = 'flex items-center justify-center px-4 py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 shadow-lg shadow-brand-500/30 transition';
-            buyBtn.onclick = () => { buyNow(product.id, 'modal'); closeDetails(); };
-        }
-    }
-
-    // Features List
-    const featureList = document.getElementById('modal-features');
-    featureList.innerHTML = '';
-    if (product.features) {
-        product.features.forEach(f => {
-            featureList.innerHTML += `<li class="flex items-start"><i class="fa-solid fa-check text-brand-500 mt-1 mr-2"></i> ${f}</li>`;
-        });
-    } else {
-        featureList.innerHTML = '<li class="text-gray-500">No specific features listed.</li>';
-    }
-
-    // Variant Selector in Modal
-    const variantContainer = document.getElementById('modal-variant-container');
-    variantContainer.innerHTML = '';
-
-    let price = product.price;
-    let orgPrice = product.originalPrice;
-
-    if (product.variants && product.variants.length > 0) {
-        const select = document.createElement('select');
-        select.id = 'modal-variant-select';
-        select.className = 'w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 cursor-pointer';
-        if (isOutOfStock) select.disabled = true;
-
-        product.variants.forEach((v, i) => {
-            const option = document.createElement('option');
-            option.value = i;
-            option.className = 'bg-gray-900';
-            option.text = `${v.label} - ৳${v.price}`;
-            select.appendChild(option);
-        });
-
-        // Handle change inside modal
-        select.onchange = function () {
-            const v = product.variants[this.value];
-            document.getElementById('modal-price').innerText = `৳${v.price}`;
-            document.getElementById('modal-price-original').innerText = `৳${v.originalPrice}`;
-        };
-
-        variantContainer.appendChild(select);
-        // Set initial values from first variant
-        price = product.variants[0].price;
-        orgPrice = product.variants[0].originalPrice;
-    }
-
-    document.getElementById('modal-price').innerText = `৳${price}`;
-    document.getElementById('modal-price-original').innerText = `৳${orgPrice}`;
-
-    // Show Modal
-    document.getElementById('product-details-modal').classList.remove('hidden');
+    // Redirect to separate details page
+    window.location.href = `product-details.html?id=${id}`;
 }
 
 function closeDetails() {
@@ -1244,16 +1387,17 @@ function createCartItem(id, source = 'card') {
     let finalName = product.name;
     let cartId = product.id.toString();
 
-    // Logic to find correct selector based on source (card vs modal)
+    // Logic to find correct selector based on source
     let selectorId = `variant-select-${id}`; // Default card selector
     if (source === 'modal') {
-        selectorId = 'modal-variant-select'; // Unique ID in modal
+        selectorId = 'modal-variant-select';
+    } else if (source === 'page') {
+        selectorId = 'page-variant-select';
     }
 
     const select = document.getElementById(selectorId);
 
-    // Only use the value if the selector exists AND belongs to this product context 
-    // (For modal, it is rebuilt on open, so it's always for current product)
+    // Only use the value if the selector exists
     if (select) {
         const index = select.value;
         const variant = product.variants[index];
@@ -2684,4 +2828,309 @@ window.showToast = function (message, type = 'success') {
     setTimeout(() => {
         toast.classList.add('translate-y-10', 'opacity-0');
     }, 3000);
+}
+
+// --- PRODUCT DETAILS PAGE LOGIC ---
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (window.location.pathname.includes('product-details.html')) {
+        loadProductDetailsPage();
+    }
+});
+
+async function loadProductDetailsPage() {
+    console.log("Loading Product Details Page...");
+    const params = new URLSearchParams(window.location.search);
+    const id = parseInt(params.get('id'));
+
+    if (!id) {
+        window.location.href = 'products.html';
+        return;
+    }
+
+    // Wait for products to load if they are not yet available
+    if (typeof products === 'undefined' || products.length === 0) {
+        // Wait 500ms and try again or rely on fetchProducts if available
+        // Assuming products are global or fetched. 
+        // If fetchProducts exists:
+        if (typeof fetchProducts === 'function') {
+            await fetchProducts();
+        } else {
+            // Simple wait if products are hardcoded at top of script but maybe not INIT yet (unlikely if script loaded)
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+
+    const product = products.find(p => p.id === id);
+    if (!product) {
+        document.getElementById('product-details-container').innerHTML = `
+            <div class="col-span-full text-center py-20">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-500 mb-4"></i>
+                <h2 class="text-2xl font-bold text-white">Product Not Found</h2>
+                <a href="products.html" class="inline-block mt-4 text-brand-400 hover:text-white underline">Back to Shop</a>
+            </div>`;
+        return;
+    }
+
+    // Update Page Title
+    document.title = `${product.name} - Tention Free`;
+    const crumb = document.getElementById('page-product-name-crumb');
+    if (crumb) crumb.innerText = product.name;
+
+    // Render logic
+    const container = document.getElementById('product-details-container');
+    const isOutOfStock = product.inStock === false;
+
+    // Determine Badge
+    const badgeHtml = isOutOfStock
+        ? `<span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Out of Stock</span>`
+        : `<span class="bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">${product.badge || Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
+
+    // Features List
+    const featuresHtml = product.features
+        ? `<ul class="space-y-3 mb-8">
+            ${product.features.map(f => `
+                <li class="flex items-start text-slate-300">
+                    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center mr-3 mt-0.5">
+                        <i class="fa-solid fa-check text-brand-500 text-xs"></i>
+                    </div>
+                    <span class="text-sm leading-relaxed">${f}</span>
+                </li>`).join('')}
+           </ul>`
+        : '';
+
+    // Instructions
+    const instructionsHtml = product.instructions
+        ? `<div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-8">
+                <h4 class="text-slate-200 font-bold mb-3 flex items-center">
+                    <i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> How to Use / Receive
+                </h4>
+                <div class="text-sm text-slate-400 leading-relaxed space-y-2">
+                    ${product.instructions.split('\n').map(line => `<p>${line}</p>`).join('')}
+                </div>
+           </div>`
+        : '';
+
+    // Variants & Price HTML Construction
+    let variantSectionHtml = '';
+    let priceSectionHtml = '';
+
+    // Default Price
+    let displayPrice = product.price;
+    let displayOrgPrice = product.originalPrice;
+
+    if (product.variants && product.variants.length > 0) {
+        // Has Variants
+        const options = product.variants.map((v, i) => `<option value="${i}">${v.label} - ৳${v.price}</option>`).join('');
+
+        variantSectionHtml = `
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-400 mb-2">Select Option</label>
+                <div class="relative">
+                    <select id="page-variant-select" onchange="updatePagePrice(${product.id})" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-4 text-white appearance-none focus:outline-none focus:border-brand-500 transition-colors cursor-pointer text-base">
+                        ${options}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                        <i class="fa-solid fa-chevron-down text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Initial Price (First Variant)
+        const v0 = product.variants[0];
+        displayPrice = v0.price;
+        displayOrgPrice = v0.originalPrice;
+    }
+
+    priceSectionHtml = `
+        <div>
+             <span class="text-sm text-slate-500 line-through block mb-1" id="page-display-org-price">৳${displayOrgPrice}</span>
+             <span class="text-4xl font-bold text-white tracking-tight" id="page-display-price">৳${displayPrice}</span>
+        </div>
+    `;
+
+    // Buttons
+    const buttonsHtml = isOutOfStock
+        ? `<button class="w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl cursor-not-allowed border border-slate-700">Out of Stock</button>`
+        : `<div class="grid grid-cols-2 gap-4">
+                <button onclick="addToCartPage(${product.id})" class="flex items-center justify-center px-6 py-4 border border-brand-500 text-brand-500 rounded-xl font-bold hover:bg-brand-500/10 transition active:scale-95">
+                    <i class="fa-solid fa-cart-plus mr-2"></i> Add to Cart
+                </button>
+                <button onclick="buyNowPage(${product.id})" class="flex items-center justify-center px-6 py-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-500 shadow-lg shadow-brand-500/30 transition active:scale-95 transform hover:-translate-y-0.5">
+                    Buy Now <i class="fa-solid fa-bolt ml-2"></i>
+                </button>
+           </div>`;
+
+
+    // Final HTML Assembly
+    const content = `
+        <!-- Left: Image -->
+        <div class="relative group">
+            <div class="absolute inset-0 bg-brand-500/20 rounded-3xl blur-3xl group-hover:bg-brand-500/30 transition-all duration-500 -z-10"></div>
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 md:p-12 flex items-center justify-center border border-slate-700 h-full relative overflow-hidden">
+                <!-- Background Decoration -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                
+                <img src="${product.image}" alt="${product.name}" class="w-full max-w-sm object-contain drop-shadow-2xl z-10 transform group-hover:scale-105 transition duration-500">
+                
+                <div class="absolute top-6 left-6 z-20">
+                    ${badgeHtml}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Info -->
+        <div class="flex flex-col h-full animate-fade-in" style="animation-delay: 100ms;">
+            <div class="mb-1">
+                <span class="text-brand-400 font-bold tracking-wider text-xs uppercase bg-brand-500/10 px-3 py-1 rounded-full">${product.category}</span>
+            </div>
+            
+            <h1 class="text-3xl md:text-5xl font-bold text-white mb-4 mt-4 leading-tight">${product.name}</h1>
+            
+            <p class="text-slate-400 text-base leading-relaxed mb-8">${product.desc}</p>
+            
+            ${featuresHtml}
+            ${instructionsHtml}
+            
+            <div class="mt-auto bg-slate-950/50 rounded-2xl p-6 border border-slate-800 backdrop-blur-sm">
+                ${variantSectionHtml}
+                
+                <div class="flex items-end justify-between mb-8">
+                     ${priceSectionHtml}
+                     <!-- Rating Summary (Small) -->
+                     <div class="text-right">
+                         <div class="text-yellow-500 text-sm mb-1"><i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i></div>
+                         <p class="text-slate-500 text-xs text-right">Instant Delivery</p>
+                     </div>
+                </div>
+
+                ${buttonsHtml}
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = content;
+
+    // Load Reviews
+    const reviewSection = document.getElementById('reviews-section');
+    if (reviewSection) reviewSection.classList.remove('hidden');
+    loadReviews(id);
+}
+
+// --- Helper Functions for Details Page ---
+function updatePagePrice(id) {
+    const product = products.find(p => p.id === id);
+    const select = document.getElementById('page-variant-select');
+    if (!product || !select) return;
+
+    const index = select.value;
+    const variant = product.variants[index];
+
+    document.getElementById('page-display-price').innerText = `৳${variant.price}`;
+    if (variant.originalPrice) document.getElementById('page-display-org-price').innerText = `৳${variant.originalPrice}`;
+}
+
+function addToCartPage(id) {
+    // Call main addToCart with 'page' source
+    addToCart(id, true, 'page');
+}
+
+function buyNowPage(id) {
+    // Call main buyNow with 'page' source
+    buyNow(id, 'page');
+}
+
+function submitReviewPage() {
+    window.submitReview();
+}
+
+// --- REVIEWS LOGIC (LocalStorage Based) ---
+function loadReviews(productId) {
+    const list = document.getElementById('page-reviews-list');
+    const summary = document.getElementById('page-rating-summary');
+
+    if (!list) return;
+
+    list.innerHTML = '<p class="text-slate-500 text-sm italic">Loading reviews...</p>';
+
+    // Simulate Network Delay
+    setTimeout(() => {
+        const allReviews = JSON.parse(localStorage.getItem('tentionfree_reviews')) || [];
+        const reviews = allReviews.filter(r => r.productId == productId);
+
+        if (reviews.length === 0) {
+            list.innerHTML = '<p class="text-slate-500 text-sm italic">No reviews yet. Be the first to review!</p>';
+            if (summary) summary.innerText = '(0.0)';
+            return;
+        }
+
+        // Calculate Average
+        const avg = reviews.reduce((sum, r) => sum + parseInt(r.rating), 0) / reviews.length;
+        if (summary) summary.innerText = `(${avg.toFixed(1)})`;
+
+        list.innerHTML = '';
+        reviews.reverse().forEach(r => {
+            const stars = '⭐'.repeat(parseInt(r.rating));
+            list.innerHTML += `
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 animate-fade-in">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-white font-bold text-sm block">${r.name || 'Anonymous'}</span>
+                            <span class="text-yellow-500 text-xs">${stars}</span>
+                        </div>
+                        <span class="text-slate-500 text-[10px]">${r.date}</span>
+                    </div>
+                    <p class="text-slate-300 text-sm leading-relaxed">${r.comment}</p>
+                </div>
+            `;
+        });
+    }, 500);
+}
+
+function submitReview() {
+    console.log("Submit Review Called");
+
+    // Get Product ID from URL
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+
+    if (!productId) {
+        showToast("Error: Product not found");
+        return;
+    }
+
+    const nameInput = document.getElementById('review-name');
+    const ratingInput = document.getElementById('review-rating');
+    const commentInput = document.getElementById('review-comment');
+
+    const name = nameInput.value.trim() || 'Anonymous';
+    const rating = ratingInput.value;
+    const comment = commentInput.value.trim();
+
+    if (!comment) {
+        showToast("Please write a comment");
+        return;
+    }
+
+    const newReview = {
+        id: Date.now(),
+        productId: productId,
+        name: name,
+        rating: rating,
+        comment: comment,
+        date: new Date().toLocaleDateString()
+    };
+
+    // Save to LocalStorage
+    const allReviews = JSON.parse(localStorage.getItem('tentionfree_reviews')) || [];
+    allReviews.push(newReview);
+    localStorage.setItem('tentionfree_reviews', JSON.stringify(allReviews));
+
+    showToast("Review Submitted!");
+
+    // Clear Form & Reload
+    nameInput.value = '';
+    commentInput.value = '';
+    loadReviews(productId);
 }
