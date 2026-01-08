@@ -262,10 +262,40 @@ async function sendOrderStatusEmail(order, updates) {
                                                                             ${itemsRows}
                                                                         </table>
 
-                                                                        <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 1px solid #334155;">
-                                                                            <span style="color: #94a3b8; margin-right: 15px; font-size: 15px;">Total Amount</span>
-                                                                            <span style="color: ${themeColor}; font-size: 24px; font-weight: 800;">${isUSD ? '$' : '৳'}${isUSD ? totalOrderPrice.toFixed(2) : totalOrderPrice}</span>
-                                                                        </div>
+                                                                    <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 1px solid #334155;">
+                                                                        <!-- Breakdown Calculations -->
+                                                                        ${(() => {
+                // Calculate Subtotal (Sum of Items)
+                let subTotal = 0;
+                order.items.forEach(i => {
+                    let price = parseFloat(i.price) * (i.quantity || 1);
+                    if (isUSD && exchangeRate > 1) price = price / exchangeRate;
+                    subTotal += price;
+                });
+
+                const finalTotal = parseFloat(totalOrderPrice); // Already parsed above
+                let discount = 0;
+                if (subTotal > finalTotal + 0.01) {
+                    discount = subTotal - finalTotal;
+                }
+
+                let html = '';
+                if (discount > 0.01) {
+                    html += `
+                                                                                 <div style="margin-bottom: 5px; color: #94a3b8; font-size: 14px;">
+                                                                                     Subtotal: <span style="color: #cbd5e1;">${isUSD ? '$' + subTotal.toFixed(2) : '৳' + subTotal}</span>
+                                                                                 </div>
+                                                                                 <div style="margin-bottom: 5px; color: #ef4444; font-size: 14px;">
+                                                                                     Discount: <span>-${isUSD ? '$' + discount.toFixed(2) : '৳' + discount}</span>
+                                                                                 </div>
+                                                                                 `;
+                }
+                return html;
+            })()}
+
+                                                                        <span style="color: #94a3b8; margin-right: 15px; font-size: 15px;">Total Amount</span>
+                                                                        <span style="color: ${themeColor}; font-size: 24px; font-weight: 800;">${isUSD ? '$' : '৳'}${isUSD ? totalOrderPrice.toFixed(2) : totalOrderPrice}</span>
+                                                                    </div>
                                                                     </div>
 
                                                                     ${paymentInfo}

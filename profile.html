@@ -955,20 +955,102 @@
                         </tbody>
                     </table>
 
-                    <!-- Total -->
-                    <div style="border-top: 2px solid #f1f5f9; padding-top: 20px; text-align: right;">
-                        <span style="font-size: 14px; color: #64748b; margin-right: 15px;">Total Amount</span>
-                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳'}${order.price || order.totalAmount || 0}</span>
+            // --- Calculate Breakdown ---
+            // Calculate User Visible Subtotal (Rendered Sum)
+            let userVisibleSubTotal = 0;
+            const isUSD = (order.currency === 'USD' || order.paymentMethod === 'Binance Pay');
+
+            items.forEach(item => {
+                let itemTotal = (item.price || 0) * (item.quantity || item.qty || 1);
+                if (isUSD) itemTotal = itemTotal / 100; // USD prices stored in cents? Based on existing logic.
+                userVisibleSubTotal += itemTotal;
+            });
+            
+            const userVisibleFinalTotal = parseFloat(order.price || order.totalAmount || 0);
+            
+            let userVisibleDiscount = 0;
+            // Only show discount if Subtotal> Final Total (implies coupon or discount applied)
+            if (userVisibleSubTotal> userVisibleFinalTotal + 0.01) {
+                userVisibleDiscount = userVisibleSubTotal - userVisibleFinalTotal;
+            }
+
+            // Generate HTML for Totals
+            const subTotalRow = userVisibleDiscount > 0.01 ? 
+                `< div style = "display:flex; justify-content:space-between; color: #64748b; font-size: 14px; margin-bottom: 5px;" >
+                    <span>Subtotal</span>
+                    <span>${isUSD ? '$' : '৳'}${isUSD ? userVisibleSubTotal.toFixed(2) : userVisibleSubTotal}</span>
+                 </div > ` : '';
+            
+            const discountRow = userVisibleDiscount > 0.01 ? 
+                `< div style = "display:flex; justify-content:space-between; color: #ef4444; font-size: 14px; margin-bottom: 5px;" >
+                    <span>Discount</span>
+                    <span>-${isUSD ? '$' : '৳'}${isUSD ? userVisibleDiscount.toFixed(2) : userVisibleDiscount}</span>
+                 </div > ` : '';
+
+
+            // Construct Inner Body of Invoice
+            container.innerHTML = `
+                < div style = "font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; max-width: 90%; background: #ffffff; padding: 40px; color: #333; box-shadow: 0 0 10px rgba(0,0,0,0.1);" >
+                    < !--Header -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+                         <div style="font-size: 28px; font-weight: bold; color: #2563eb; letter-spacing: -1px;">TentionFree</div>
+                         <div style="text-align:right;">
+                             <div style="font-size: 12px; text-transform:uppercase; color: #64748b; font-weight:bold; letter-spacing: 1px;">Invoice</div>
+                             <div style="font-size: 16px; font-weight:bold; color: #1e293b;">#${order.id}</div>
+                         </div>
                     </div>
 
-                    <!-- Footer -->
-                    <div style="margin-top: 60px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 30px;">
-                        <div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">TentionFree</div>
-                        <div style="font-size: 12px; color: #94a3b8;">Digital Product Shop Bangladesh</div>
-                        <div style="font-size: 12px; color: #94a3b8; margin-top:5px;">Thank you for your business!</div>
+                    <!--Info Grid-- >
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 40px;">
+                        <div>
+                            <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Billed To</div>
+                            <div style="font-weight:bold; color: #1e293b; margin-bottom:3px; font-size:16px;">${order.customer || order.customerName || 'Guest'}</div>
+                            <div style="color: #64748b; font-size: 14px;">${order.email || ''}</div>
+                            <div style="color: #64748b; font-size: 14px;">${order.phone || ''}</div>
+                            ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="color: #64748b; font-size: 14px; margin-top: 5px;">Player/Account ID: <span style="color: #334155; font-weight:500;">${order.gameUid}</span></div>` : ''}
+                        </div>
+                        <div style="text-align:right;">
+                             <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Details</div>
+                             <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Date: <span style="color: #1e293b; font-weight:600;">${new Date(order.date).toLocaleDateString()}</span></div>
+                             <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Method: <span style="color: #1e293b; font-weight:600;">${order.paymentMethod}</span></div>
+                             <div style="color: #64748b; font-size: 14px;">Status: <span style="color:${order.status === 'Completed' ? '#10b981' : '#f59e0b'}; font-weight:600;">${order.status}</span></div>
+                             ${order.trx ? `<div style="color: #64748b; font-size: 14px; margin-top: 3px;">TrxID: <span style="color: #334155; font-weight:600;">${order.trx}</span></div>` : ''}
+                        </div>
                     </div>
+
+                    <!--Table -->
+                    <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background-color: #eff6ff; border-bottom: 2px solid #e2e8f0;">
+                                <th style="text-align:left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Item</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Qty</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Price</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                     <!--Total Block-- >
+                    <div style="border-top: 2px solid #f1f5f9; padding-top: 20px;">
+                        ${subTotalRow}
+                        ${discountRow}
+                        <div style="display:flex; justify-content:space-between; color: #1e293b; font-size: 18px; font-weight: bold; margin-top: 10px;">
+                            <span>Total Amount</span>
+                            <span style="color: #2563eb;">${isUSD ? '$' : '৳'}${isUSD ? userVisibleFinalTotal.toFixed(2) : userVisibleFinalTotal}</span>
+                        </div>
+                    </div>
+
+                    <!--Footer -->
+                <div style="margin-top: 60px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 30px;">
+                    <div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">TentionFree</div>
+                    <div style="font-size: 12px; color: #94a3b8;">Digital Product Shop Bangladesh</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top:5px;">Thank you for your business!</div>
                 </div>
-            `;
+                </div >
+                `;
 
             // Append to body momentarily for rendering
             document.body.appendChild(container);
@@ -983,7 +1065,7 @@
 
             const opt = {
                 margin: 0.2, // Small margin
-                filename: `Invoice_${order.id}.pdf`,
+                filename: `Invoice_${ order.id }.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
@@ -1431,7 +1513,7 @@
             const month = document.getElementById('cp-month').value;
             const year = document.getElementById('cp-year').value;
 
-            const dob = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const dob = `${ year } -${ month.toString().padStart(2, '0') } -${ day.toString().padStart(2, '0') } `;
 
             // Age Check
             const birthDate = new Date(dob);
@@ -1453,7 +1535,7 @@
                 const user = JSON.parse(localStorage.getItem('user'));
                 const token = localStorage.getItem('userToken');
 
-                const res = await fetch(`/api/customers/${user.id}`, {
+                const res = await fetch(`/ api / customers / ${ user.id }`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

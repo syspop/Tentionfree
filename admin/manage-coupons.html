@@ -206,6 +206,20 @@
                 <input type="number" id="c-max-user" placeholder="e.g. 1" class="input-box" style="margin:0">
             </div>
 
+            <!-- Expiration -->
+            <div class="input-group">
+                <label>Expires In (0 = Never)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="c-expire-time" placeholder="e.g. 30" class="input-box"
+                        style="margin:0; flex: 2;">
+                    <select id="c-expire-type" class="input-box" style="margin:0; flex: 1; padding: 12px;">
+                        <option value="minutes">Minutes</option>
+                        <option value="hours">Hours</option>
+                        <option value="days" selected>Days</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="input-group" style="grid-column: 1 / -1;">
                 <label>Applicable Products</label>
                 <div class="checkbox-list-container">
@@ -377,6 +391,32 @@
                 const used = c.usageCount || 0;
                 const statusColor = c.isActive === false ? '#ef4444' : '#10b981';
 
+                // Expiry Logic for Display
+                let expiryText = "";
+                if (c.expiryDate) {
+                    const diff = new Date(c.expiryDate) - new Date();
+                    if (diff <= 0) {
+                        expiryText = `<span style="color:#ef4444; font-size:11px; font-weight:bold;">EXPIRED</span>`;
+                    } else {
+                        // Calculate nicely
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                        let timeString = "";
+                        if (days > 0) timeString = `${days}d ${hours}h`;
+                        else if (hours > 0) timeString = `${hours}h ${minutes}m`;
+                        else timeString = `${minutes}m`;
+
+                        if (days > 3650) {
+                            // effectively never
+                            expiryText = "";
+                        } else {
+                            expiryText = `<span style="color:#f59e0b; font-size:11px;">Expires in: <span style="color:white;">${timeString}</span></span>`;
+                        }
+                    }
+                }
+
                 return `
                 <div class="coupon-card" style="border-left: 4px solid ${statusColor}">
                     <div style="position:absolute; top:20px; right:20px; display:flex; gap:10px;">
@@ -386,7 +426,10 @@
                     </div>
 
                     <div class="coupon-code">${c.code} ${c.isActive === false ? '<span style="font-size:10px; color:#ef4444; background:rgba(239,68,68,0.1); padding:2px 6px; border-radius:4px;">INACTIVE</span>' : ''}</div>
-                    <span class="coupon-type">${c.type === 'percent' ? 'Percentage' : 'Flat Amount'}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="coupon-type">${c.type === 'percent' ? 'Percentage' : 'Flat Amount'}</span>
+                        ${expiryText}
+                    </div>
                     
                     <div class="coupon-details">
                         <div style="font-size:18px; color:white; font-weight:bold; margin-bottom:5px;">
@@ -501,6 +544,10 @@
             const maxUsage = document.getElementById('c-max-usage').value;
             const maxUserUsage = document.getElementById('c-max-user').value;
 
+            // Expiration
+            const expireTime = document.getElementById('c-expire-time').value;
+            const expireType = document.getElementById('c-expire-type').value;
+
             // Get selected products
             const allCb = document.querySelector('input[value="all"]');
             let applicableProducts = ['all'];
@@ -526,7 +573,9 @@
                     },
                     body: JSON.stringify({
                         code, discount, type, minSpend, applicableProducts,
-                        maxUsage, maxUserUsage
+                        maxUsage, maxUserUsage,
+                        expireTime: expireTime || 0,
+                        expireType
                     })
                 });
 
@@ -539,6 +588,7 @@
                     document.getElementById('c-min').value = '';
                     document.getElementById('c-max-usage').value = '';
                     document.getElementById('c-max-user').value = '';
+                    document.getElementById('c-expire-time').value = '';
 
                     // Reset checkboxes
                     loadProductsSelect(); // Reloads to default state

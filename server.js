@@ -837,6 +837,18 @@ app.post('/api/coupons/verify', async (req, res) => {
             return res.json({ success: false, message: "Invalid or inactive coupon." });
         }
 
+        // --- EXPIRATION CHECK (NEW) ---
+        if (coupon.expiryDate) {
+            const now = new Date();
+            const expiry = new Date(coupon.expiryDate);
+            if (now > expiry) {
+                // Auto-delete expired coupon
+                const updatedCoupons = coupons.filter(c => c.id !== coupon.id);
+                await writeLocalJSON('coupons.json', updatedCoupons);
+                return res.json({ success: false, message: "This coupon has expired." });
+            }
+        }
+
         // --- USAGE LIMITS ---
         // 1. Global Limit
         if (coupon.maxUsage && coupon.maxUsage > 0) {
@@ -920,7 +932,20 @@ app.post('/api/coupons/verify', async (req, res) => {
 app.get('/api/coupons', authenticateAdmin, async (req, res) => {
     try {
         const coupons = await readLocalJSON('coupons.json') || [];
-        res.json(coupons);
+
+        // Lazy Cleanup: Remove expired coupons on fetch
+        const now = new Date();
+        const activeCoupons = coupons.filter(c => {
+            if (!c.expiryDate) return true;
+            return new Date(c.expiryDate) > now;
+        });
+
+        if (activeCoupons.length !== coupons.length) {
+            await writeLocalJSON('coupons.json', activeCoupons);
+            console.log(`[CLEANUP] Deleted ${coupons.length - activeCoupons.length} expired coupons.`);
+        }
+
+        res.json(activeCoupons);
     } catch (err) {
         res.status(500).json({ error: "Failed to load coupons" });
     }
@@ -939,19 +964,33 @@ app.post('/api/coupons', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: "Coupon code already exists!" });
         }
 
+        // Calculate Expiry Date from Duration
+        let expiryDate = null;
+        if (req.body.expireTime && req.body.expireTime > 0) {
+            const duration = parseFloat(req.body.expireTime);
+            const type = req.body.expireType || 'days';
+            const now = new Date();
+            if (type === 'minutes') now.setMinutes(now.getMinutes() + duration);
+            else if (type === 'hours') now.setHours(now.getHours() + duration);
+            else now.setDate(now.getDate() + duration); // 'days'
+
+            expiryDate = now.toISOString();
+        }
+
         const newCoupon = {
             id: Date.now(),
             code: code.toUpperCase(),
             discount: parseFloat(discount),
-            type, // 'percent' or 'flat'
+            type,
             minSpend: parseFloat(minSpend) || 0,
             applicableProducts: Array.isArray(applicableProducts) ? applicableProducts : ['all'],
             maxUsage: parseInt(maxUsage) || 0,
             maxUserUsage: parseInt(maxUserUsage) || 0,
             usageCount: 0,
             usageByUsers: {},
-            isActive: isActive !== false, // default true
-            createdAt: new Date().toISOString()
+            isActive: isActive !== false,
+            createdAt: new Date().toISOString(),
+            expiryDate: expiryDate // [NEW]
         };
 
         coupons.push(newCoupon);
