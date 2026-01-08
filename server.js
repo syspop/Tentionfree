@@ -512,6 +512,28 @@ app.post('/api/orders', async (req, res) => {
             sendOrderStatusEmail(newOrder, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
         }
 
+        // --- COUPON USAGE TRACKING ---
+        if (newOrder.couponCode) {
+            try {
+                const coupons = await readLocalJSON('coupons.json');
+                const couponIndex = coupons.findIndex(c => c.code === newOrder.couponCode);
+                if (couponIndex !== -1) {
+                    const c = coupons[couponIndex];
+                    c.usageCount = (c.usageCount || 0) + 1;
+
+                    // User Usage
+                    if (newOrder.customer && newOrder.customer.id) {
+                        const uid = newOrder.customer.id;
+                        if (!c.usageByUsers) c.usageByUsers = {};
+                        c.usageByUsers[uid] = (c.usageByUsers[uid] || 0) + 1;
+                    }
+                    await writeLocalJSON('coupons.json', coupons);
+                }
+            } catch (err) {
+                console.error("Failed to update coupon usage:", err);
+            }
+        }
+
         allOrders.push(newOrder);
         await writeLocalJSON('orders.json', allOrders);
 
@@ -786,7 +808,7 @@ app.delete('/api/tickets/:id', authenticateAdmin, async (req, res) => {
 // Verify Coupon (Public)
 // Verify Coupon (Public)
 app.post('/api/coupons/verify', async (req, res) => {
-    const { code, cartTotal, cartItems } = req.body;
+    const { code, cartTotal, cartItems, userId } = req.body;
     if (!code) return res.json({ success: false, message: "Code required" });
 
     try {
@@ -795,6 +817,25 @@ app.post('/api/coupons/verify', async (req, res) => {
 
         if (!coupon) {
             return res.json({ success: false, message: "Invalid or inactive coupon." });
+        }
+
+        // --- USAGE LIMITS ---
+        // 1. Global Limit
+        if (coupon.maxUsage && coupon.maxUsage > 0) {
+            if ((coupon.usageCount || 0) >= coupon.maxUsage) {
+                return res.json({ success: false, message: "Coupon usage limit reached." });
+            }
+        }
+
+        // 2. Per User Limit
+        if (coupon.maxUserUsage && coupon.maxUserUsage > 0) {
+            if (!userId) {
+                return res.json({ success: false, message: "Please Login to use this coupon." });
+            }
+            const userUsage = (coupon.usageByUsers && coupon.usageByUsers[userId]) || 0;
+            if (userUsage >= coupon.maxUserUsage) {
+                return res.json({ success: false, message: "You have reached your usage limit for this coupon." });
+            }
         }
 
         // Check Minimum Spend (on total cart value usually)
@@ -869,7 +910,7 @@ app.get('/api/coupons', authenticateAdmin, async (req, res) => {
 
 // Admin: Create Coupon
 app.post('/api/coupons', authenticateAdmin, async (req, res) => {
-    const { code, discount, type, minSpend, isActive, applicableProducts } = req.body;
+    const { code, discount, type, minSpend, isActive, applicableProducts, maxUsage, maxUserUsage } = req.body;
     if (!code || !discount || !type) return res.status(400).json({ error: "Missing fields" });
 
     try {
@@ -887,6 +928,10 @@ app.post('/api/coupons', authenticateAdmin, async (req, res) => {
             type, // 'percent' or 'flat'
             minSpend: parseFloat(minSpend) || 0,
             applicableProducts: Array.isArray(applicableProducts) ? applicableProducts : ['all'],
+            maxUsage: parseInt(maxUsage) || 0,
+            maxUserUsage: parseInt(maxUserUsage) || 0,
+            usageCount: 0,
+            usageByUsers: {},
             isActive: isActive !== false, // default true
             createdAt: new Date().toISOString()
         };

@@ -1859,6 +1859,11 @@ async function applyCoupon() {
     const itemsToCheckout = isBuyNowMode ? [buyNowItem] : cartItems;
     let totalBDT = itemsToCheckout.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
+    // Get User for Limits
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const userId = user ? user.id : null;
+
     try {
         msgDiv.innerText = "Checking...";
         msgDiv.className = "text-xs mt-1 h-4 text-slate-400";
@@ -1866,7 +1871,7 @@ async function applyCoupon() {
         const res = await fetch('/api/coupons/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code, cartTotal: totalBDT, cartItems: itemsToCheckout })
+            body: JSON.stringify({ code, cartTotal: totalBDT, cartItems: itemsToCheckout, userId })
         });
         const data = await res.json();
 
@@ -2508,4 +2513,30 @@ window.submitReview = async function () {
     } catch (err) {
         showToast('Error submitting review', 'error');
     }
+}
+
+// Global Toast Function
+window.showToast = function (message, type = 'success') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+
+    // Icon based on type
+    const icon = type === 'error' ? '<i class="fa-solid fa-circle-xmark mr-2"></i>' : '<i class="fa-solid fa-check-circle mr-2"></i>';
+
+    toast.innerHTML = icon + message;
+    toast.className = type === 'error' ? 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center show' : 'show';
+    // Note: The CSS handles #toast properties, but we ensure 'show' class is added. 
+    // If CSS has specific colors for error, we might not need inline styles, but style.css only showed generic #toast green color.
+    // Let's override color if error.
+
+    if (type === 'error') {
+        toast.style.backgroundColor = 'rgba(239, 68, 68, 0.95)'; // Red
+    } else {
+        toast.style.backgroundColor = 'rgba(13, 148, 136, 0.95)'; // Teal/Green as per CSS
+    }
+
+    // Hide after 3s
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
 }
