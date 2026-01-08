@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - TentionFree</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="assets/images/logo.png">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        brand: { 400: '#3b82f6', 500: '#2563eb', 600: '#1d4ed8' },
+                        dark: { bg: '#0f172a', card: '#1e293b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #020617;
+            background-image: radial-gradient(at 50% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .order-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .order-card:hover {
+            transform: translateY(-4px);
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+    <link rel="stylesheet" href="assets/style.css">
+    <div id="u-toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-3"></div>
+    <script src="assets/script.js?v=3.1"></script>
+</head>
+
+<body class="text-slate-100 min-h-screen bg-slate-950 pb-24 md:pb-0 safe-area-bottom">
+
+    <div class="flex h-screen overflow-hidden bg-[#0f172a]">
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="sidebar-overlay" onclick="toggleSidebar()"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden glass-panel transition-opacity">
+        </div>
+
+        <!-- SIDEBAR -->
+        <aside id="profile-sidebar"
+            class="w-72 bg-[#0f172a] border-r border-white/5 flex flex-col fixed inset-y-0 left-0 transform -translate-x-full lg:relative lg:translate-x-0 transition-transform duration-300 z-50 glass-panel pb-24 lg:pb-0">
+            <!-- Logo area -->
+            <div class="h-20 flex items-center px-8 border-b border-white/5">
+                <a href="/" class="flex items-center gap-3">
+                    <img src="assets/images/logo.png" alt="TentionFree Logo" class="w-8 h-8 object-contain">
+                    <span class="font-bold text-xl tracking-tight text-slate-200">Tention<span
+                            class="text-brand-500">Free</span></span>
+                </a>
+            </div>
+
+            <!-- User Info (Compact) -->
+            <div class="px-6 py-6 border-b border-white/5 bg-slate-900/30">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-400 to-blue-700 flex items-center justify-center text-xl font-bold text-white shadow-lg"
+                        id="u-avatar">?</div>
+                    <div>
+                        <h2 class="text-white font-bold text-lg leading-tight" id="u-name">...</h2>
+                        <p class="text-[11px] text-slate-400 font-mono" id="u-id">...</p>
+                    </div>
+                </div>
+                <div id="u-badge-container"
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-bold border border-white/5 w-full justify-center">
+                    <i id="u-badge-icon" class="fa-solid fa-user"></i> <span id="u-badge-text">Normal Member</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+                <p class="text-xs font-bold text-slate-500 uppercase px-4 mb-2 tracking-wider">Menu</p>
+
+                <button onclick="switchTab('orders')" id="btn-orders"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-white/5 hover:text-white group">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center group-hover:bg-brand-500/20 group-hover:text-brand-400 transition-colors">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <span>My Orders</span>
+                </button>
+
+                <button onclick="switchTab('support')" id="btn-support"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-white/5 hover:text-white group">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center group-hover:bg-brand-500/20 group-hover:text-brand-400 transition-colors">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <span>Support Tickets</span>
+                </button>
+
+                <button onclick="switchTab('security')" id="btn-security"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-white/5 hover:text-white group">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center group-hover:bg-brand-500/20 group-hover:text-brand-400 transition-colors">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <span>Settings & Security</span>
+                </button>
+            </div>
+
+            <!-- Footer / Logout -->
+            <div class="p-4 border-t border-white/5 bg-slate-900/30">
+                <button onclick="logoutUser()"
+                    class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-red-400 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 transition-all">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto relative bg-[#020617]">
+            <!-- Mobile Header -->
+            <div
+                class="lg:hidden h-16 flex items-center justify-between px-4 border-b border-white/5 bg-[#0f172a]/80 backdrop-blur-md sticky top-0 z-30">
+                <span class="font-bold text-lg text-white">My Dashboard</span>
+                <button onclick="toggleSidebar()"
+                    class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-white">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+
+            <div class="p-6 lg:p-10 max-w-6xl mx-auto">
+
+                <!-- HEADER (Welcome & Action) -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-1">Welcome back, <span id="u-name-display"
+                                class="text-brand-400">User</span>!</h1>
+                        <p class="text-slate-400 text-sm">Manage your orders and account settings.</p>
+                    </div>
+                    <button onclick="location.href='products'"
+                        class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2 w-full md:w-auto justify-center">
+                        <i class="fa-solid fa-cart-shopping"></i> New Order
+                    </button>
+                </div>
+
+                <!-- SECTIONS -->
+                <div id="content-area" class="space-y-6">
+
+                    <!-- ORDERS SECTION -->
+                    <div id="order-list" class="space-y-4 animate-[fadeIn_0.3s_ease-out]">
+                        <!-- Loaded via JS -->
+                        <div
+                            class="glass-panel p-12 rounded-3xl text-center text-slate-400 animate-pulse border border-white/5">
+                            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-brand-500"></i>
+                            <p>Loading your profile data...</p>
+                        </div>
+                    </div>
+
+                    <!-- SUPPORT SECTION -->
+                    <div id="support-section" class="hidden animate-[fadeIn_0.3s_ease-out]">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="glass-panel p-8 rounded-3xl border border-white/5 shadow-2xl">
+                                <div class="text-center mb-6">
+                                    <div
+                                        class="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400 border border-blue-500/20">
+                                        <i class="fa-solid fa-life-ring text-2xl"></i>
+                                    </div>
+                                    <h2 class="text-2xl font-bold text-white mb-2">Support Center</h2>
+                                    <p class="text-slate-400 text-sm">Facing issues? Submit a ticket below.</p>
+                                </div>
+
+                                <form onsubmit="submitTicket(event)" class="space-y-5">
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-slate-400 uppercase mb-2">Subject</label>
+                                        <div class="relative">
+                                            <i
+                                                class="fa-solid fa-tag absolute left-4 top-3.5 text-slate-500 text-xs"></i>
+                                            <select id="t-subject"
+                                                class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none appearance-none">
+                                                <option value="Delivery Issue">Order Not Received</option>
+                                                <option value="Login Issue">Account/Login Issue</option>
+                                                <option value="Payment Issue">Payment Problem</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-slate-400 uppercase mb-2">Description</label>
+                                        <textarea id="t-desc" rows="4"
+                                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none"
+                                            placeholder="Describe your issue in detail..." required></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Screenshot
+                                            (Optional)</label>
+                                        <div class="relative">
+                                            <input type="file" id="t-file" accept="image/*" class="hidden"
+                                                onchange="previewImage(this)">
+                                            <label for="t-file"
+                                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-brand-500 hover:bg-slate-800/50 transition-all group"
+                                                id="drop-zone">
+                                                <div class="text-center" id="upload-prompt">
+                                                    <div
+                                                        class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-brand-500/20 transition-colors">
+                                                        <i
+                                                            class="fa-solid fa-cloud-upload-alt text-slate-400 group-hover:text-brand-400"></i>
+                                                    </div>
+                                                    <p class="text-xs text-slate-400">Click to upload image</p>
+                                                </div>
+                                                <img id="img-preview"
+                                                    class="hidden h-full w-auto object-contain rounded-lg p-2">
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" id="submit-btn"
+                                        class="w-full bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-paper-plane"></i> Submit Ticket
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECURITY SECTION -->
+                    <div id="security-section" class="hidden animate-[fadeIn_0.3s_ease-out]">
+                        <div class="max-w-2xl mx-auto">
+                            <!-- Info Cards -->
+                            <div class="grid grid-cols-3 gap-4 mb-6">
+                                <div class="glass-panel p-5 rounded-2xl border border-white/5">
+                                    <p class="text-xs text-slate-500 font-bold uppercase mb-1">Email</p>
+                                    <p class="text-white font-medium truncate" id="u-email-sec">...</p>
+                                </div>
+                                <div class="glass-panel p-5 rounded-2xl border border-white/5">
+                                    <p class="text-xs text-slate-500 font-bold uppercase mb-1">Phone</p>
+                                    <p class="text-white font-medium truncate" id="u-phone-sec">...</p>
+                                </div>
+                                <div class="glass-panel p-5 rounded-2xl border border-white/5">
+                                    <p class="text-xs text-slate-500 font-bold uppercase mb-1">Birth Date</p>
+                                    <p class="text-white font-medium truncate" id="u-dob-sec">...</p>
+                                </div>
+                            </div>
+
+                            <div class="glass-panel p-8 rounded-3xl border border-white/5 shadow-2xl">
+                                <div class="text-center mb-8">
+                                    <div
+                                        class="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-red-400 border border-red-500/20">
+                                        <i class="fa-solid fa-shield-halved text-2xl"></i>
+                                    </div>
+                                    <h2 class="text-2xl font-bold text-white mb-2">Password Security</h2>
+                                    <p class="text-slate-400 text-sm">Update your password to keep your account safe.
+                                    </p>
+                                </div>
+
+                                <form onsubmit="changePassword(event)" class="space-y-5">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Current
+                                            Password</label>
+                                        <input type="password" id="cp-old"
+                                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none transition-colors"
+                                            placeholder="••••••••" required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">New
+                                            Password</label>
+                                        <input type="password" id="cp-new"
+                                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none transition-colors"
+                                            placeholder="••••••••" required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Confirm New
+                                            Password</label>
+                                        <input type="password" id="cp-confirm"
+                                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:outline-none transition-colors"
+                                            placeholder="••••••••" required>
+                                    </div>
+
+                                    <button type="submit" id="cp-btn"
+                                        class="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-500/25 transition-all">
+                                        Update Password
+                                    </button>
+                                </form>
+
+                                <!-- Danger Zone -->
+                                <div class="mt-8 border-t border-red-500/20 pt-8">
+                                    <h3 class="text-red-500 font-bold mb-4 uppercase text-xs tracking-wider">Danger Zone
+                                    </h3>
+                                    <div
+                                        class="glass-panel p-6 rounded-2xl border border-red-500/20 bg-red-500/5 flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-white font-bold">Delete Account</h4>
+                                            <p class="text-slate-400 text-sm mt-1">Once you delete your account, there
+                                                is no going back.</p>
+                                        </div>
+                                        <button onclick="confirmDeleteAccount()"
+                                            class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-500/20 text-sm">
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Custom Notification Modal (Global) -->
+                <div id="custom-alert"
+                    class="fixed inset-0 z-[200] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
+                    <div
+                        class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full text-center mx-4">
+                        <div id="alert-icon-bg"
+                            class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                            <i id="alert-icon" class="text-3xl"></i>
+                        </div>
+                        <h3 id="alert-title" class="text-xl font-bold text-white mb-2">Notification</h3>
+                        <p id="alert-msg" class="text-slate-400 text-sm mb-6">Message goes here...</p>
+                        <button type="button" onclick="closeCustomAlert(event)"
+                            class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto relative z-50">
+                            Okay, Got it
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+    </div>
+
+    <!-- ORDER DETAILS MODAL -->
+    <div id="order-details-modal"
+        class="fixed inset-0 z-[110] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300"
+            onclick="closeOrderModal()"></div>
+
+        <!-- Modal Content -->
+        <div
+            class="glass-panel p-0 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col overflow-hidden">
+
+            <!-- Header -->
+            <div class="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                        Order Details <span id="vo-id" class="text-slate-500 font-mono text-lg">#...</span>
+                    </h3>
+                </div>
+                <button onclick="closeOrderModal()"
+                    class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="p-6 overflow-y-auto custom-scrollbar" id="view-order-content">
+
+                <!-- Status Bar -->
+                <div
+                    class="flex items-center justify-between bg-slate-800/30 p-4 rounded-2xl border border-white/5 mb-6">
+                    <div id="vo-status"></div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Order Date</p>
+                        <p class="text-xs text-white" id="vo-date">...</p>
+                    </div>
+                </div>
+
+                <!-- Main Info Grid -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 rounded-2xl bg-slate-800/30 border border-white/5">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Payment Method</p>
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-brand-400">
+                                <i class="fa-regular fa-credit-card"></i>
+                            </div>
+                            <span class="text-sm font-bold text-white" id="vo-method">...</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-800/30 border border-white/5">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Transaction ID</p>
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-brand-400">
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <span class="text-sm font-mono text-slate-300 truncate" id="vo-trx">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items List -->
+                <div class="mb-6">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-3 px-1">Order Items</p>
+                    <div id="vo-items" class="space-y-2"></div>
+                    <div class="mt-3 flex justify-end items-center gap-3 pt-3 border-t border-white/5">
+                        <span class="text-slate-400 text-xs font-bold uppercase">Total Amount</span>
+                        <span class="text-2xl font-bold text-brand-400" id="vo-total">...</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Extra Info (Delivery, Cancel, Refund, GameID) -->
+                <div id="vo-extra"></div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3">
+                <button id="btn-download-invoice"
+                    class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm transition-all shadow-lg shadow-brand-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice"></i> Invoice
+                </button>
+                <button onclick="closeOrderModal()"
+                    class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-all shadow-lg shadow-black/20">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Search Modal -->
+    <div id="mobile-search-modal"
+        class="fixed inset-0 z-[120] bg-slate-900/95 backdrop-blur-sm hidden flex-col p-4 animate-fade-in">
+        <div class="flex justify-end p-2 relative z-10">
+            <button onclick="toggleMobileSearch()"
+                class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 flex flex-col items-center justify-center -mt-20">
+            <h3 class="text-2xl font-bold text-white mb-6">Search Product</h3>
+            <div class="w-full max-w-md relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-slate-400 text-lg"></i>
+                <input type="search" id="mobile-search-overlay-input" placeholder="Search Netflix, Pubg, etc..."
+                    class="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-lg text-white focus:outline-none focus:border-brand-500 focus:shadow-lg focus:shadow-brand-500/20 transition-all placeholder-slate-500"
+                    onkeypress="handleMobileSearch(event)">
+            </div>
+            <p class="text-slate-500 mt-4 text-sm">Press Enter to search</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                window.location.href = 'login';
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+
+            // Populate UI
+            document.getElementById('u-name').innerText = user.name;
+            document.getElementById('u-name-display').innerText = user.name; // Header name
+            document.getElementById('u-id').innerText = user.id || 'N/A';
+            document.getElementById('u-email-sec').innerText = user.email; // Security section
+            document.getElementById('u-phone-sec').innerText = user.phone; // Security section
+            document.getElementById('u-dob-sec').innerText = user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'; // Security section
+
+            document.getElementById('u-avatar').innerText = user.name.charAt(0).toUpperCase();
+
+            loadHistory(user);
+
+            const token = localStorage.getItem('userToken');
+            if (token) {
+                // Fetch fresh user data securely
+                fetch('api/my-profile?t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error("Auth Failed");
+                        return res.json();
+                    })
+                    .then(freshUser => {
+                        if (freshUser) {
+                            // Update UI
+                            document.getElementById('u-name').innerText = freshUser.name;
+                            document.getElementById('u-name-display').innerText = freshUser.name;
+                            document.getElementById('u-email-sec').innerText = freshUser.email;
+                            document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
+                            document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString() : 'N/A';
+                            document.getElementById('u-avatar').innerText = freshUser.name.charAt(0).toUpperCase();
+
+                            // Update localStorage
+                            localStorage.setItem('user', JSON.stringify(freshUser));
+                        }
+                    })
+                    .catch(err => console.error("Failed to sync user profile", err));
+            }
+        });
+
+        let userCurrentPage = 1;
+        let userTotalPages = 1;
+        let userIsLoading = false;
+        let userOrdersCache = [];
+
+        async function loadHistory(user, page = 1, append = false) {
+            if (userIsLoading) return;
+            userIsLoading = true;
+
+            const container = document.getElementById('order-list');
+            const loadMoreId = 'user-load-more-btn';
+            let loadMoreBtn = document.getElementById(loadMoreId);
+
+            if (!append) {
+                container.innerHTML = `
+                        <div class="glass-panel p-12 rounded-3xl text-center text-slate-400 animate-pulse border border-white/5">
+                            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4 text-brand-500"></i>
+                            <p>Loading your profile data...</p>
+                        </div>`;
+                userOrdersCache = [];
+            } else {
+                if (loadMoreBtn) loadMoreBtn.innerText = 'Loading...';
+            }
+
+            try {
+                // Fetch authenticated user's orders (Server filters by token)
+                const res = await fetch(`api/my-orders?page=${page}&limit=10&t=` + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    logoutUser();
+                    return;
+                }
+
+                const data = await res.json();
+                const orders = data.orders || [];
+                userCurrentPage = data.page || 1;
+                userTotalPages = data.pages || 1;
+                const completedCount = data.completedCount || 0;
+
+                // Update Membership Badge
+                updateMembershipBadge(completedCount);
+
+                if (!append) {
+                    if (orders.length === 0) {
+                        renderEmptyState(container);
+                        return;
+                    }
+                    container.innerHTML = '';
+                    userOrdersCache = orders;
+                } else {
+                    userOrdersCache = [...userOrdersCache, ...orders];
+                }
+
+                orders.forEach(o => {
+                    // Status Badge Logic
+                    let statusClass = "bg-slate-700/50 text-slate-300 border border-slate-600/30";
+                    let icon = "fa-clock";
+
+                    if (o.status === 'Completed') {
+                        statusClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                        icon = "fa-check-circle";
+                    } else if (o.status === 'Pending') {
+                        statusClass = "bg-orange-500/10 text-orange-400 border border-orange-500/20";
+                        icon = "fa-hourglass-start"; // Fixed icon
+                    }
+                    // Continue rendering...
+                    // Check if card already exists to prevent duplicate on race condition? No, append is controlled.
+
+                    const card = document.createElement('div');
+                    card.className = "order-card glass-panel rounded-2xl p-5 border border-white/5 relative overflow-hidden group hover:border-brand-500/30 transition-all";
+                    card.onclick = () => viewOrder(o.id);
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                                    <i class="fa-solid fa-box-open"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white text-sm">Order #${o.id}</h3>
+                                    <p class="text-[10px] text-slate-500 font-mono">${new Date(parseInt(o.id)).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusClass}">
+                                    <i class="fa-solid ${icon}"></i> ${o.status}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Total Amount</p>
+                                <p class="text-lg font-bold text-white">৳${o.price || o.totalAmount}</p>
+                            </div>
+                           <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-brand-500 hover:text-white transition-all">
+                                <i class="fa-solid fa-arrow-right -rotate-45"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                updateUserLoadMoreUI(container);
+
+            } catch (e) {
+                console.error(e);
+                if (!append) container.innerHTML = `<p class="text-red-400 text-center">Failed to load orders.</p>`;
+            } finally {
+                userIsLoading = false;
+            }
+        }
+
+        function updateMembershipBadge(count) {
+            const badgeContainer = document.getElementById('u-badge-container');
+            const badgeText = document.getElementById('u-badge-text');
+            const badgeIcon = document.getElementById('u-badge-icon');
+
+            if (count >= 15) {
+                badgeText.innerText = "VIP Member";
+                badgeIcon.className = "fa-solid fa-crown";
+                badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[10px] font-bold border border-purple-500/20 w-full justify-center";
+            } else if (count >= 5) {
+                badgeText.innerText = "Premium Member";
+                badgeIcon.className = "fa-solid fa-medal";
+                badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-400 text-[10px] font-bold border border-brand-500/20 w-full justify-center";
+            } else {
+                badgeText.innerText = "Normal Member";
+                badgeIcon.className = "fa-solid fa-user";
+                badgeContainer.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-400 text-[10px] font-bold border border-white/5 w-full justify-center";
+            }
+        }
+
+        function renderEmptyState(container) {
+            container.innerHTML = `
+                <div class="text-center py-16 glass-panel rounded-3xl border-dashed border-2 border-slate-700">
+                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-600">
+                        <i class="fa-solid fa-ghost text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">No Orders Yet</h3>
+                    <p class="text-slate-400 max-w-sm mx-auto mb-8">You haven't purchased anything yet.</p>
+                    <a href="products" class="inline-block bg-white text-slate-900 px-8 py-3 rounded-full font-bold hover:bg-brand-50 transition-colors">
+                        Explore Store
+                    </a>
+                </div>
+            `;
+        }
+
+        function updateUserLoadMoreUI(container) {
+            let loadMoreContainer = document.getElementById('user-load-more-wrapper');
+            if (loadMoreContainer) loadMoreContainer.remove();
+
+            if (userCurrentPage < userTotalPages) {
+                loadMoreContainer = document.createElement('div');
+                loadMoreContainer.id = 'user-load-more-wrapper';
+                loadMoreContainer.className = 'text-center mt-6';
+                loadMoreContainer.innerHTML = `
+                    <button id="user-load-more-btn" onclick="loadHistory(null, ${userCurrentPage + 1}, true)" 
+                        class="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all border border-white/5">
+                        Load More
+                    </button>
+                `;
+                container.parentNode.appendChild(loadMoreContainer);
+            }
+        }
+
+
+        let currentFullOrder = null;
+
+        async function viewOrder(id) {
+            // Fetch Full Data (On Demand)
+            let order;
+            try {
+                // Try fetching from API first for full details (images)
+                const res = await fetch(`/api/orders/${id}`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
+                });
+                if (res.ok) {
+                    order = await res.json();
+                } else {
+                    // Fallback to cache if API fails (might miss images)
+                    order = userOrdersCache.find(o => o.id == id);
+                }
+            } catch (e) {
+                order = userOrdersCache.find(o => o.id == id);
+            }
+
+            // Store for invoice
+            currentFullOrder = order;
+
+            if (!order) return showNotification("Order not found", "error");
+
+            const modal = document.getElementById('order-details-modal');
+            const container = document.getElementById('view-order-content');
+
+            // Populate Data
+            document.getElementById('vo-id').innerText = '#' + order.id;
+
+            // Status Badge
+            let statusBadge = '';
+            if (order.status === 'Completed') statusBadge = '<span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold"><i class="fa-solid fa-check-circle mr-1"></i> Completed</span>';
+            else if (order.status === 'Pending') statusBadge = '<span class="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 text-xs font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i> Pending</span>';
+            else if (order.status === 'Cancelled') statusBadge = '<span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold"><i class="fa-solid fa-ban mr-1"></i> Cancelled</span>';
+            else if (order.status === 'Refunded') statusBadge = '<span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-bold"><i class="fa-solid fa-rotate-left mr-1"></i> Refunded</span>';
+
+            document.getElementById('vo-status').innerHTML = statusBadge;
+            document.getElementById('vo-date').innerText = new Date(parseInt(order.id)).toLocaleDateString();
+            document.getElementById('vo-method').innerText = order.paymentMethod || 'Unknown';
+            document.getElementById('vo-trx').innerText = order.trx || order.transactionId || 'N/A';
+
+            // Items
+            const items = order.items || order.cart || [];
+            let itemsHtml = '';
+            if (Array.isArray(items)) {
+                itemsHtml = items.map(i => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 border border-white/5 mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-lg bg-slate-700/50 overflow-hidden flex-shrink-0 border border-white/5">
+                                <img src="${i.image || 'assets/images/logo.png'}" alt="${i.name}" class="w-full h-full object-cover" onerror="this.src='assets/images/logo.png'">
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">${i.name}</p>
+                                <p class="text-[10px] text-slate-400">${i.variant || 'Standard'}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-sm font-bold text-white">x${i.quantity || i.qty || 1}</p>
+                             <p class="text-xs text-brand-400">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' + ((i.price || 0) / 100).toFixed(2) : '৳' + i.price}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                itemsHtml = `<p class="text-slate-400 italic">Product: ${order.product}</p>`;
+            }
+            document.getElementById('vo-items').innerHTML = itemsHtml;
+            document.getElementById('vo-total').innerText = ((order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳') + order.price;
+
+            // Extra Info Sections (Reset first)
+            const extraContainer = document.getElementById('vo-extra');
+            extraContainer.innerHTML = '';
+
+            // 1. Delivery Info
+            if (order.deliveryInfo) {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+                            <h4 class="text-xs font-bold text-emerald-400 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-envelope-open-text"></i> Delivery Credentials
+                            </h4>
+                            <div class="bg-black/20 p-3 rounded-xl border border-white/5 font-mono text-sm text-emerald-100/90 whitespace-pre-wrap select-all shadow-inner">${order.deliveryInfo}</div>
+                            ${order.deliveryImage ? `<div class="mt-3"><p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Attached Image</p><img src="${order.deliveryImage}" class="max-w-full rounded-lg border border-white/10 shadow-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${order.deliveryImage}', '_blank')"></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 2. Cancellation Info
+            if (order.status === 'Cancelled' && order.cancelReason) {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-red-500/5 border border-red-500/20">
+                            <h4 class="text-xs font-bold text-red-400 uppercase mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-exclamation"></i> Cancellation Reason
+                            </h4>
+                            <p class="text-sm text-slate-300">${order.cancelReason}</p>
+                            ${order.cancelImage ? `<div class="mt-3"><img src="${order.cancelImage}" class="max-w-[150px] rounded-lg border border-white/10" onclick="window.open('${order.cancelImage}', '_blank')"></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 3. Refund Info
+            if (order.status === 'Refunded') {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20">
+                            <h4 class="text-xs font-bold text-purple-400 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-left"></i> Refund Details
+                            </h4>
+                            <div class="grid grid-cols-2 gap-4 mb-3">
+                                <div class="bg-black/20 p-2 rounded-lg">
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold">Method</p>
+                                    <p class="text-sm text-white font-medium">${order.refundMethod || 'N/A'}</p>
+                                </div>
+                                <div class="bg-black/20 p-2 rounded-lg">
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold">TrxID</p>
+                                    <p class="text-sm text-white font-mono">${order.refundTrx || 'N/A'}</p>
+                                </div>
+                            </div>
+                            ${order.refundNote ? `<p class="text-sm text-slate-300 italic">"${order.refundNote}"</p>` : ''}
+                            ${order.refundImage ? `<div class="mt-3"><img src="${order.refundImage}" class="max-w-[150px] rounded-lg border border-white/10" onclick="window.open('${order.refundImage}', '_blank')"></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 4. Game UIDs
+            if (order.gameUid && order.gameUid !== 'N/A') {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+                            <h4 class="text-xs font-bold text-blue-400 uppercase mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-gamepad"></i> Player / Account Info
+                            </h4>
+                            <div class="bg-black/20 p-3 rounded-xl border border-white/5 font-mono text-sm text-blue-100/90 whitespace-pre-wrap select-all">${order.gameUid}</div>
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // 5. Proof (if user uploaded)
+            if (order.proof) {
+                let html = `
+                    <div class="mt-6 animate-fade-in">
+                        <div class="p-4 rounded-2xl bg-slate-800/30 border border-slate-700/50">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Payment Proof</h4>
+                             <img src="${order.proof}" class="max-w-full rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${order.proof}', '_blank')" title="Click to enlarge">
+                        </div>
+                    </div>
+                `;
+                extraContainer.innerHTML += html;
+            }
+
+            // Set Invoice Download Action
+            const invoiceBtn = document.getElementById('btn-download-invoice');
+            if (invoiceBtn) {
+                invoiceBtn.onclick = () => downloadInvoice(order.id);
+            }
+
+            // Show Modal
+            modal.classList.remove('hidden');
+            // Trigger animation
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.glass-panel').classList.remove('scale-90');
+                modal.querySelector('.glass-panel').classList.add('scale-100');
+            }, 10);
+
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeOrderModal() {
+            const modal = document.getElementById('order-details-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('.glass-panel').classList.remove('scale-100');
+            modal.querySelector('.glass-panel').classList.add('scale-90');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        async function downloadInvoice(orderId) {
+            let order = currentFullOrder && currentFullOrder.id == orderId ? currentFullOrder : userOrdersCache.find(o => o.id == orderId);
+
+            // If still missing items or details, fetch it
+            if (!order || !order.items || !order.customer) {
+                try {
+                    console.log("Fetching full order for invoice...", orderId);
+                    const res = await fetch(`/api/orders/${orderId}`, { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') } });
+                    if (res.ok) order = await res.json();
+                } catch (e) { console.error("Invoice Fetch Error", e); }
+            }
+
+            if (!order) return showNotification("Order data missing.", "error");
+
+            const items = order.items || order.cart || [];
+            const itemsHtml = items.length > 0 ? items.map(item => `
+                <tr style="border-bottom: 1px solid #e2e8f0; background-color: #ffffff !important; color: #334155 !important;">
+                    <td style="padding: 12px 15px; color: #334155 !important; background-color: #ffffff !important;">
+                        <div style="font-weight: 500; color: #334155 !important;">${item.name || 'Item'}</div>
+                        <div style="font-size: 12px; color: #94a3b8 !important;">${item.variant || ''}</div>
+                    </td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${item.quantity || item.qty || 1}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' + ((item.price || 0) / 100).toFixed(2) : '৳' + (item.price || 0)}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' + (((item.price || 0) * (item.quantity || item.qty || 1)) / 100).toFixed(2) : '৳' + ((item.price || 0) * (item.quantity || item.qty || 1))}</td>
+                </tr>
+            `).join('') : '';
+
+            // Create a VISIBLE full-screen overlay for the invoice
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.width = '100vw';
+            container.style.height = '100vh';
+            container.style.zIndex = '10000'; // High z-index to stay on top
+            container.style.backgroundColor = '#ffffff'; // White background
+            container.style.overflowY = 'auto';
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.paddingTop = '20px';
+
+            container.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; width: 800px; max-width: 90%; background: #ffffff; padding: 40px; color: #333; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+                         <div style="font-size: 28px; font-weight: bold; color: #2563eb; letter-spacing: -1px;">TentionFree</div>
+                         <div style="text-align:right;">
+                             <div style="font-size: 12px; text-transform:uppercase; color: #64748b; font-weight:bold; letter-spacing: 1px;">Invoice</div>
+                             <div style="font-size: 16px; font-weight:bold; color: #1e293b;">#${order.id}</div>
+                         </div>
+                    </div>
+
+                    <!-- Info Grid -->
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 40px;">
+                        <div>
+                            <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Billed To</div>
+                            <div style="font-weight:bold; color: #1e293b; margin-bottom:3px; font-size:16px;">${order.customer || order.customerName || 'Guest'}</div>
+                            <div style="color: #64748b; font-size: 14px;">${order.email || ''}</div>
+                            <div style="color: #64748b; font-size: 14px;">${order.phone || ''}</div>
+                            ${order.gameUid && order.gameUid !== 'N/A' ? `<div style="color: #64748b; font-size: 14px; margin-top: 5px;">Player/Account ID: <span style="color: #334155; font-weight:500;">${order.gameUid}</span></div>` : ''}
+                        </div>
+                        <div style="text-align:right;">
+                             <div style="font-size: 11px; text-transform:uppercase; color: #94a3b8; font-weight:bold; margin-bottom:5px;">Details</div>
+                             <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Date: <span style="color: #1e293b; font-weight:600;">${new Date(order.date).toLocaleDateString()}</span></div>
+                             <div style="color: #64748b; font-size: 14px; margin-bottom: 3px;">Method: <span style="color: #1e293b; font-weight:600;">${order.paymentMethod}</span></div>
+                             <div style="color: #64748b; font-size: 14px;">Status: <span style="color:${order.status === 'Completed' ? '#10b981' : '#f59e0b'}; font-weight:600;">${order.status}</span></div>
+                             ${order.trx ? `<div style="color: #64748b; font-size: 14px; margin-top: 3px;">TrxID: <span style="color: #334155; font-weight:600;">${order.trx}</span></div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <table style="width:100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background-color: #eff6ff; border-bottom: 2px solid #e2e8f0;">
+                                <th style="text-align:left; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Item</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Qty</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Price</th>
+                                <th style="text-align:right; padding: 12px 15px; font-size: 12px; text-transform: uppercase; color: #475569; font-weight: 600;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+
+                    <!-- Total -->
+                    <div style="border-top: 2px solid #f1f5f9; padding-top: 20px; text-align: right;">
+                        <span style="font-size: 14px; color: #64748b; margin-right: 15px;">Total Amount</span>
+                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">${(order.currency === 'USD' || order.paymentMethod === 'Binance Pay') ? '$' : '৳'}${order.price || order.totalAmount || 0}</span>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="margin-top: 60px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 30px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 5px;">TentionFree</div>
+                        <div style="font-size: 12px; color: #94a3b8;">Digital Product Shop Bangladesh</div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top:5px;">Thank you for your business!</div>
+                    </div>
+                </div>
+            `;
+
+            // Append to body momentarily for rendering
+            document.body.appendChild(container);
+
+            const elementToPrint = container.children[0];
+
+            // Use html2pdf to generate and save
+            if (typeof html2pdf === 'undefined') {
+                document.body.removeChild(container);
+                return showNotification("PDF Generator Library Missing. Please refresh.", "error");
+            }
+
+            const opt = {
+                margin: 0.2, // Small margin
+                filename: `Invoice_${order.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(elementToPrint).save()
+                .then(() => {
+                    document.body.removeChild(container);
+                    showNotification("Invoice downloaded!", "success");
+                })
+                .catch(err => {
+                    console.error("Invoice Error:", err);
+                    document.body.removeChild(container);
+                    showNotification("Failed to generate PDF. check console.", "error");
+                });
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('userToken');
+            window.location.href = 'index.html';
+        }
+
+        // --- TICKET & SECURITY LOGIC ---
+        function switchTab(tab) {
+            const ordersBtn = document.getElementById('btn-orders');
+            const supportBtn = document.getElementById('btn-support');
+            const securityBtn = document.getElementById('btn-security');
+
+            const ordersSec = document.getElementById('order-list');
+            const supportSec = document.getElementById('support-section');
+            const securitySec = document.getElementById('security-section');
+
+            // Styles for Active/Inactive
+            const inactiveClass = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-white/5 hover:text-white group";
+            const activeClass = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-brand-600 text-white shadow-lg shadow-brand-500/20";
+            const iconInactive = "w-8 h-8 rounded-lg bg-slate-800/50 flex items-center justify-center group-hover:bg-brand-500/20 group-hover:text-brand-400 transition-colors";
+            const iconActive = "w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white";
+
+            // Reset everything first
+            [ordersBtn, supportBtn, securityBtn].forEach(btn => {
+                if (btn) {
+                    btn.className = inactiveClass;
+                    btn.querySelector('div').className = iconInactive;
+                }
+            });
+
+            [ordersSec, supportSec, securitySec].forEach(sec => sec.classList.add('hidden'));
+
+            // Activate selected
+            if (tab === 'support') {
+                supportBtn.className = activeClass;
+                supportBtn.querySelector('div').className = iconActive;
+                supportSec.classList.remove('hidden');
+            } else if (tab === 'security') {
+                securityBtn.className = activeClass;
+                securityBtn.querySelector('div').className = iconActive;
+                securitySec.classList.remove('hidden');
+            } else {
+                ordersBtn.className = activeClass;
+                ordersBtn.querySelector('div').className = iconActive;
+                ordersSec.classList.remove('hidden');
+            }
+
+            // Close sidebar on mobile after selection
+            if (window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('profile-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            // Toggle translate class
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+
+
+        async function changePassword(e) {
+            e.preventDefault();
+            const oldPass = document.getElementById('cp-old').value;
+            const newPass = document.getElementById('cp-new').value;
+            const confirmPass = document.getElementById('cp-confirm').value;
+            const btn = document.getElementById('cp-btn');
+
+            if (newPass.length < 4) return showNotification("Password must be at least 4 characters long.", "error");
+            if (newPass !== confirmPass) return showNotification("New passwords do not match!", "error");
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            const originalText = btn.innerText;
+            btn.innerText = "Updating...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('api/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id, email: user.email, oldPass, newPass })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    showNotification("Password Updated Successfully! Please login again.", "success");
+                    setTimeout(() => logoutUser(), 2000);
+                } else {
+                    showNotification(result.message || "Failed to update password", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification("Server Error", "error");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function confirmDeleteAccount() {
+            const modal = document.getElementById('delete-account-modal');
+            modal.classList.remove('hidden');
+            // Small delay to allow transition to work? or just remove hidden first then opacity
+            requestAnimationFrame(() => {
+                modal.style.opacity = "1";
+                modal.children[1].style.transform = "scale(1)";
+            });
+        }
+
+        function closeDeleteAccountModal() {
+            const modal = document.getElementById('delete-account-modal');
+            modal.style.opacity = "0";
+            modal.children[1].style.transform = "scale(0.9)";
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300); // 300ms matches duration-300
+        }
+
+        async function executeAccountDeletion(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || !user.id) return;
+
+            const pass = document.getElementById('del-user-pass').value;
+            if (!pass) return showNotification("Please enter your password", "error");
+
+            const btn = document.getElementById('btn-final-delete');
+            btn.innerText = "Deleting...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('api/customers/' + user.id, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pass })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    localStorage.removeItem('user');
+                    window.location.href = 'index.html';
+                } else {
+                    closeDeleteAccountModal();
+                    showNotification(result.message || "Failed to delete account", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                closeDeleteAccountModal();
+                showNotification("Server Error", "error");
+            } finally {
+                btn.innerText = "Yes, Delete";
+                btn.disabled = false;
+            }
+        }
+
+
+
+        // --- CUSTOM NOTIFICATION LOGIC ---
+        function showNotification(msg, type = "success") {
+            const modal = document.getElementById('custom-alert');
+            const icon = document.getElementById('alert-icon');
+            const bg = document.getElementById('alert-icon-bg');
+            const title = document.getElementById('alert-title');
+
+            if (!modal) return console.error("Modal not found: " + msg); // Fallback
+
+            document.getElementById('alert-msg').innerText = msg;
+
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.style.opacity = "1";
+                modal.children[1].style.transform = "scale(1)";
+            });
+
+            if (type === "success") {
+                icon.className = "fa-solid fa-check text-emerald-400 text-3xl";
+                bg.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20";
+                title.innerText = "Success";
+            } else {
+                icon.className = "fa-solid fa-xmark text-red-400 text-3xl";
+                bg.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/20";
+                title.innerText = "Error";
+            }
+        }
+
+        function closeCustomAlert(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const modal = document.getElementById('custom-alert');
+            modal.style.opacity = "0";
+            modal.children[1].style.transform = "scale(0.9)";
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        let base64Image = "";
+
+        function previewImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    base64Image = e.target.result;
+                    const img = document.getElementById('img-preview');
+                    img.src = base64Image;
+                    img.classList.remove('hidden');
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function submitTicket(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Submitting...";
+            btn.disabled = true;
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            const data = {
+                userId: user.id,
+                userName: user.name,
+                email: user.email,
+                subject: document.getElementById('t-subject').value,
+                desc: document.getElementById('t-desc').value,
+                image: base64Image
+            };
+
+            try {
+                const res = await fetch('api/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    showNotification("Ticket Submitted! We will contact you shortly.", "success");
+                    e.target.reset();
+                    document.getElementById('img-preview').classList.add('hidden');
+                    document.getElementById('upload-prompt').classList.remove('hidden');
+                    base64Image = "";
+                    switchTab('orders'); // Go back
+                } else {
+                    showNotification("Error submitting ticket.", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showNotification("Server error.", "error");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-account-modal"
+        class="fixed inset-0 z-[110] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"></div>
+        <div
+            class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full text-center mx-4">
+            <div
+                class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/20">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Delete Account?</h3>
+            <p class="text-slate-400 text-sm mb-4">Are you sure you want to delete your account? This action is
+                permanent and cannot be undone.</p>
+
+            <div class="mb-6 text-left">
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Enter Your Password</label>
+                <input type="password" id="del-user-pass"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-red-500 focus:outline-none transition-colors"
+                    placeholder="••••••••">
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeDeleteAccountModal()"
+                    class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto">
+                    Cancel
+                </button>
+                <button type="button" onclick="executeAccountDeletion(event)" id="btn-final-delete"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-colors pointer-events-auto relative z-50">
+                    Yes, Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div style="z-index: 10001 !important;"
+        class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 lg:hidden safe-area-bottom h-20 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+        <div class="grid grid-cols-4 h-full">
+            <a href="/"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
+                <i class="fa-solid fa-house mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Home</span>
+            </a>
+            <a href="products"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
+                <i class="fa-solid fa-store mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Shop</span>
+            </a>
+            <a href="services"
+                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
+                <i class="fa-solid fa-bolt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Services</span>
+            </a>
+            <a href="profile.html"
+                class="flex flex-col items-center justify-center text-brand-500 transition-colors group">
+                <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Profile</span>
+            </a>
+        </div>
+    </div>
+    <!-- COMPLETE PROFILE MODAL -->
+    <div id="complete-profile-modal"
+        class="fixed inset-0 z-[150] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+        <div
+            class="glass-panel p-8 rounded-3xl border border-brand-500/30 shadow-2xl relative z-10 transform scale-95 transition-all duration-300 max-w-md w-full mx-4">
+
+            <div class="text-center mb-6">
+                <div
+                    class="w-16 h-16 bg-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-500/40 animate-pulse">
+                    <i class="fa-solid fa-user-pen text-3xl text-brand-400"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Complete Your Profile</h3>
+                <p class="text-slate-400 text-sm">We need a few more details to process your orders securely.</p>
+            </div>
+
+            <form onsubmit="handleProfileCompletion(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Phone Number</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-phone absolute left-4 top-3.5 text-slate-500"></i>
+                        <input type="text" id="cp-phone" required pattern="[0-9]*" inputmode="numeric"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white focus:border-brand-500 focus:outline-none transition-colors"
+                            placeholder="01712345678">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Date of Birth</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" id="cp-day" placeholder="DD" min="1" max="31" required
+                            class="bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white focus:border-brand-500 focus:outline-none">
+                        <input type="number" id="cp-month" placeholder="MM" min="1" max="12" required
+                            class="bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white focus:border-brand-500 focus:outline-none">
+                        <input type="number" id="cp-year" placeholder="YYYY" min="1900" max="2100" required
+                            class="bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white focus:border-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <button type="submit" id="cp-submit-btn"
+                    class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all mt-2">
+                    Save & Continue
+                </button>
+            </form>
+        </div>
+    </div>
+    <script>
+        // CHECK PROFILE COMPLETION ON LOAD
+        document.addEventListener('DOMContentLoaded', () => {
+            // Give it a moment for the main user load to happen (though we can check localStorage directly)
+            setTimeout(checkProfileCompletion, 1000);
+        });
+
+        function checkProfileCompletion() {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) return;
+
+            const user = JSON.parse(userStr);
+            // Check if Phone or DOB (dob logic varies, might be string or empty)
+            const hasPhone = user.phone && user.phone.length > 5;
+            const hasDob = user.dob && user.dob.length > 5;
+
+            if (!hasPhone || !hasDob) {
+                openCompleteProfileModal(user);
+            }
+        }
+
+        function openCompleteProfileModal(user) {
+            const modal = document.getElementById('complete-profile-modal');
+            modal.classList.remove('hidden');
+            // small delay for transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div.transform').classList.remove('scale-95');
+                modal.querySelector('div.transform').classList.add('scale-100');
+            }, 10);
+
+            // Pre-fill if partial data exists
+            if (user.phone) document.getElementById('cp-phone').value = user.phone;
+            if (user.dob) {
+                const date = new Date(user.dob);
+                if (!isNaN(date.getTime())) {
+                    document.getElementById('cp-day').value = date.getDate();
+                    document.getElementById('cp-month').value = date.getMonth() + 1;
+                    document.getElementById('cp-year').value = date.getFullYear();
+                }
+            }
+        }
+
+        async function handleProfileCompletion(e) {
+            e.preventDefault();
+            const btn = document.getElementById('cp-submit-btn');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const phone = document.getElementById('cp-phone').value;
+            const day = document.getElementById('cp-day').value;
+            const month = document.getElementById('cp-month').value;
+            const year = document.getElementById('cp-year').value;
+
+            const dob = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+            // Age Check
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age < 16) { // Enforce 16+ age requirement
+                showNotification("Invalid Date of Birth", "error");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const token = localStorage.getItem('userToken');
+
+                const res = await fetch(`/api/customers/${user.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ phone, dob })
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    showNotification("Profile Completed!", "success");
+
+                    // Update Local Storage
+                    user.phone = phone;
+                    user.dob = dob;
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    // Update UI
+                    document.getElementById('u-phone-sec').innerText = phone;
+                    document.getElementById('u-dob-sec').innerText = new Date(dob).toLocaleDateString();
+
+                    // Close Modal
+                    const modal = document.getElementById('complete-profile-modal');
+                    modal.classList.add('opacity-0');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
+                } else {
+                    showNotification(result.message || "Failed to update profile", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification("Server Error", "error");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>
