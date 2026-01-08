@@ -867,35 +867,78 @@ function initCheckoutPage() {
         if (submitBtnSpan) submitBtnSpan.innerText = "Get for Free";
     }
 
-    // 4. Populate Dynamic Game UIDs
-    const gamingItems = itemsToCheckout.filter(item => item.category === 'gaming');
-    const uidContainer = document.getElementById('game-uid-field');
+    // 4. Populate Dynamic Custom Fields
+    const customFieldsContainer = document.getElementById('game-uid-field');
 
-    if (uidContainer) {
-        uidContainer.innerHTML = '';
-        if (gamingItems.length > 0) {
-            uidContainer.classList.remove('hidden');
-            gamingItems.forEach((item, index) => {
-                const wrapper = document.createElement('div');
-                let labelText = item.name + " ID";
-                let placeholder = "Enter ID";
-                const lowerName = item.name.toLowerCase();
-                if (lowerName.includes('pubg')) {
-                    labelText = "PUBG Player ID";
-                    placeholder = "Enter PUBG ID";
-                } else if (lowerName.includes('free fire') || lowerName.includes('freefire')) {
-                    labelText = "FreeFire UID";
-                    placeholder = "Enter FreeFire UID";
+    if (customFieldsContainer) {
+        customFieldsContainer.innerHTML = '';
+        let hasCustomFields = false;
+
+        itemsToCheckout.forEach(item => {
+            if (item.customFields && Array.isArray(item.customFields) && item.customFields.length > 0) {
+                hasCustomFields = true;
+
+                // Add Product Header if multiple items?
+                if (itemsToCheckout.length > 1) {
+                    const header = document.createElement('div');
+                    header.className = "text-sm font-bold text-gray-400 mt-2 border-b border-gray-700 pb-1 mb-2";
+                    header.innerText = item.name + " Details";
+                    customFieldsContainer.appendChild(header);
                 }
 
-                wrapper.innerHTML = `
-                    <label class="block text-xs font-bold text-brand-500 mb-1 uppercase tracking-wide">${labelText}</label>
-                    <input type="text" data-item-name="${item.name}" required
-                        class="dynamic-game-uid w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-brand-500 transition-all placeholder-slate-500"
-                        placeholder="${placeholder}">
-                `;
-                uidContainer.appendChild(wrapper);
-            });
+                item.customFields.forEach(field => {
+                    const wrapper = document.createElement('div');
+                    const fieldId = `custom-${item.cartId || item.id}-${field.label.replace(/\s+/g, '-').toLowerCase()}`;
+
+                    wrapper.innerHTML = `
+                        <label class="block text-xs font-bold text-brand-500 mb-1 uppercase tracking-wide">
+                            ${field.label} ${field.required ? '<span class="text-red-500">*</span>' : ''}
+                        </label>
+                        <input type="text" 
+                            id="${fieldId}"
+                            data-label="${field.label}"
+                            data-item-name="${item.name}"
+                            data-required="${field.required}"
+                            class="custom-field-input w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-brand-500 transition-all placeholder-slate-500"
+                            placeholder="${field.placeholder || ''}">
+                    `;
+                    customFieldsContainer.appendChild(wrapper);
+                });
+            } else {
+                // FALLBACK: Legacy Game UID Logic for older products without customFields schema
+                // (Only apply if NO custom fields were manually defined to avoid duplication if migration happened)
+                const lowerName = item.name.toLowerCase();
+                let isGaming = item.category === 'gaming' || lowerName.includes('pubg') || lowerName.includes('freefire') || lowerName.includes('topup');
+
+                // However, user specifically wants to control this via admin now. 
+                // We should probably rely ONLY on customFields if we want full control.
+                // BUT to prevent breaking existing "Gaming" items that rely on hardcoded logic, we can keep a fallback.
+
+                if (isGaming && (!item.customFields || item.customFields.length === 0)) {
+                    hasCustomFields = true;
+                    // ... (keep minimal legacy logic or just force them to update product?)
+                    // Let's keep it for compatibility but mark it.
+                    const wrapper = document.createElement('div');
+                    let labelText = item.name + " ID";
+                    let placeholder = "Enter ID";
+                    if (lowerName.includes('pubg')) { labelText = "PUBG Player ID"; placeholder = "Enter PUBG ID"; }
+                    else if (lowerName.includes('free fire')) { labelText = "FreeFire UID"; placeholder = "Enter FreeFire UID"; }
+
+                    wrapper.innerHTML = `
+                        <label class="block text-xs font-bold text-brand-500 mb-1 uppercase tracking-wide">${labelText}</label>
+                        <input type="text" data-item-name="${item.name}" required
+                            class="dynamic-game-uid w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-brand-500 transition-all placeholder-slate-500"
+                            placeholder="${placeholder}">
+                    `;
+                    customFieldsContainer.appendChild(wrapper);
+                }
+            }
+        });
+
+        if (hasCustomFields) {
+            customFieldsContainer.classList.remove('hidden');
+        } else {
+            customFieldsContainer.classList.add('hidden');
         }
     }
 
@@ -1201,7 +1244,8 @@ function createCartItem(id, source = 'card') {
         price: finalPrice,
         image: product.image,
         category: product.category,
-        quantity: 1
+        quantity: 1,
+        customFields: product.customFields // Pass custom fields to cart item
     };
 }
 
@@ -1761,32 +1805,51 @@ async function submitOrder() {
         }
     }
 
-    // Check for Dynamic Game UIDs
-    const uidInputs = document.querySelectorAll('.dynamic-game-uid');
-    let gameUidString = "";
+    // --- CUSTOM FIELDS COLLECTION (REPLACES OLD GAME UID LOGIC) ---
+    let extraDetails = "";
+    let missingRequired = false;
 
-    // Validate if any are missing
-    let missingUid = false;
+    // 1. Collect New Custom Fields
+    const customInputs = document.querySelectorAll('.custom-field-input');
+    customInputs.forEach(input => {
+        const label = input.getAttribute('data-label');
+        const itemName = input.getAttribute('data-item-name');
+        const isReq = input.getAttribute('data-required') === 'true';
+        const val = input.value.trim();
 
-    if (uidInputs.length > 0) {
-        const collectedIds = [];
-        uidInputs.forEach(input => {
-            if (!input.value.trim()) {
-                missingUid = true;
-            } else {
-                collectedIds.push(`${input.getAttribute('data-item-name')}: ${input.value.trim()} `);
-            }
-        });
-        gameUidString = collectedIds.join('\n');
-    }
+        if (isReq && !val) {
+            missingRequired = true;
+            input.style.borderColor = 'red';
+        } else {
+            input.style.borderColor = ''; // reset
+        }
 
-    if (missingUid) {
-        showErrorModal("Game ID Required", "Please enter Player IDs for all gaming items.");
+        if (val) {
+            extraDetails += `${itemName} - ${label}: ${val}\n`;
+        }
+    });
+
+    // 2. Collect Legacy dynamic-game-uid (Fallback)
+    const legacyInputs = document.querySelectorAll('.dynamic-game-uid');
+    legacyInputs.forEach(input => {
+        const val = input.value.trim();
+        if (!val) {
+            // Legacy usually required for gaming
+            missingRequired = true;
+            input.style.borderColor = 'red';
+        } else {
+            input.style.borderColor = '';
+            extraDetails += `${input.getAttribute('data-item-name')} ID: ${val}\n`;
+        }
+    });
+
+    if (missingRequired) {
+        showErrorModal("Missing Information", "Please fill in all required fields (marked *).");
         return;
     }
 
-    // Assign to legacy variable for compatibility if needed, or just use the new string
-    const gameUid = gameUidString;
+    // Use extraDetails as the "gameUid" field for backend compatibility (renaming it conceptually to "Order Notes/Details")
+    const gameUid = extraDetails.trim();
 
     const platform = !isFreeOrder ? document.querySelector('input[name="orderMethod"]:checked').value : 'Web';
 
@@ -1948,8 +2011,8 @@ async function submitOrder() {
                 message += `👤 * Customer:* ${name} \n`;
                 message += `📱 * Phone:* ${phone} \n`;
                 message += `📧 * Email:* ${customerEmail} \n`;
-                if (hasGamingItem && gameUid) {
-                    message += `🎮 * Game UID:* ${gameUid} \n`;
+                if (gameUid) { // Now gameUid contains all custom fields
+                    message += `📝 * Order Details:*\n${gameUid}\n`;
                 }
 
                 // Message format depending on payment
@@ -1996,27 +2059,39 @@ async function submitOrder() {
 // --- Modals ---
 
 function showSuccessModal() {
-    // Force remove existing modal to ensure fresh content (and remove old buttons)
+    // Force remove existing modal
     let existingModal = document.getElementById('order-success-modal');
     if (existingModal) existingModal.remove();
 
     const modalHTML = `
-    <div id="order-success-modal" class="fixed inset-0 z-[160] flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity animate-[fadeIn_0.3s_ease-out]">
-        <div class="bg-slate-800 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border border-slate-700/50 relative overflow-hidden">
+    <div id="order-success-modal" class="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-md transition-opacity animate-[fadeIn_0.3s_ease-out]">
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border border-white/10 relative overflow-hidden transform animate-[blob_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)]">
+            
+            <!-- Glow Effect -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl -z-10"></div>
+
             <!-- Checkmark -->
-            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-emerald-500 mb-6 shadow-lg shadow-emerald-500/20">
+            <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 mb-6 shadow-lg shadow-emerald-500/40 animate-pulse">
                 <i class="fa-solid fa-check text-4xl text-white"></i>
             </div>
-            <!-- Text -->
-            <h3 class="text-2xl font-bold text-white mb-2">Order Created!</h3>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">Your order has been received successfully.</p>
             
-            <button onclick="window.location.href='index.html'" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl mb-6 transition-all border border-slate-600">
-                Back to Home
+            <!-- Text -->
+            <h3 class="text-3xl font-bold text-white mb-2 tracking-tight">Order Placed!</h3>
+            <p class="text-slate-400 text-sm mb-8 leading-relaxed">Your order has been secured and confirmed.</p>
+            
+            <button onclick="window.location.href='index.html'" class="w-full group relative overflow-hidden bg-white/5 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl mb-4 transition-all border border-white/10 hover:border-emerald-400">
+                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                <span class="relative">Back to Home</span>
             </button>
             
             <!-- Timer -->
-            <p class="text-xs text-slate-500">Closing in <span id="redirect-timer" class="font-bold text-white text-lg ml-1">3</span>s...</p>
+            <div class="flex items-center justify-center gap-2 text-xs text-slate-500">
+                <span>Redirecting in</span>
+                <div class="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                    <span id="redirect-timer" class="font-bold text-emerald-400">3</span>
+                </div>
+                <span>seconds...</span>
+            </div>
         </div>
     </div>`;
 
@@ -2026,9 +2101,6 @@ function showSuccessModal() {
     // Countdown Timer (3s -> Close)
     let seconds = 3;
     const timerInfo = document.getElementById('redirect-timer');
-
-    // Clear any previous intervals if somehow attached (global var?) 
-    // Usually local var `interval` is enough unless specific race conditions.
 
     const interval = setInterval(() => {
         seconds--;
@@ -2043,22 +2115,27 @@ function showSuccessModal() {
 
 function showErrorModal(title, message) {
     let modal = document.getElementById('error-modal');
-
-    // Always recreate or update content to ensure message is fresh
     if (modal) modal.remove();
 
     const modalHTML = `
-    <div id="error-modal" class="fixed inset-0 z-[170] flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity animate-[fadeIn_0.2s_ease-out]">
-        <div class="bg-slate-800 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border border-red-500/30 relative overflow-hidden">
+    <div id="error-modal" class="fixed inset-0 z-[170] flex items-center justify-center bg-black/60 backdrop-blur-md transition-opacity animate-[fadeIn_0.2s_ease-out]">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border border-red-500/20 relative overflow-hidden transform animate-[blob_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]">
+            
+            <!-- Glow -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -z-10"></div>
+
             <!-- Cross Icon -->
-            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-500 mb-6 shadow-lg shadow-red-500/20">
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-red-500 to-red-600 mb-6 shadow-lg shadow-red-500/30">
                 <i class="fa-solid fa-xmark text-4xl text-white"></i>
             </div>
-            <!-- Text -->
-            <h3 class="text-xl font-bold text-white mb-2">${title}</h3>
-            <p class="text-slate-400 text-sm mb-8 leading-relaxed">${message}</p>
             
-            <button onclick="document.getElementById('error-modal').remove()" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition-all">Close</button>
+            <!-- Text -->
+            <h3 class="text-2xl font-bold text-white mb-2 tracking-tight">${title}</h3>
+            <p class="text-slate-400 text-sm mb-8 leading-relaxed px-2">${message}</p>
+            
+            <button onclick="document.getElementById('error-modal').remove()" class="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3.5 rounded-xl transition-all border border-white/5 hover:border-white/20 active:scale-95">
+                Close
+            </button>
         </div>
     </div>`;
 
@@ -2072,23 +2149,27 @@ function showLoginRequiredModal() {
     if (modal) modal.remove();
 
     const modalHTML = `
-    <div id="login-req-modal" class="fixed inset-0 z-[180] flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity animate-[fadeIn_0.3s_ease-out]">
-        <div class="bg-slate-800 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border border-brand-500/50 relative overflow-hidden">
+    <div id="login-req-modal" class="fixed inset-0 z-[180] flex items-center justify-center bg-black/60 backdrop-blur-md transition-opacity animate-[fadeIn_0.3s_ease-out]">
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl border border-brand-500/20 relative overflow-hidden transform animate-[blob_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]">
             
-            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-brand-500/10 mb-6 border border-brand-500/50 shadow-[0_0_30px_rgba(37,99,235,0.2)]">
-                <i class="fa-solid fa-lock text-3xl text-brand-500"></i>
+            <!-- Glow -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-brand-600/10 rounded-full blur-3xl -z-10"></div>
+
+            <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-gradient-to-br from-brand-500/10 to-brand-600/20 mb-6 border border-brand-500/30 shadow-[0_0_30px_rgba(37,99,235,0.2)]">
+                <i class="fa-solid fa-lock text-4xl text-brand-500 drop-shadow-lg"></i>
             </div>
 
-            <h3 class="text-2xl font-bold text-white mb-2">Login Required</h3>
+            <h3 class="text-2xl font-bold text-white mb-3">Login Required</h3>
             <p class="text-slate-400 text-sm mb-8 leading-relaxed">
-                To pay with Bkash/Nagad securely, you must have an account. Please login or register to continue.
+                Security Check: To use this payment method, you need to sign in to your account.
             </p>
 
             <div class="space-y-3">
-                <a href="login.html" class="block w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-500/30 transform hover:-translate-y-0.5">
-                    Login / Register
+                <a href="login.html" class="flex items-center justify-center w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-500/30 transform hover:-translate-y-0.5 group">
+                    <span>Login or Register</span>
+                    <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </a>
-                <button onclick="document.getElementById('login-req-modal').remove()" class="w-full bg-slate-700/50 hover:bg-slate-700 text-slate-300 font-bold py-3.5 rounded-xl transition-all">
+                <button onclick="document.getElementById('login-req-modal').remove()" class="w-full bg-slate-700/30 hover:bg-slate-700/50 text-slate-400 font-medium py-3 rounded-xl transition-all border border-transparent hover:border-slate-600">
                     Cancel
                 </button>
             </div>
@@ -2228,4 +2309,34 @@ function handleMobileSearch(event) {
             }
         }
     }
-}
+
+    // --- INJECT MODAL STYLES (Animations) ---
+    function ensureModalStyles() {
+        if (document.getElementById('modal-animations')) return;
+
+        const style = document.createElement('style');
+        style.id = 'modal-animations';
+        style.innerHTML = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes blob {
+            0% { transform: scale(0.95); opacity: 0; }
+            40% { transform: scale(1.02); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+    `;
+        document.head.appendChild(style);
+    }
+
+    // Ensure styles are loaded
+    document.addEventListener('DOMContentLoaded', ensureModalStyles);
+    // Also call immediately in case DOM is already ready (dynamic load)
+    ensureModalStyles();

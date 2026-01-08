@@ -112,6 +112,23 @@
                 </div>
             </div>
 
+            <!-- Custom User Inputs Section -->
+            <div
+                style="background:#0f172a; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid var(--border);">
+                <h4 style="margin-top:0; color:var(--brand); display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-list-check"></i> Custom User Inputs
+                </h4>
+                <p style="font-size:12px; color:var(--gray); margin-bottom:15px;">Add extra fields the user must fill
+                    out during checkout (e.g. Game ID, Home Address).</p>
+
+                <div id="custom-inputs-container"></div>
+
+                <button onclick="addCustomInputRow()"
+                    style="background:var(--bg-card); color:var(--brand); border:1px dashed var(--brand); padding:8px 15px; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:5px; hover:background:rgba(59,130,246,0.1);">
+                    + Add Custom Field
+                </button>
+            </div>
+
             <button class="btn-main" onclick="saveProduct()">Save Product</button>
         </div>
     </div>
@@ -120,24 +137,62 @@
 
     <!-- Success Modal -->
     <div id="save-success-modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:2000; justify-content:center; align-items:center;">
         <div
-            style="background:var(--bg-card); width:320px; padding:30px; border-radius:20px; border:1px solid var(--border); text-align:center; animation:fadeIn 0.3s ease-out; position:relative;">
+            style="background:rgba(20, 25, 40, 0.95); width:350px; padding:40px; border-radius:30px; border:1px solid rgba(255,255,255,0.1); text-align:center; animation:popIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); position:relative; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+
+            <!-- Animated Icon -->
             <div
-                style="margin:0 auto 20px auto; width:70px; height:70px; background:rgba(16,185,129,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(16,185,129,0.2);">
-                <i class="fa-solid fa-check" style="color:#10b981; font-size:32px;"></i>
+                style="margin:0 auto 25px auto; width:80px; height:80px; background:linear-gradient(135deg, #10b981, #059669); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 25px rgba(16,185,129,0.3); animation:pulse 2s infinite;">
+                <i class="fa-solid fa-check" style="color:white; font-size:40px;"></i>
             </div>
-            <h3 style="color:white; margin-top:0; font-size:22px; margin-bottom:5px;" id="success-modal-msg">Success!
+
+            <h3 style="color:white; margin-top:0; font-size:24px; font-weight:700; margin-bottom:10px;"
+                id="success-modal-msg">Success!
             </h3>
-            <p style="color:var(--gray); font-size:14px; margin-bottom:20px;">Changes saved successfully.</p>
-            <div style="width:100%; background:rgba(255,255,255,0.1); height:4px; border-radius:2px; overflow:hidden;">
+            <p style="color:#94a3b8; font-size:15px; margin-bottom:30px; line-height:1.5;">Changes saved successfully.
+            </p>
+
+            <!-- Timer Bar -->
+            <div
+                style="width:100%; background:rgba(255,255,255,0.05); height:6px; border-radius:10px; overflow:hidden; margin-bottom:15px;">
                 <div id="success-timer-bar"
-                    style="width:100%; height:4px; background:#10b981; transition:width 3s linear;"></div>
+                    style="width:100%; height:100%; background:linear-gradient(90deg, #10b981, #34d399); border-radius:10px;">
+                </div>
             </div>
-            <p style="color:var(--gray); font-size:12px; margin-top:10px;">Closing in <span id="success-timer-count"
-                    style="font-weight:bold; color:white;">3</span>s...</p>
+
+            <p style="color:#64748b; font-size:12px; font-family:monospace;">Redirecting in <span
+                    id="success-timer-count" style="color:#10b981; font-weight:bold;">3</span>s</p>
         </div>
     </div>
+
+    <style>
+        @keyframes popIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
 
     <!-- Custom Alert Modal -->
     <!-- Custom Alert Modal (Removed - using Global) -->
@@ -159,6 +214,29 @@
                 loadProductForEdit(editId);
             }
         });
+
+        // --- CUSTOM INPUTS LOGIC ---
+        function addCustomInputRow(label = '', placeholder = '', required = false) {
+            const container = document.getElementById('custom-inputs-container');
+            const div = document.createElement('div');
+            div.style.display = 'grid';
+            div.style.gridTemplateColumns = '1fr 1fr 80px 30px';
+            div.style.gap = '10px';
+            div.style.marginBottom = '10px';
+            div.style.alignItems = 'center';
+
+            const checked = required ? 'checked' : '';
+
+            div.innerHTML = `
+                <input type="text" placeholder="Label (e.g. Game ID)" class="input-box" style="margin:0" value="${label}">
+                <input type="text" placeholder="Placeholder (e.g. Enter ID)" class="input-box" style="margin:0" value="${placeholder}">
+                <label style="font-size:12px; display:flex; align-items:center; gap:5px; color:var(--gray); cursor:pointer;">
+                    <input type="checkbox" ${checked} style="width:auto;"> Req.
+                </label>
+                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
+            `;
+            container.appendChild(div);
+        }
 
         // --- CATEGORY MANIPULATION ---
         async function loadCategories() {
@@ -239,6 +317,15 @@
                     });
                 } else {
                     addVariantRow('1 Month', '', '');
+                }
+
+                // Populate Custom Inputs
+                const customContainer = document.getElementById('custom-inputs-container');
+                customContainer.innerHTML = '';
+                if (p.customFields && p.customFields.length > 0) {
+                    p.customFields.forEach(f => {
+                        addCustomInputRow(f.label, f.placeholder, f.required);
+                    });
                 }
 
                 // Trigger check after population
@@ -406,7 +493,21 @@
             const autoInfo = document.getElementById('p-auto-info').value;
             const autoImg = document.getElementById('p-auto-img').value;
 
-
+            // Custom Inputs
+            const customRows = document.querySelectorAll('#custom-inputs-container > div');
+            const customFields = [];
+            customRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                // 0: Label, 1: Placeholder, 2: Checkbox (Required)
+                if (inputs[0].value.trim()) {
+                    customFields.push({
+                        label: inputs[0].value.trim(),
+                        placeholder: inputs[1].value.trim(),
+                        required: inputs[2].checked,
+                        type: 'text' // Default to text for now, could expand later
+                    });
+                }
+            });
             // Variants
             const rows = document.querySelectorAll('#variants-container > div');
             const variants = [];
@@ -435,7 +536,8 @@
                     price: mainPrice,
                     originalPrice: mainOriginalPrice,
                     autoDeliveryInfo: autoInfo,
-                    autoDeliveryImage: autoImg
+                    autoDeliveryImage: autoImg,
+                    customFields: customFields
                 };
 
                 let res;
@@ -485,6 +587,7 @@
             document.querySelectorAll('input, textarea').forEach(i => i.value = "");
             document.getElementById('variants-container').innerHTML = '';
             addVariantRow('1 Month', '', '');
+            document.getElementById('custom-inputs-container').innerHTML = '';
             currentEditingId = null;
             document.querySelector('.btn-main').innerText = "Save Product";
         }
