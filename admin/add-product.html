@@ -216,11 +216,11 @@
         });
 
         // --- CUSTOM INPUTS LOGIC ---
-        function addCustomInputRow(label = '', placeholder = '', required = false) {
+        function addCustomInputRow(label = '', placeholder = '', required = false, type = 'text') {
             const container = document.getElementById('custom-inputs-container');
             const div = document.createElement('div');
             div.style.display = 'grid';
-            div.style.gridTemplateColumns = '1fr 1fr 80px 30px';
+            div.style.gridTemplateColumns = '1.5fr 1.5fr 1fr 0.5fr 30px'; // Adjusted grid
             div.style.gap = '10px';
             div.style.marginBottom = '10px';
             div.style.alignItems = 'center';
@@ -228,14 +228,33 @@
             const checked = required ? 'checked' : '';
 
             div.innerHTML = `
-                <input type="text" placeholder="Label (e.g. Game ID)" class="input-box" style="margin:0" value="${label}">
-                <input type="text" placeholder="Placeholder (e.g. Enter ID)" class="input-box" style="margin:0" value="${placeholder}">
+                <input type="text" placeholder="Label (e.g. Screenshot)" class="input-box" style="margin:0" value="${label}">
+                <input type="text" placeholder="Placeholder (e.g. Upload Proof)" class="input-box" style="margin:0" value="${placeholder}">
+                
+                <select class="input-box" style="margin:0; padding:8px;" onchange="updatePlaceholder(this)">
+                    <option value="text" ${type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="number" ${type === 'number' ? 'selected' : ''}>Number</option>
+                    <option value="email" ${type === 'email' ? 'selected' : ''}>Email</option>
+                    <option value="textarea" ${type === 'textarea' ? 'selected' : ''}>Short Note</option>
+                    <option value="file" ${type === 'file' ? 'selected' : ''}>Screenshot (File)</option>
+                </select>
+
                 <label style="font-size:12px; display:flex; align-items:center; gap:5px; color:var(--gray); cursor:pointer;">
                     <input type="checkbox" ${checked} style="width:auto;"> Req.
                 </label>
                 <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
             `;
             container.appendChild(div);
+        }
+
+        function updatePlaceholder(select) {
+            // Optional: Auto-update placeholder based on type for UX
+            const row = select.parentElement;
+            const placeholderInput = row.querySelectorAll('input')[1];
+            if (!placeholderInput.value) {
+                if (select.value === 'file') placeholderInput.value = "Upload Image";
+                else if (select.value === 'email') placeholderInput.value = "example@mail.com";
+            }
         }
 
         // --- CATEGORY MANIPULATION ---
@@ -324,7 +343,7 @@
                 customContainer.innerHTML = '';
                 if (p.customFields && p.customFields.length > 0) {
                     p.customFields.forEach(f => {
-                        addCustomInputRow(f.label, f.placeholder, f.required);
+                        addCustomInputRow(f.label, f.placeholder, f.required, f.type);
                     });
                 }
 
@@ -498,13 +517,15 @@
             const customFields = [];
             customRows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
+                const select = row.querySelector('select');
                 // 0: Label, 1: Placeholder, 2: Checkbox (Required)
+                // Select is for Type
                 if (inputs[0].value.trim()) {
                     customFields.push({
                         label: inputs[0].value.trim(),
                         placeholder: inputs[1].value.trim(),
                         required: inputs[2].checked,
-                        type: 'text' // Default to text for now, could expand later
+                        type: select ? select.value : 'text'
                     });
                 }
             });
