@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
     <title>Product Details - Tention Free</title>
     <meta name="description" content="Product Details">
 
@@ -89,17 +90,59 @@
                 <span class="text-slate-200 font-medium" id="page-product-name-crumb">Loading...</span>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-slate-900/50 rounded-3xl p-6 md:p-10 border border-slate-800 backdrop-blur-sm relative overflow-hidden"
-                id="product-details-container">
+            <!-- SSR CONTENT PLACEHOLDERS -->
 
-                <!-- Loading State -->
-                <div class="col-span-full text-center py-20">
-                    <div
-                        class="spinner border-4 border-brand-500/30 border-t-brand-500 rounded-full w-12 h-12 animate-spin mx-auto mb-4">
+            <!-- Left: Image -->
+            <div class="relative group">
+                <div
+                    class="absolute inset-0 bg-brand-500/20 rounded-3xl blur-3xl group-hover:bg-brand-500/30 transition-all duration-500 -z-10">
+                </div>
+                <div
+                    class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 md:p-12 flex items-center justify-center border border-slate-700 h-full relative overflow-hidden">
+                    <img src="" alt="Product"
+                        class="w-full max-w-sm object-contain drop-shadow-2xl z-10 transform group-hover:scale-105 transition duration-500">
+                    <div class="absolute top-6 left-6 z-20">
+                        <!-- Badge Placeholder -->
                     </div>
-                    <p class="text-slate-400">Loading product details...</p>
+                </div>
+            </div>
+
+            <!-- Right: Info -->
+            <div class="flex flex-col h-full animate-fade-in" style="animation-delay: 100ms;">
+                <div class="mb-1">
+                    <span id="modal-category"
+                        class="text-brand-400 font-bold tracking-wider text-xs uppercase bg-brand-500/10 px-3 py-1 rounded-full">Category</span>
                 </div>
 
+                <h1 id="product-modal-title" class="text-3xl md:text-5xl font-bold text-white mb-4 mt-4 leading-tight">
+                    Product Title</h1>
+
+                <p id="modal-desc" class="text-slate-400 text-base leading-relaxed mb-8">Description goes here...</p>
+
+                <div class="mt-auto bg-slate-950/50 rounded-2xl p-6 border border-slate-800 backdrop-blur-sm">
+
+                    <!-- Client-Side Hydration (Script will populate variants) -->
+                    <div id="ssr-variant-container" class="mb-6"></div>
+
+                    <div class="flex items-end justify-between mb-8">
+                        <div>
+                            <span class="text-sm text-slate-500 line-through block mb-1"></span>
+                            <span class="text-4xl font-bold text-white tracking-tight" id="page-display-price">৳0</span>
+                        </div>
+                    </div>
+
+                    <!-- Buttons (Client-side functionality attached via ID usually, but here we can add basic ones) -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="ssr-add-to-cart-btn" onclick="addToCartPage(0)"
+                            class="flex items-center justify-center px-6 py-4 border border-brand-500 text-brand-500 rounded-xl font-bold hover:bg-brand-500/10 transition active:scale-95">
+                            <i class="fa-solid fa-cart-plus mr-2"></i> Add to Cart
+                        </button>
+                        <button id="ssr-buy-now-btn" onclick="buyNowPage(0)"
+                            class="flex items-center justify-center px-6 py-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-500 shadow-lg shadow-brand-500/30 transition active:scale-95 transform hover:-translate-y-0.5">
+                            Buy Now <i class="fa-solid fa-bolt ml-2"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Reviews Section -->

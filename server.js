@@ -99,6 +99,74 @@ app.use((req, res, next) => {
     next();
 });
 
+// ======================================
+// SERVER-SIDE RENDERING (SSR) FOR PRODUCTS
+// ======================================
+app.get(['/product/:id', '/products.html'], async (req, res, next) => {
+    // Check if it's strictly the SSR route pattern or a legacy redirect
+    let productId = null;
+    let isSSR = false;
+
+    if (req.path.startsWith('/product/')) {
+        productId = req.params.id; // Correctly get ID from route param
+        isSSR = true;
+    } else if (req.path === '/products.html' || req.path === '/product-details.html') {
+        // If accessing via legacy query params, let client-side handle it OR redirect?
+        // For now, let static middleware handle .html unless we want to intercept.
+        // Actually, if user visits product-details.html?id=123, we can't easily SSR it here without complex logic.
+        // Let's STICK to the new route /product/:id for SSR.
+        return next();
+    }
+
+    if (!isSSR || !productId) return next();
+
+    try {
+        const products = await readLocalJSON('products');
+        const product = products.find(p => p.id == productId || p.name.toLowerCase().replace(/ /g, '-') === productId.toLowerCase());
+
+        if (!product) {
+            return res.status(404).send('<h1>Product not found</h1><a href="/products">Back to Shop</a>');
+        }
+
+        // Read Template
+        let html = fs.readFileSync(path.join(__dirname, 'product-details.html'), 'utf8');
+
+        // INJECT DATA (Simple Replace)
+        // Meta Tags
+        html = html.replace(/<title>.*<\/title>/, `<title>${product.name} | Tention Free</title>`);
+        html = html.replace(/content="Browse our catalog.*"/, `content="${product.desc || product.name}"`);
+
+        // Open Graph
+        html = html.replace(/property="og:title" content=".*"/, `property="og:title" content="${product.name}"`);
+        html = html.replace(/property="og:description" content=".*"/, `property="og:description" content="${product.desc}"`);
+        html = html.replace(/property="og:image" content=".*"/, `property="og:image" content="${'https://tentionfree.store/' + product.image}"`);
+
+        // CONTENT INJECTION MARKERS
+        // We will add specific comments in HTML to target replacements safely, 
+        // OR we can rely on DOM hydration for detailed interactivity and just pre-fill key visuals.
+
+        // For "Instant Load", we need to pre-fill the visible parts:
+        // 1. Image
+        html = html.replace('src="" alt="Product"', `src="${product.image}" alt="${product.name}"`);
+        // 2. Title
+        html = html.replace('id="product-modal-title">Product Title', `id="product-modal-title">${product.name}`);
+        // 3. Price
+        html = html.replace('id="page-display-price">৳0', `id="page-display-price">৳${product.price}`);
+        // 4. Description
+        html = html.replace('id="modal-desc">Description goes here...', `id="modal-desc">${product.longDesc ? product.longDesc.replace(/\n/g, '<br>') : product.desc}`);
+        // 5. Category Badge
+        html = html.replace('id="modal-category" class="', `id="modal-category" class="">${product.category}</span><span style="display:none;" class="`);
+
+
+        // Send Hydrated HTML
+        res.send(html);
+
+    } catch (err) {
+        console.error("SSR Error:", err);
+        res.status(500).send("Server Error");
+    }
+});
+
 // Explicitly serve services.html for /services route to fix "Cannot GET" error
 app.get(['/services', '/services/'], (req, res) => {
     res.sendFile(__dirname + '/services.html');

@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initBannerSlider(); // New: Initialize Banner Slider (Homepage)
 
         // Auto-run on details page
-        if (window.location.pathname.includes('product-details.html') || window.location.search.includes('id=')) {
+        if (window.location.pathname.includes('product-details.html') || window.location.pathname.startsWith('/product/') || window.location.search.includes('id=')) {
             loadProductDetailsPage();
         }
     });
@@ -581,8 +581,8 @@ window.addEventListener('load', () => {
     // Router Logic based on Path
     const path = window.location.pathname;
 
-    // 1. Product Details Page
-    if (path.includes('product-details.html')) {
+    // 1. Product Details Page (Legacy or SSR)
+    if (path.includes('product-details.html') || path.startsWith('/product/')) {
         loadProductDetailsPage();
     }
 });
@@ -591,10 +591,21 @@ window.addEventListener('load', () => {
 async function loadProductDetailsPage() {
     console.log("Loading Product Details Page...");
     const params = new URLSearchParams(window.location.search);
-    const id = parseInt(params.get('id'));
+    let id = parseInt(params.get('id'));
+
+    // SSR Fallback: Get ID from URL path (e.g., /product/123)
+    if (!id) {
+        const parts = window.location.pathname.split('/');
+        // Usually last part, but might have trailing slash
+        const lastPart = parts.pop() || parts.pop();
+        id = parseInt(lastPart);
+    }
 
     if (!id) {
-        window.location.href = 'products.html';
+        // Only redirect if effectively no ID found (and it's not a generic listing page)
+        // Adjust logic if needed, but for now safe redirect to shop
+        console.warn("No ID found, redirecting.");
+        window.location.href = 'products';
         return;
     }
 
@@ -1328,16 +1339,10 @@ function showSuggestions(query, containerId) {
     container.classList.add('show');
 }
 
+
 function navigateToProduct(id) {
-    // If we are on products page, just open modal
-    if (document.getElementById('product-grid')) {
-        openDetails(id);
-        // Hide all suggestion boxes
-        document.querySelectorAll('.search-suggestions').forEach(el => el.classList.remove('show'));
-    } else {
-        // Redirect with ID for robust handling
-        window.location.href = `products.html?id=${id}`;
-    }
+    // Redirect with ID for robust handling (SSR)
+    window.location.href = `product/${id}`;
 }
 
 function clearSearch() {
@@ -1358,8 +1363,8 @@ function clearSearch() {
 // --- Product Details Modal Logic ---
 
 function openDetails(id) {
-    // Redirect to separate details page
-    window.location.href = `product-details.html?id=${id}`;
+    // Redirect to separate details page (SSR)
+    window.location.href = `product/${id}`;
 }
 
 function closeDetails() {
