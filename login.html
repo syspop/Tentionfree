@@ -711,16 +711,52 @@
             }
         }
 
+        let tokenClient;
+
         // --- SOCIAL AUTH INIT (Google & Facebook) ---
         window.onload = function () {
             // Google
+            // Still initialize One Tap for auto-signin if desired, but for the button we need Token Client
+            /* 
             google.accounts.id.initialize({
                 client_id: "966188173381-2ebngavegtsmpk5gdgc6om3mjoolb5ll.apps.googleusercontent.com",
                 callback: handleGoogleCredentialResponse
             });
+            */
+
+            if (typeof google !== 'undefined' && google.accounts) {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: "966188173381-2ebngavegtsmpk5gdgc6om3mjoolb5ll.apps.googleusercontent.com",
+                    scope: "email profile",
+                    callback: async (response) => {
+                        if (response.error) {
+                            showCustomAlert("Error", "Google Sign-In failed: " + response.error, "error");
+                            return;
+                        }
+
+                        // Use Access Token to get User Info
+                        try {
+                            const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                                headers: { Authorization: `Bearer ${response.access_token}` }
+                            });
+                            const userData = await userInfoRes.json();
+
+                            processSocialLogin('google', {
+                                email: userData.email,
+                                name: userData.name,
+                                photo: userData.picture
+                            });
+
+                        } catch (err) {
+                            console.error(err);
+                            showCustomAlert("Error", "Failed to get Google profile.", "error");
+                        }
+                    },
+                });
+            }
         };
 
-        // --- GOOGLE HANDLER ---
+        // --- GOOGLE HANDLER (Legacy/One Tap - kept reference if needed but unused for main button now) ---
         function handleGoogleCredentialResponse(response) {
             const responsePayload = decodeJwtResponse(response.credential);
             processSocialLogin('google', {
@@ -744,16 +780,13 @@
             console.log("Social Login Clicked:", provider); // Debug Log
 
             if (provider === 'google') {
-                if (typeof google === 'undefined' || !google.accounts) {
+                if (typeof google === 'undefined' || !google.accounts || !tokenClient) {
                     showCustomAlert("Error", "Google Sign-In is not loaded yet. Please refresh.", "error");
                     return;
                 }
-                google.accounts.id.prompt((notification) => {
-                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        console.log("Google Prompt Skipped:", notification.getNotDisplayedReason());
-                        // Fallback or alert user if needed
-                    }
-                });
+
+                // Force Popup Flow
+                tokenClient.requestAccessToken();
                 return;
             }
 
