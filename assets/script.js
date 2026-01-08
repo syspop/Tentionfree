@@ -1816,6 +1816,85 @@ function previewCustomUpload(input) {
     }
 }
 
+// --- 5. CHECKOUT PAGE LOGIC ---
+
+function initCheckoutPage() {
+    console.log("Init Checkout Page");
+
+    renderCheckoutItems();
+
+    // Toggle Payment Section on load
+    togglePaymentSection();
+
+    // Prefill user data if logged in
+    prefillCheckout();
+
+    // Check URL params for auto-fill (optional)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('ref')) {
+        document.getElementById('promo-code-input').value = urlParams.get('ref');
+    }
+}
+
+function renderCheckoutItems() {
+    const list = document.getElementById('checkout-items-summary');
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    // Determine Source
+    let items = [];
+    const buyNowData = localStorage.getItem('tentionfree_buyNow');
+    let isBuyNow = false;
+
+    if (buyNowData) {
+        items = [JSON.parse(buyNowData)];
+        isBuyNow = true;
+    } else {
+        items = JSON.parse(localStorage.getItem('cart')) || [];
+    }
+
+    if (items.length === 0) {
+        list.innerHTML = "<div class='text-slate-500 text-center py-4'>Cart is empty</div>";
+        document.getElementById('checkout-total-amount').innerText = "৳0.00";
+        return;
+    }
+
+    let total = 0;
+
+    items.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+
+        list.innerHTML += `
+            <div class="flex items-center gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                <img src="${item.image}" alt="${item.name}" class="w-12 h-12 rounded-md object-cover bg-slate-900">
+                <div class="flex-1">
+                    <h4 class="text-white text-sm font-bold line-clamp-1">${item.name}</h4>
+                    <p class="text-slate-400 text-xs">${item.variantName || 'Standard'}</p>
+                    <div class="flex justify-between items-center mt-1">
+                        <span class="text-brand-500 text-xs font-bold">৳${item.price} x ${item.quantity}</span>
+                        <span class="text-white text-xs font-bold">৳${itemTotal}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('checkout-total-amount').innerText = "৳" + total.toFixed(2);
+
+    // Free Order Check
+    const isFree = total === 0;
+    const freeInput = document.getElementById('is-free-order');
+    if (freeInput) freeInput.value = isFree;
+
+    if (isFree) {
+        // Hide Payment Method, Auto-Select Free
+        const paymentToggle = document.getElementById('payment-method-toggle');
+        if (paymentToggle) paymentToggle.classList.add('hidden');
+    }
+}
+
 // --- 6. COUPON LOGIC ---
 let appliedCoupon = null;
 
@@ -2538,28 +2617,146 @@ window.submitReview = async function () {
     }
 }
 
-// Global Toast Function
+// --- 7. UTILITIES & MODALS ---
+
+function togglePaymentSection() {
+    const type = document.querySelector('input[name="paymentType"]:checked');
+    const details = document.getElementById('payment-details-section');
+    const confirm = document.getElementById('confirmation-method-section');
+
+    if (type && type.value === 'now') {
+        if (details) details.classList.remove('hidden');
+        if (confirm) confirm.classList.add('hidden');
+    } else {
+        if (details) details.classList.add('hidden');
+        if (confirm) confirm.classList.remove('hidden');
+    }
+}
+
+function updatePaymentInfo() {
+    // Logic to update displayed number based on selected wallet (bkash/nagad)
+    // For now just placeholder or simple logic if needed
+    // This was likely used to show "Send money to: 01xxx"
+    // If not critical, keep empty or simple.
+    const select = document.getElementById('payment');
+    if (!select) return;
+    // Implementation depends on HTML structure for showing number.
+}
+
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
+// --- Dynamic Modal / Alert Logic ---
+function ensureModalExists() {
+    if (!document.getElementById('custom-alert')) {
+        const modalHTML = `
+        <div id="custom-alert" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+            <div class="glass-card w-[400px] max-w-[90%] p-6 rounded-2xl shadow-2xl transform scale-95 transition-transform duration-300" id="custom-alert-box">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4" id="alert-icon-bg">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl text-red-500" id="alert-icon"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2" id="alert-title">Attention</h3>
+                    <div class="text-slate-300 text-sm leading-relaxed mb-6" id="alert-msg">Message</div>
+                    <button onclick="closeCustomAlert()" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]" id="alert-btn">Understood</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+}
+
+window.showErrorModal = function (title, msg) {
+    ensureModalExists();
+    const modal = document.getElementById('custom-alert');
+    if (!modal) { alert(title + "\n" + msg); return; } // Fallback
+
+    document.getElementById('alert-title').innerText = title;
+    document.getElementById('alert-msg').innerText = msg;
+
+    // Style for Error
+    document.getElementById('alert-icon-bg').className = "w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
+    document.getElementById('alert-icon').className = "fa-solid fa-triangle-exclamation text-2xl text-red-500";
+    const btn = document.getElementById('alert-btn');
+    btn.className = "w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]";
+    btn.innerText = "Close";
+
+    // Show
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    document.getElementById('custom-alert-box').classList.remove('scale-95');
+    document.getElementById('custom-alert-box').classList.add('scale-100');
+}
+
+window.showSuccessModal = function (title = "Success", msg = "Operation completed successfully.") {
+    ensureModalExists();
+    const modal = document.getElementById('custom-alert');
+    if (!modal) { alert(msg); return; }
+
+    document.getElementById('alert-title').innerText = title;
+    document.getElementById('alert-msg').innerText = msg;
+
+    // Style for Success
+    document.getElementById('alert-icon-bg').className = "w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4";
+    document.getElementById('alert-icon').className = "fa-solid fa-check text-2xl text-green-500";
+    const btn = document.getElementById('alert-btn');
+    btn.className = "w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform hover:scale-[1.02]";
+    btn.innerText = "Continue";
+
+    // Show
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    document.getElementById('custom-alert-box').classList.remove('scale-95');
+    document.getElementById('custom-alert-box').classList.add('scale-100');
+}
+
+window.showLoginRequiredModal = function () {
+    showErrorModal("Login Required", "You must be logged in to perform this action.");
+    // Optionally redirect to login on close?
+    // For now simple alert
+}
+
+window.closeCustomAlert = function () {
+    const modal = document.getElementById('custom-alert');
+    if (modal) {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        document.getElementById('custom-alert-box').classList.add('scale-95');
+        document.getElementById('custom-alert-box').classList.remove('scale-100');
+    }
+}
 window.showToast = function (message, type = 'success') {
-    const toast = document.getElementById('toast');
-    if (!toast) return;
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none';
+        document.body.appendChild(toast);
+    }
+
+    // Reset classes
+    toast.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center transition-all duration-300 transform translate-y-10 opacity-0';
 
     // Icon based on type
-    const icon = type === 'error' ? '<i class="fa-solid fa-circle-xmark mr-2"></i>' : '<i class="fa-solid fa-check-circle mr-2"></i>';
-
-    toast.innerHTML = icon + message;
-    toast.className = type === 'error' ? 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center show' : 'show';
-    // Note: The CSS handles #toast properties, but we ensure 'show' class is added. 
-    // If CSS has specific colors for error, we might not need inline styles, but style.css only showed generic #toast green color.
-    // Let's override color if error.
+    const icon = type === 'error' ? '<i class="fa-solid fa-circle-xmark mr-2 text-red-500"></i>' : '<i class="fa-solid fa-check-circle mr-2 text-green-500"></i>';
+    toast.innerHTML = icon + `<span>${message}</span>`;
 
     if (type === 'error') {
-        toast.style.backgroundColor = 'rgba(239, 68, 68, 0.95)'; // Red
+        toast.classList.add('border', 'border-red-500/50');
     } else {
-        toast.style.backgroundColor = 'rgba(13, 148, 136, 0.95)'; // Teal/Green as per CSS
+        toast.classList.add('border', 'border-green-500/50');
     }
+
+    // Show
+    setTimeout(() => {
+        toast.classList.remove('translate-y-10', 'opacity-0');
+    }, 10);
 
     // Hide after 3s
     setTimeout(() => {
-        toast.classList.remove('show');
+        toast.classList.add('translate-y-10', 'opacity-0');
     }, 3000);
 }
