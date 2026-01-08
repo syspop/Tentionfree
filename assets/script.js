@@ -616,7 +616,12 @@ async function loadProductDetailsPage() {
         await fetchProducts();
     }
 
-    const product = products.find(p => p.id === id);
+    // Use searchId for lookup (handles both number and string slugs)
+    const product = products.find(p =>
+        p.id == searchId ||
+        (p.name && p.name.toLowerCase().replace(/ /g, '-') === searchId) ||
+        (p.name && p.name.toLowerCase().replace(/ /g, '%20') === searchId.replace(/-/g, '%20'))
+    );
     if (!product) {
         document.getElementById('product-details-container').innerHTML = `
             <div class="col-span-full text-center py-20">
