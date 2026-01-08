@@ -591,23 +591,25 @@ window.addEventListener('load', () => {
 async function loadProductDetailsPage() {
     console.log("Loading Product Details Page...");
     const params = new URLSearchParams(window.location.search);
-    let id = parseInt(params.get('id'));
+    let id = params.get('id'); // Keep as string initially
 
-    // SSR Fallback: Get ID from URL path (e.g., /product/123)
+    // SSR Fallback: Get ID from URL path (e.g., /product/123 or /product/netflix-premium)
     if (!id) {
         const parts = window.location.pathname.split('/');
         // Usually last part, but might have trailing slash
         const lastPart = parts.pop() || parts.pop();
-        id = parseInt(lastPart);
+        id = lastPart;
     }
 
     if (!id) {
-        // Only redirect if effectively no ID found (and it's not a generic listing page)
-        // Adjust logic if needed, but for now safe redirect to shop
-        console.warn("No ID found, redirecting.");
-        window.location.href = 'products';
+        console.warn("No ID found.");
+        // Do not auto-redirect immediately, let the user see the 404 from server if exists.
         return;
     }
+
+    // Normalize ID for comparison (if numeric, parse it, otherwise keep string)
+    const numericId = parseInt(id);
+    const searchId = isNaN(numericId) ? id.toLowerCase() : numericId; // numeric or lowercase slug
 
     // Wait for products to load if empty (fetch first if needed)
     if (!products || products.length === 0) {
@@ -1363,8 +1365,8 @@ function clearSearch() {
 // --- Product Details Modal Logic ---
 
 function openDetails(id) {
-    // Redirect to separate details page (SSR)
-    window.location.href = `product/${id}`;
+    // Open in separate NEW TAB (to prevent closing main list and satisfy 'alada page')
+    window.open(`product/${id}`, '_blank');
 }
 
 function closeDetails() {
