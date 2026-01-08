@@ -1175,7 +1175,7 @@
             const bg = document.getElementById('alert-icon-bg');
             const title = document.getElementById('alert-title');
 
-            if (!modal) return alert(msg); // Fallback
+            if (!modal) return console.error("Modal not found: " + msg); // Fallback
 
             document.getElementById('alert-msg').innerText = msg;
 

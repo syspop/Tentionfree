@@ -302,14 +302,16 @@
 
                 const data = await res.json();
                 if (data.success) {
-                    // Success! Reload logic to show updated button states
-                    loadProducts();
+                    showToast("Status updated successfully");
                 } else {
-                    alert("Failed to update status: " + (data.message || "Unknown error"));
+                    showToast("Failed to update status: " + (data.message || "Unknown error"), 'error');
+                    // Revert select check
+                    checkbox.checked = !isChecked;
                 }
-            } catch (e) {
-                console.error(e);
-                alert("Network error updating status");
+            } catch (err) {
+                console.error(err);
+                showToast("Network error updating status", 'error');
+                checkbox.checked = !isChecked;
             }
         }
     </script>
