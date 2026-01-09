@@ -35,11 +35,16 @@ body {
     display: flex;
     flex-direction: column;
     position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
     height: 100vh;
     padding: 20px;
     box-sizing: border-box;
     z-index: 1000;
     transition: transform 0.3s ease;
+    overflow-y: auto;
+    /* Ensure scrollability if content overflows */
 }
 
 .admin-logo {
