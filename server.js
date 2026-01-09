@@ -1697,6 +1697,28 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
     if (!productId || !rating) return res.status(400).json({ error: "Missing fields" });
 
     try {
+        // --- VERIFIED PURCHASE CHECK ---
+        const orders = await readLocalJSON('orders.json') || [];
+        const userEmail = req.user.email.toLowerCase().trim();
+
+        // Find if user has a COMPLETED order for this product
+        const hasPurchased = orders.some(o => {
+            const isUser = (o.email && o.email.toLowerCase().trim() === userEmail) ||
+                (o.customerEmail && o.customerEmail.toLowerCase().trim() === userEmail);
+
+            const isCompleted = o.status === 'completed';
+
+            const hasProduct = o.items && Array.isArray(o.items) && o.items.some(item => String(item.id) === String(productId));
+
+            return isUser && isCompleted && hasProduct;
+        });
+
+        if (!hasPurchased) {
+            // Check if admin is exempt? Maybe not.
+            return res.status(403).json({ error: "You must purchase and complete an order for this product before reviewing." });
+        }
+        // -------------------------------
+
         const reviews = await readLocalJSON('reviews.json') || [];
         const newReview = {
             id: Date.now(),
