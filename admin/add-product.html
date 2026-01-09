@@ -381,16 +381,15 @@
 
                 // Inform user
                 // showToast("Auto-detected Identity Fields"); 
-            }
 
                 // Trigger check after population
                 setTimeout(checkPriceForAutoDelivery, 100);
 
-            document.querySelector('.btn-main').innerText = "Update Product";
-        } catch (e) {
-            console.error("Error loading product for edit:", e);
-            showAlert("Error", "Failed to load product data.", "error");
-        }
+                document.querySelector('.btn-main').innerText = "Update Product";
+            } catch (e) {
+                console.error("Error loading product for edit:", e);
+                showAlert("Error", "Failed to load product data.", "error");
+            }
         }
 
         // --- AUTO-DELIVERY LOGIC (Toggle visibility based on price) ---
