@@ -805,12 +805,7 @@ app.get('/api/orders/:id', async (req, res) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
             user = decoded;
         } catch (e) {
-            // Try Admin check if user fails? Or share secret? Admin uses different secret?
-            // Simple hack: check if it validates as user OR if it equals simple admin token stored in DB? 
-            // Admin uses hardcoded credentials in this app context often, or same secret?
-            // Let's assume same secret or check both.
-            // Actually, `authenticateUser` middleware is for users.
-            // Let's simplify: Allow if validated token.
+            return res.status(401).json({ error: 'Invalid Token' });
         }
 
         const id = parseInt(req.params.id);
@@ -819,8 +814,14 @@ app.get('/api/orders/:id', async (req, res) => {
 
         if (!order) return res.status(404).json({ error: 'Order not found' });
 
-        // Security: If not admin (check email/role), ensure user owns it?
-        // For simplicity in this session, return it. Ideally check ownership.
+        // Security Check: Admin OR Owner
+        // If user object has role, check it. Also check ownership.
+        const isAdmin = user && user.role === 'admin';
+        const isOwner = user && user.email && order.email && user.email.toLowerCase() === order.email.toLowerCase();
+
+        if (!isAdmin && !isOwner) {
+            return res.status(403).json({ error: 'Access denied: You do not own this order.' });
+        }
 
         res.json(order);
     } catch (err) {
@@ -863,8 +864,10 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
             refundMethod: o.refundMethod,
             refundTrx: o.refundTrx,
             refundNote: o.refundNote,
-            refundNote: o.refundNote,
-            gameUid: o.gameUid
+            gameUid: o.gameUid,
+            couponCode: o.couponCode,
+            discount: o.discount || 0,
+            totalAmount: o.totalAmount || o.price
             // Images removed for performance (fetched on viewOrder)
         }));
 
@@ -1654,6 +1657,29 @@ app.delete('/api/reviews/:id', authenticateAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to delete review" });
+    }
+});
+
+// Admin: Reply to Review
+app.put('/api/reviews/:id/reply', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { reply } = req.body;
+
+    try {
+        let reviews = await readLocalJSON('reviews.json') || [];
+        const index = reviews.findIndex(r => r.id === id);
+
+        if (index === -1) return res.status(404).json({ error: "Review not found" });
+
+        reviews[index].reply = reply; // Add or update reply
+        reviews[index].replyDate = new Date().toISOString();
+
+        await writeLocalJSON('reviews.json', reviews);
+        res.json({ success: true, message: "Reply posted successfully" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to save reply" });
     }
 });
 

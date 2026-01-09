@@ -15,9 +15,8 @@ body {
     background: var(--bg-body);
     margin: 0;
     padding: 0;
-    /* Remove default padding for full screen */
     color: var(--dark);
-    display: flex;
+    /* display: flex;  <-- REMOVED to prevent layout squeezing */
     min-height: 100vh;
 }
 
@@ -128,10 +127,6 @@ body {
 }
 
 .admin-box {
-    /* Resetting generic card styles to fit new layout if needed,
-       but we essentially just treat admin-main as the container now.
-       We might need to keep responsive admin-box behavior?
-       Let's redefine it to be transparent/fluid or just remove its constraint. */
     max-width: 1200px;
     margin: 0 auto;
     background: transparent;
@@ -139,6 +134,14 @@ body {
     border-radius: 0;
     box-shadow: none;
     animation: fadeIn 0.5s ease-out;
+}
+
+/* Fix: When admin-box acts as admin-main, enforce the sidebar offset */
+.admin-box.admin-main {
+    margin: 30px 30px 30px 290px !important;
+    /* 260px (sidebar) + 30px (gap) */
+    width: auto;
+    max-width: 1400px;
 }
 
 /* Mobile Toggle */
@@ -171,6 +174,11 @@ body {
         margin-left: 0;
         width: 100%;
         padding: 20px;
+    }
+
+    .admin-box.admin-main {
+        margin: 20px !important;
+        width: auto;
     }
 
     .menu-toggle {
@@ -525,6 +533,7 @@ td:last-child {
     z-index: 10000;
     pointer-events: none;
 }
+
 .toast {
     background: rgba(16, 185, 129, 0.9);
     backdrop-filter: blur(10px);
@@ -535,21 +544,38 @@ td:last-child {
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     animation: slideInRight 0.3s ease-out forwards;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     pointer-events: auto;
     font-weight: 500;
     font-size: 14px;
 }
+
 .toast.error {
     background: rgba(239, 68, 68, 0.9);
 }
+
 @keyframes slideInRight {
-    from { transform: translateX(100%); opacity:0; }
-    to { transform: translateX(0); opacity:1; }
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
+
 @keyframes slideOutRight {
-    from { transform: translateX(0); opacity:1; }
-    to { transform: translateX(120%); opacity:0; }
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(120%);
+        opacity: 0;
+    }
 }

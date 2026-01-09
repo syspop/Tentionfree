@@ -622,6 +622,29 @@
     </a>
 
     <!-- Footer -->
+    <div class="bottom-nav md:hidden">
+        <a href="/" class="bottom-nav-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="products" class="bottom-nav-item">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Shop</span>
+        </a>
+        <div class="bottom-nav-item">
+            <button onclick="toggleCart()" class="bottom-nav-fab">
+                <i class="fa-solid fa-cart-shopping"></i>
+            </button>
+        </div>
+        <a href="index.html#contact" class="bottom-nav-item">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>Contact</span>
+        </a>
+        <a href="profile" class="bottom-nav-item">
+            <i class="fa-solid fa-user"></i>
+            <span>Profile</span>
+        </a>
+    </div>
 
 
     <!-- Shopping Cart Sidebar -->
@@ -1129,7 +1152,7 @@
             <i class="fa-solid fa-bolt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-medium">Services</span>
         </a>
-        <a href="profile.html"
+        <a href="profile.html" id="mobile-auth-link"
             class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
             <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-medium">Profile</span>

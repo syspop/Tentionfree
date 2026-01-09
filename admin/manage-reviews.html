@@ -203,6 +203,12 @@
                 const productName = productsMap[r.productId] || 'Unknown Product';
                 const date = new Date(r.date).toLocaleDateString() + ' ' + new Date(r.date).toLocaleTimeString();
 
+                const replyHtml = r.reply ?
+                    `<div style="margin-top:10px; padding:10px; background:rgba(59, 130, 246, 0.1); border-left: 2px solid #3b82f6; border-radius:4px;">
+                        <div style="font-size:11px; font-weight:bold; color:#3b82f6; margin-bottom:2px;">TargettFree Reply:</div>
+                        <div style="font-size:13px; color:#cbd5e1;">${r.reply}</div>
+                     </div>` : '';
+
                 return `
                 <div class="review-card">
                     <div class="review-content">
@@ -217,6 +223,18 @@
                         <div class="review-date" style="margin-top:10px;">
                             ${date}
                         </div>
+                        
+                        ${replyHtml}
+
+                        <div style="margin-top:15px; display:flex; gap:10px;">
+                            <input type="text" id="reply-input-${r.id}" placeholder="Write a reply..." 
+                                style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; padding:8px 12px; border-radius:6px; font-size:13px;">
+                            <button onclick="submitReply(${r.id})" 
+                                style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:6px; font-size:13px; cursor:pointer;">
+                                Reply
+                            </button>
+                        </div>
+
                     </div>
                     <button class="delete-btn" onclick="deleteReview(${r.id})" title="Delete Review">
                         <i class="fa-solid fa-trash"></i>
@@ -224,6 +242,34 @@
                 </div>
                 `;
             }).join('');
+        }
+
+        async function submitReply(id) {
+            const input = document.getElementById(`reply-input-${id}`);
+            const replyText = input.value.trim();
+
+            if (!replyText) return showToast("Please write a reply");
+
+            try {
+                const res = await fetch(`/api/reviews/${id}/reply`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ reply: replyText })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Reply Posted!");
+                    loadReviews();
+                } else {
+                    showAlert("Error", "Failed to post reply", "error");
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         async function deleteReview(id) {

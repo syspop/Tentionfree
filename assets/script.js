@@ -919,72 +919,50 @@ function renderProducts() {
             `;
         }
 
+        card.className = opacityClass;
+        card.className = opacityClass;
+
+        // Variant Logic
+        let variantHtml = '';
+        if (product.variants && product.variants.length > 0) {
+            variantHtml = `
+                <select id="variant-select-${product.id}" onclick="event.stopPropagation()" onchange="updateCardPrice(${product.id})" class="card-select">
+                    ${product.variants.map((v, i) => `<option value="${i}">${v.label}</option>`).join('')}
+                </select>
+            `;
+        }
+
         card.innerHTML = `
-            <div class="h-32 md:h-48 bg-gradient-to-b from-white/5 to-transparent flex items-center justify-center relative overflow-hidden p-4 md:p-8 group cursor-pointer ${opacityClass}" onclick="openDetails(${product.id})">
-                <img src="${product.image}" alt="${product.name}" loading="lazy" width="200" height="200"
-                    class="h-full max-w-full object-contain drop-shadow-2xl transform group-hover:scale-110 transition duration-500 aspect-square"
-                    onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
-                ${badgeHtml}
-                
-                <!-- Desktop View Details Button (Hover) -->
-                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center hidden md:flex">
-                    <button onclick="event.stopPropagation(); openDetails(${product.id})" class="text-xs font-bold text-white bg-white/20 hover:bg-brand-500 backdrop-blur-sm px-4 py-2 rounded-full flex items-center transition">
-                        <i class="fa-regular fa-eye mr-2"></i> View Details
-                    </button>
+            <div class="product-card-modern group" onclick="openDetails(${product.id})">
+                <div class="card-image-container">
+                    ${badgeHtml ? `<div id="badge-${product.id}" class="card-badge bg-gradient-to-r from-brand-600 to-brand-400 border-none shadow-lg shadow-brand-500/20">${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF</div>` : ''}
+                    <img src="${product.image}" loading="lazy" class="card-image" alt="${product.name}" onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
                 </div>
+                <div class="card-content">
+                    <span class="card-category text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">${product.category}</span>
+                    <h3 class="card-title text-sm font-bold text-white mb-2 truncate">${product.name}</h3>
+                    
+                    ${variantHtml}
 
-                <!-- Mobile View Button (Always Visible) -->
-                <div class="absolute bottom-1 left-1 md:hidden z-10">
-                    <button onclick="event.stopPropagation(); openDetails(${product.id})" class="bg-black/60 text-white text-[9px] px-2 py-1 rounded backdrop-blur-md border border-white/10 flex items-center shadow-lg">
-                        <i class="fa-regular fa-eye mr-1"></i> View
-                    </button>
-                </div>
-            </div>
-            <div class="p-3 md:p-5 flex-1 flex flex-col relative ${opacityClass}">
-                <script type="application/ld+json">
-                {
-                  "@context": "https://schema.org/",
-                  "@type": "Product",
-                  "name": "${product.name}",
-                  "image": "https://tentionfree.store/${product.image}",
-                  "description": "${product.desc}",
-                  "sku": "${product.id}",
-                  "brand": {
-                    "@type": "Brand",
-                    "name": "Tention Free"
-                  },
-                  "offers": {
-                    "@type": "Offer",
-                    "url": "https://tentionfree.store/products",
-                    "priceCurrency": "BDT",
-                    "price": "${product.price}",
-                    "availability": "${isOutOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock'}",
-                    "itemCondition": "https://schema.org/NewCondition"
-                  },
-                  "aggregateRating": {
-                    "@type": "AggregateRating",
-                    "ratingValue": "5",
-                    "bestRating": "5",
-                    "ratingCount": "${Math.floor(Math.random() * (500 - 100 + 1)) + 100}"
-                  }
-                }
-                </script>
-                <div class="absolute top-2 right-2 md:top-4 md:right-4 bg-dark-bg/90 backdrop-blur border border-white/10 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-lg transition-all z-10 ${addCartCursor}" ${addCartAction} aria-label="Add to Cart">
-                    <i class="fa-solid fa-plus text-xs md:text-base"></i>
-                </div>
-                
-                <div class="text-[9px] md:text-[10px] text-brand-400 font-bold uppercase tracking-widest mb-1 md:mb-2 mt-0.5">${product.category}</div>
-                <h3 class="text-sm md:text-lg font-bold text-white mb-1 leading-tight pr-8 md:pr-12 cursor-pointer hover:text-brand-400 transition" onclick="openDetails(${product.id})">${product.name}</h3>
-                <p class="text-gray-400 text-[10px] md:text-xs mb-2 md:mb-3 flex-1 line-clamp-2">${product.desc}</p>
-                
-                ${variantSelectorHtml}
-
-                <div class="flex items-center justify-between mt-auto pt-3 md:pt-4 border-t border-white/5">
-                    <div class="flex flex-col">
-                        <span id="price-original-${product.id}" class="text-[10px] md:text-xs text-gray-500 line-through">৳${product.originalPrice}</span>
-                        <span id="price-current-${product.id}" class="text-base md:text-xl font-bold text-white">৳${product.price}</span>
+                    <div class="flex items-center justify-between mt-2">
+                        <div class="flex flex-col">
+                            <span id="price-original-${product.id}" class="text-[10px] text-slate-500 line-through">৳${product.originalPrice}</span>
+                            <span id="price-current-${product.id}" class="text-base font-bold text-white">৳${product.price}</span>
+                        </div>
                     </div>
-                    ${buyButtonHtml}
+
+                    <div class="action-row">
+                        ${!isOutOfStock ? `
+                            <button onclick="event.stopPropagation(); buyNow(${product.id}, 'card')" class="btn-buy-now">
+                                Buy Now
+                            </button>
+                            <button onclick="event.stopPropagation(); addToCart(${product.id}, true, 'card')" class="btn-add-cart" title="Add to Cart">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        ` : `
+                            <button class="w-full bg-slate-800 text-slate-500 text-xs py-2 rounded-lg cursor-not-allowed border border-slate-700">Stock Out</button>
+                        `}
+                    </div>
                 </div>
             </div>
         `;
@@ -2708,8 +2686,11 @@ window.toggleReviewForm = function () {
 
 window.loadReviews = async function (productId) {
     currentProductReviewId = productId;
-    const list = document.getElementById('modal-reviews-list');
-    const summary = document.getElementById('modal-rating-summary');
+
+    // Support both Modal and Page containers
+    const list = document.getElementById('modal-reviews-list') || document.getElementById('page-reviews-list');
+    const summary = document.getElementById('modal-rating-summary') || document.getElementById('page-rating-summary');
+
     if (!list) return;
 
     list.innerHTML = '<p class="text-xs text-slate-500 italic">Loading...</p>';
@@ -2732,17 +2713,25 @@ window.loadReviews = async function (productId) {
             return;
         }
 
-        list.innerHTML = reviews.map(r => `
-            <div class="bg-slate-800 p-2 rounded border border-slate-700">
+        list.innerHTML = reviews.reverse().map(r => `
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-3">
                 <div class="flex justify-between items-start">
-                    <span class="text-xs font-bold text-slate-200">${r.userName}</span>
+                    <span class="text-sm font-bold text-slate-200">${r.userName || r.name || 'User'}</span>
                     <span class="text-[10px] text-yellow-500">${'★'.repeat(r.rating)}</span>
                 </div>
-                <p class="text-xs text-slate-400 mt-1">${r.comment}</p>
-                <div class="flex justify-between mt-1">
+                <p class="text-xs text-slate-300 mt-1 leading-relaxed">${r.comment}</p>
+                <div class="flex justify-between mt-2">
                      <span class="text-[9px] text-slate-600">${new Date(r.date).toLocaleDateString()}</span>
-                     <span class="text-[9px] text-green-500"><i class="fa-solid fa-check-circle"></i> Verified</span>
+                     <span class="text-[9px] text-green-500"><i class="fa-solid fa-check-circle"></i> Verified Purchase</span>
                 </div>
+                ${r.reply ? `
+                    <div class="mt-3 ml-2 pl-3 border-l-2 border-brand-500 bg-brand-500/5 p-2 rounded-r-lg">
+                        <div class="text-[10px] font-bold text-brand-400 mb-1">
+                            <i class="fa-solid fa-reply mr-1"></i> TentionFree Response
+                        </div>
+                        <p class="text-xs text-slate-400 italic">"${r.reply}"</p>
+                    </div>
+                ` : ''}
             </div>
         `).join('');
 
@@ -3091,48 +3080,17 @@ function submitReviewPage() {
     window.submitReview();
 }
 
-// --- REVIEWS LOGIC (LocalStorage Based) ---
-function loadReviews(productId) {
-    const list = document.getElementById('page-reviews-list');
-    const summary = document.getElementById('page-rating-summary');
+// --- 7. UTILITIES & MODALS ---
 
-    if (!list) return;
-
-    list.innerHTML = '<p class="text-slate-500 text-sm italic">Loading reviews...</p>';
-
-    // Simulate Network Delay
-    setTimeout(() => {
-        const allReviews = JSON.parse(localStorage.getItem('tentionfree_reviews')) || [];
-        const reviews = allReviews.filter(r => r.productId == productId);
-
-        if (reviews.length === 0) {
-            list.innerHTML = '<p class="text-slate-500 text-sm italic">No reviews yet. Be the first to review!</p>';
-            if (summary) summary.innerText = '(0.0)';
-            return;
-        }
-
-        // Calculate Average
-        const avg = reviews.reduce((sum, r) => sum + parseInt(r.rating), 0) / reviews.length;
-        if (summary) summary.innerText = `(${avg.toFixed(1)})`;
-
-        list.innerHTML = '';
-        reviews.reverse().forEach(r => {
-            const stars = '⭐'.repeat(parseInt(r.rating));
-            list.innerHTML += `
-                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 animate-fade-in">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="text-white font-bold text-sm block">${r.name || 'Anonymous'}</span>
-                            <span class="text-yellow-500 text-xs">${stars}</span>
-                        </div>
-                        <span class="text-slate-500 text-[10px]">${r.date}</span>
-                    </div>
-                    <p class="text-slate-300 text-sm leading-relaxed">${r.comment}</p>
-                </div>
-            `;
-        });
-    }, 500);
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
 }
+
 
 function submitReview() {
     console.log("Submit Review Called");
@@ -3219,8 +3177,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize Cart Badge
+    // Initialize Cart Badge
     updateCartCount();
+
+    // Check Login State for UI
+    checkLogin();
 });
+
+// --- Authentication & UI Logic ---
+function checkLogin() {
+    const user = localStorage.getItem('user');
+    const dtLink = document.querySelector('a[href="login"]');
+    const mbLink = document.getElementById('mobile-auth-link');
+
+    if (user) {
+        // Logged In
+        if (dtLink) {
+            dtLink.innerHTML = `
+                <i class="fa-solid fa-user text-xl mr-2"></i>
+                <span class="text-sm font-medium">Profile</span>
+            `;
+            dtLink.href = 'profile.html';
+        }
+
+        if (mbLink) {
+            mbLink.innerHTML = `
+                <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Profile</span>
+            `;
+            mbLink.href = 'profile.html';
+            mbLink.classList.remove('text-slate-400');
+            mbLink.classList.add('text-brand-500');
+            mbLink.closest('a').classList.add('text-brand-500');
+        }
+    } else {
+        // Guest
+        if (dtLink) {
+            dtLink.innerHTML = `
+                 <i class="fa-solid fa-user text-xl mr-2"></i>
+                 <span class="text-sm font-medium">Login</span>
+            `;
+            dtLink.href = 'login';
+        }
+
+        if (mbLink) {
+            mbLink.innerHTML = `
+                <i class="fa-solid fa-sign-in-alt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Login</span>
+            `;
+            mbLink.href = 'login';
+            mbLink.classList.add('text-slate-400');
+            mbLink.classList.remove('text-brand-500');
+            mbLink.closest('a').classList.remove('text-brand-500');
+        }
+    }
+}
 
 
 
