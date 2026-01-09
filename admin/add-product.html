@@ -232,11 +232,12 @@
                 <input type="text" placeholder="Placeholder (e.g. Upload Proof)" class="input-box" style="margin:0" value="${placeholder}">
                 
                 <select class="input-box" style="margin:0; padding:8px;" onchange="updatePlaceholder(this)">
-                    <option value="text" ${type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="text" ${type === 'text' ? 'selected' : ''}>Short Text</option>
+                    <option value="textarea" ${type === 'textarea' ? 'selected' : ''}>Long Text</option>
                     <option value="number" ${type === 'number' ? 'selected' : ''}>Number</option>
                     <option value="email" ${type === 'email' ? 'selected' : ''}>Email</option>
-                    <option value="textarea" ${type === 'textarea' ? 'selected' : ''}>Short Note</option>
-                    <option value="file" ${type === 'file' ? 'selected' : ''}>Screenshot (File)</option>
+                    <option value="tel" ${type === 'tel' ? 'selected' : ''}>Phone Number</option>
+                    <option value="file" ${type === 'file' ? 'selected' : ''}>File / Image</option>
                 </select>
 
                 <label style="font-size:12px; display:flex; align-items:center; gap:5px; color:var(--gray); cursor:pointer;">
