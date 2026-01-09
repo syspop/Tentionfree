@@ -946,8 +946,8 @@ function renderProducts() {
         card.innerHTML = `
             <div class="product-card-modern group" onclick="openDetails(${product.id})">
                 <div class="card-image-container">
-                    ${badgeHtml ? `<div id="badge-${product.id}" class="card-badge bg-gradient-to-r from-brand-600 to-brand-400 border-none shadow-lg shadow-brand-500/20">${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF</div>` : ''}
                     <img src="${product.image}" loading="lazy" class="card-image" alt="${product.name}" onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
+                    ${badgeHtml ? `<div id="badge-${product.id}" class="card-badge bg-gradient-to-r from-brand-600 to-brand-400 border-none shadow-lg shadow-brand-500/20">${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF</div>` : ''}
                 </div>
                 <div class="card-content">
                     <span class="card-category text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">${product.category}</span>
