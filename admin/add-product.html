@@ -123,8 +123,8 @@
 
                 <div id="custom-inputs-container"></div>
 
-                <button onclick="addCustomInputRow()"
-                    style="background:var(--bg-card); color:var(--brand); border:1px dashed var(--brand); padding:8px 15px; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:5px; hover:background:rgba(59,130,246,0.1);">
+                <button onclick="addCustomInputRow()" class="action-btn"
+                    style="background:var(--bg-card); color:var(--brand); border:1px dashed var(--brand); padding:8px 15px; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:5px;">
                     + Add Custom Field
                 </button>
             </div>
@@ -604,7 +604,6 @@
         }
 
         function resetForm() {
-            document.querySelectorAll('input, textarea').forEach(i => i.value = "");
             document.querySelectorAll('input, textarea').forEach(i => i.value = "");
             document.getElementById('variants-container').innerHTML = '';
             addVariantRow('1 Month', '', '');
