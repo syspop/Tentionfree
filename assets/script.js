@@ -1217,15 +1217,15 @@ function initCheckoutPage() {
                     customFieldsContainer.appendChild(wrapper);
                 });
             } else {
-                // FALLBACK: Legacy Game UID Logic for older products without customFields schema
-                // (Only apply if NO custom fields were manually defined to avoid duplication if migration happened)
+                // FALLBACK: Legacy Game UID Logic
                 const lowerName = item.name.toLowerCase();
                 const lowerCat = (item.category || '').toLowerCase();
-                let isGaming = lowerCat.includes('game') || lowerCat.includes('gaming') || lowerName.includes('pubg') || lowerName.includes('freefire') || lowerName.includes('topup');
 
-                // However, user specifically wants to control this via admin now. 
-                // We should probably rely ONLY on customFields if we want full control.
-                // BUT to prevent breaking existing "Gaming" items that rely on hardcoded logic, we can keep a fallback.
+                // Aggressive check: if name has these keywords, it IS a game.
+                let isGaming = lowerCat.includes('game') || lowerCat.includes('gaming') ||
+                    lowerName.includes('pubg') || lowerName.includes('free') ||
+                    lowerName.includes('topup') || lowerName.includes('uc') ||
+                    lowerName.includes('diamond');
 
                 if (isGaming && (!item.customFields || item.customFields.length === 0)) {
                     hasCustomFields = true;

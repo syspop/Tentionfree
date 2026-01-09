@@ -123,7 +123,7 @@
 
                 <div id="custom-inputs-container"></div>
 
-                <button onclick="addCustomInputRow()" class="action-btn"
+                <button type="button" onclick="addCustomInputRow()" class="action-btn"
                     style="background:var(--bg-card); color:var(--brand); border:1px dashed var(--brand); padding:8px 15px; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:5px;">
                     + Add Custom Field
                 </button>
@@ -242,7 +242,7 @@
                 <label style="font-size:12px; display:flex; align-items:center; gap:5px; color:var(--gray); cursor:pointer;">
                     <input type="checkbox" ${checked} style="width:auto;"> Req.
                 </label>
-                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
+                <button type="button" onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
             `;
             container.appendChild(div);
         }
@@ -378,13 +378,26 @@
             }
         }
 
-        // Hook into inputs
-        document.getElementById('variants-container').addEventListener('input', checkPriceForAutoDelivery);
+        // Hook into inputs with DEBOUNCE to prevent performance issues
+        let debounceTimer;
+        document.getElementById('variants-container').addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(checkPriceForAutoDelivery, 300);
+        });
+
+        // Prevent Enter Key form submission
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && event.target.tagName === 'INPUT') {
+                event.preventDefault();
+                return false;
+            }
+        });
+
         // Also check on load/add row
         const originalAddVariantRow = addVariantRow;
         addVariantRow = function (l, p, o) {
             originalAddVariantRow(l, p, o);
-            checkPriceForAutoDelivery();
+            setTimeout(checkPriceForAutoDelivery, 100);
         }
 
         // --- IMAGE LOGIC (Updated for File Upload) ---
