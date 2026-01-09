@@ -127,8 +127,7 @@
     <script src="assets/script.js?v=1.7" defer></script>
 </head>
 
-<body
-    class="antialiased min-h-screen flex flex-col relative text-slate-100 bg-slate-950 pb-24 md:pb-0 safe-area-bottom">
+<body class="antialiased min-h-screen flex flex-col relative text-slate-100 bg-slate-950 md:pb-0">
 
     <!-- Loading Screen -->
     <div id="loader">
@@ -785,29 +784,67 @@
     </div>
 
     <!-- Mobile Bottom Navigation -->
-    <div style="z-index: 10001 !important;"
-        class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 md:hidden safe-area-bottom h-20 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
-        <div class="grid grid-cols-4 h-full">
+    <div class="fixed bottom-0 left-0 right-0 z-[10001] md:hidden">
+        <!-- Glass Container -->
+        <div
+            class="absolute inset-0 bg-slate-950/80 backdrop-blur-xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+        </div>
+
+        <!-- Menu Items -->
+        <div class="relative grid grid-cols-4 h-20 items-center justify-items-center">
+            <!-- Home -->
             <a href="/"
-                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
-                <i class="fa-solid fa-house mb-1 text-xl group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-medium">Home</span>
+                class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-brand-400 transition-all duration-300 group">
+                <div class="relative">
+                    <i
+                        class="fa-solid fa-house text-xl mb-1 group-hover:scale-110 group-hover:-translate-y-1 transition-transform duration-300 relative z-10"></i>
+                    <div
+                        class="absolute inset-0 bg-brand-500/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    </div>
+                </div>
+                <span class="text-[10px] font-medium tracking-wide">Home</span>
             </a>
-            <a href="products" class="flex flex-col items-center justify-center text-brand-500 transition-colors group">
-                <i class="fa-solid fa-store mb-1 text-xl group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-medium">Shop</span>
+
+            <!-- Shop -->
+            <a href="products"
+                class="flex flex-col items-center gap-1 p-2 text-brand-400 transition-all duration-300 group">
+                <div class="relative">
+                    <i
+                        class="fa-solid fa-store text-xl mb-1 group-hover:scale-110 group-hover:-translate-y-1 transition-transform duration-300 relative z-10"></i>
+                    <div
+                        class="absolute inset-0 bg-brand-500/20 blur-lg rounded-full opacity-100 transition-opacity duration-300">
+                    </div>
+                </div>
+                <span class="text-[10px] font-medium tracking-wide">Shop</span>
             </a>
+
+            <!-- Services -->
             <a href="services"
-                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
-                <i class="fa-solid fa-bolt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-medium">Services</span>
+                class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-brand-400 transition-all duration-300 group">
+                <div class="relative">
+                    <i
+                        class="fa-solid fa-bolt text-xl mb-1 group-hover:scale-110 group-hover:-translate-y-1 transition-transform duration-300 relative z-10"></i>
+                    <div
+                        class="absolute inset-0 bg-brand-500/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    </div>
+                </div>
+                <span class="text-[10px] font-medium tracking-wide">Services</span>
             </a>
+
+            <!-- Profile -->
             <a href="profile.html"
-                class="flex flex-col items-center justify-center text-slate-400 hover:text-brand-500 transition-colors group">
-                <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-medium">Profile</span>
+                class="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-brand-400 transition-all duration-300 group">
+                <div class="relative">
+                    <i
+                        class="fa-solid fa-user text-xl mb-1 group-hover:scale-110 group-hover:-translate-y-1 transition-transform duration-300 relative z-10"></i>
+                    <div
+                        class="absolute inset-0 bg-brand-500/20 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    </div>
+                </div>
+                <span class="text-[10px] font-medium tracking-wide">Profile</span>
             </a>
         </div>
+    </div>
 </body>
 
 </html>

@@ -1,3 +1,23 @@
+// --- Auth Protection ---
+(function checkAuthProtection() {
+    const path = window.location.pathname;
+    const token = localStorage.getItem('userToken');
+
+    // Protected Routes (User must be logged in)
+    if (path.includes('profile.html')) {
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+    }
+
+    // Public/Guest Routes (User must NOT be logged in)
+    if (path.includes('login.html') || path.includes('register.html')) {
+        if (token) {
+            window.location.href = 'profile.html';
+        }
+    }
+})();
+
 // --- Data ---
 function createVariants(basePrice, baseOriginal) {
     return [
@@ -9,15 +29,6 @@ function createVariants(basePrice, baseOriginal) {
 }
 
 // Enriched Product Data with details
-// --- Data ---
-function createVariants(basePrice, baseOriginal) {
-    return [
-        { label: "1 Month", price: basePrice, originalPrice: baseOriginal },
-        { label: "3 Months", price: basePrice * 3 * 0.95, originalPrice: baseOriginal * 3 }, // 5% off
-        { label: "6 Months", price: basePrice * 6 * 0.90, originalPrice: baseOriginal * 6 }, // 10% off
-        { label: "12 Months", price: basePrice * 12 * 0.85, originalPrice: baseOriginal * 12 } // 15% off
-    ].map(v => ({ ...v, price: Math.round(v.price), originalPrice: Math.round(v.originalPrice) }));
-}
 
 // Default Products Data (used for seeding)
 const defaultProducts = [
