@@ -111,7 +111,7 @@
                     <td>
                         <button onclick="editProduct(${p.id})" class="action-btn edit-btn"><i class="fa-solid fa-pen"></i></button>
                         <button onclick="deleteProduct(${p.id})" class="action-btn delete-btn"><i class="fa-solid fa-trash"></i></button>
-                        <button onclick="copyProductLink(${p.id})" class="action-btn" style="background:#0ea5e9; margin-left:5px;" title="Copy Product Link">
+                        <button onclick="copyProductLink(${p.id}, '${p.name.replace(/'/g, "\\'")}')" class="action-btn" style="background:#0ea5e9; margin-left:5px;" title="Copy Product Link">
                             <i class="fa-solid fa-copy"></i>
                         </button>
                     </td>
@@ -131,16 +131,41 @@
         }
 
         // --- COPY LINK FUNCTION ---
-        function copyProductLink(id) {
-            // Construct the clean URL (e.g. https://domain.com/?id=123)
-            const url = `${window.location.origin}/?id=${id}`;
+        function copyProductLink(id, name) {
+            // Generate Slug Logic (Must match Server Logic: name-id)
+            const slug = name.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with dash
+                .replace(/(^-|-$)/g, '');    // Trim dashes
 
-            navigator.clipboard.writeText(url).then(() => {
+            // URL Structure: /product/slug-id
+            const fullSlug = slug + '-' + id;
+            const url = `${window.location.origin}/product/${fullSlug}`;
+
+            // Robust Copy Logic
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast("Link Copied! 📋");
+                }).catch(err => copyFallback(url));
+            } else {
+                copyFallback(url);
+            }
+        }
+
+        function copyFallback(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";  // Avoid scrolling to bottom
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
                 showToast("Link Copied! 📋");
-            }).catch(err => {
+            } catch (err) {
                 console.error('Failed to copy: ', err);
                 showToast("Failed to copy link ❌");
-            });
+            }
+            document.body.removeChild(textArea);
         }
 
         function showToast(msg) {
