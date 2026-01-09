@@ -340,19 +340,24 @@
                 }
 
                 // Populate Custom Inputs
+                // Populate Custom Inputs
                 const customContainer = document.getElementById('custom-inputs-container');
                 customContainer.innerHTML = '';
+
+                let hasName = false, hasPhone = false, hasEmail = false;
+
                 if (p.customFields && p.customFields.length > 0) {
                     p.customFields.forEach(f => {
                         addCustomInputRow(f.label, f.placeholder, f.required, f.type);
+                        const lowerLbl = f.label.toLowerCase();
+                        if (lowerLbl.includes('name') && !lowerLbl.includes('game') && !lowerLbl.includes('user')) hasName = true;
+                        if (lowerLbl.includes('phone') || lowerLbl.includes('mobile')) hasPhone = true;
+                        if ((lowerLbl.includes('email') || lowerLbl.includes('mail')) && !lowerLbl.includes('game')) hasEmail = true;
                     });
                 } else {
-                    // MIGRATION / VISUALIZATION LOGIC:
-                    // If no custom fields exist, but it IS a game (by name), 
-                    // pre-fill the "Implicit" field so the admin can see/edit it.
+                    // Pre-fill Game Logic (if applicable)
                     const lowerName = p.name.toLowerCase();
                     const lowerCat = (p.category || '').toLowerCase();
-
                     const isGaming = lowerCat.includes('game') || lowerCat.includes('gaming') ||
                         lowerName.includes('pubg') || lowerName.includes('free') ||
                         lowerName.includes('topup') || lowerName.includes('uc') ||
@@ -361,38 +366,31 @@
                     if (isGaming) {
                         let label = "Player ID / UID";
                         let placeholder = "Enter Player ID";
-
-                        // Heuristic matches
-                        if (lowerName.includes('pubg')) {
-                            label = "PUBG UID / Player ID";
-                            placeholder = "Enter PUBG UID";
-                        } else if (lowerName.includes('free')) {
-                            label = "Freefire UID / Player ID";
-                            placeholder = "Enter Freefire UID";
-                        }
-
-                        // Add the row to the UI
+                        if (lowerName.includes('pubg')) { label = "PUBG UID / Player ID"; placeholder = "Enter PUBG UID"; }
+                        else if (lowerName.includes('free')) { label = "Freefire UID / Player ID"; placeholder = "Enter Freefire UID"; }
                         addCustomInputRow(label, placeholder, true, 'text');
                     }
-
-                    // UNIVERSAL IMPLICIT FIELDS (For ALL products: Netflix, VPN, Gaming, etc.)
-                    // This ensures Admin can always see/edit Name/Phone/Email behavior.
-                    addCustomInputRow("Full Name", "Enter Name", true, 'text');
-                    addCustomInputRow("Phone Number", "Enter Phone", true, 'tel');
-                    addCustomInputRow("Email Address", "Enter Email", true, 'email');
-
-                    // Inform user
-                    // showToast("Auto-detected Identity Fields"); 
                 }
+
+                // ALWAYS ensure Identity Fields are present if they weren't found
+                // (Unless user explicitly deletes them and saves, but since we map logic based on label presence,
+                // re-adding them allows re-enabling them easily. The user asked for "Default Enable").
+                if (!hasName) addCustomInputRow("Full Name", "Enter Name", true, 'text');
+                if (!hasPhone) addCustomInputRow("Phone Number", "Enter Phone", true, 'tel');
+                if (!hasEmail) addCustomInputRow("Email Address", "Enter Email", true, 'email');
+
+                // Inform user
+                // showToast("Auto-detected Identity Fields"); 
+            }
 
                 // Trigger check after population
                 setTimeout(checkPriceForAutoDelivery, 100);
 
-                document.querySelector('.btn-main').innerText = "Update Product";
-            } catch (e) {
-                console.error("Error loading product for edit:", e);
-                showAlert("Error", "Failed to load product data.", "error");
-            }
+            document.querySelector('.btn-main').innerText = "Update Product";
+        } catch (e) {
+            console.error("Error loading product for edit:", e);
+            showAlert("Error", "Failed to load product data.", "error");
+        }
         }
 
         // --- AUTO-DELIVERY LOGIC (Toggle visibility based on price) ---
