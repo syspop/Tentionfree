@@ -1047,6 +1047,33 @@ function initCheckoutPage() {
     // 1. Determine Mode & Items
     const buyNowData = localStorage.getItem('tentionfree_buyNow');
 
+    // --- AUTO FILL USER DATA ---
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user) {
+                const nameInput = document.getElementById('name');
+                const phoneInput = document.getElementById('phone');
+                const emailInput = document.getElementById('customer_email');
+
+                if (nameInput && user.name) nameInput.value = user.name;
+                // Prefer phone from user object, but sometimes it is stored as 'mobile' or 'phoneNumber'
+                if (phoneInput && (user.phone || user.mobile || user.phoneNumber)) {
+                    phoneInput.value = user.phone || user.mobile || user.phoneNumber;
+                }
+                if (emailInput && user.email) {
+                    emailInput.value = user.email;
+                    // Optional: Make email readonly if logged in to prevent mismatch?
+                    // emailInput.readOnly = true; 
+                    // emailInput.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Error auto-filling user data:", e);
+    }
+
     if (buyNowData) {
         isBuyNowMode = true;
         buyNowItem = JSON.parse(buyNowData);
