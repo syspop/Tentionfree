@@ -867,8 +867,10 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
             gameUid: o.gameUid,
             couponCode: o.couponCode,
             discount: o.discount || 0,
-            totalAmount: o.totalAmount || o.price
-            // Images removed for performance (fetched on viewOrder)
+            totalAmount: o.totalAmount || o.price,
+            deliveryImage: o.deliveryImage, // Include delivery image URL
+            cancelImage: o.cancelImage // Include cancel image URL if exists
+            // Images removed for performance (fetched on viewOrder) -> Now including URLs as they are light
         }));
 
         res.json({

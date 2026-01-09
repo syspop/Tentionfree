@@ -226,29 +226,34 @@
                 <small
                     style="color:#10b981; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">Delivery
                     Info</small>
-                <div id="view-delivery" style="font-family:monospace; color:white;"></div>
+                <div id="view-delivery" style="font-family:monospace; color:white; white-space:pre-wrap;"></div>
+                <div id="view-delivery-img-wrapper" style="margin-top:10px; display:none; text-align:center;">
+                    <small style="color:#10b981; font-size:10px; font-weight:bold; text-transform:uppercase;">Attached
+                        Image</small><br>
+                    <img id="view-delivery-img" src=""
+                        style="max-height:200px; max-width:100%; border-radius:8px; margin-top:5px; cursor:pointer;"
+                        onclick="window.open(this.src, '_blank')">
+                </div>
             </div>
-            <div id="view-delivery" style="font-family:monospace; color:white;"></div>
-        </div>
 
-        <div id="view-proof-container"
-            style="display:none; background:rgba(59,130,246,0.1); padding:15px; border-radius:10px; border:1px solid rgba(59,130,246,0.2); margin-top:10px; text-align:center;">
-            <small
-                style="color:#3b82f6; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; text-align:left; margin-bottom:10px;">Payment
-                Proof (Click to Enlarge)</small>
-            <img id="view-proof-img" src=""
-                style="max-height:500px; width:auto; max-width:100%; border-radius:8px; display:inline-block; object-fit:contain;"
-                alt="Payment Proof">
-        </div>
+            <div id="view-proof-container"
+                style="display:none; background:rgba(59,130,246,0.1); padding:15px; border-radius:10px; border:1px solid rgba(59,130,246,0.2); margin-top:10px; text-align:center;">
+                <small
+                    style="color:#3b82f6; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; text-align:left; margin-bottom:10px;">Payment
+                    Proof (Click to Enlarge)</small>
+                <img id="view-proof-img" src=""
+                    style="max-height:500px; width:auto; max-width:100%; border-radius:8px; display:inline-block; object-fit:contain; cursor:pointer;"
+                    onclick="window.open(this.src, '_blank')" alt="Payment Proof">
+            </div>
 
-        <div id="view-cancel-container"
-            style="display:none; background:rgba(239,68,68,0.1); padding:15px; border-radius:10px; border:1px solid rgba(239,68,68,0.2);">
-            <small
-                style="color:#ef4444; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">Cancellation
-                Reason</small>
-            <div id="view-cancel" style="color:#cbd5e1;"></div>
+            <div id="view-cancel-container"
+                style="display:none; background:rgba(239,68,68,0.1); padding:15px; border-radius:10px; border:1px solid rgba(239,68,68,0.2);">
+                <small
+                    style="color:#ef4444; text-transform:uppercase; font-size:10px; font-weight:bold; display:block; margin-bottom:5px;">Cancellation
+                    Reason</small>
+                <div id="view-cancel" style="color:#cbd5e1;"></div>
+            </div>
         </div>
-    </div>
     </div>
 
     <script src="script.js?v=5"></script>
@@ -528,6 +533,7 @@
                 });
 
                 loadOrders(); // Refresh UI
+                showAlert("Success", "Order updated successfully", "success");
 
             } catch (e) {
                 console.error(e);
@@ -552,22 +558,49 @@
             pendingCancelId = null;
         }
 
+        // Helper: Upload Image and get URL
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || "Upload failed");
+            return data.url;
+        }
+
         async function confirmCancellation() {
             const reason = document.getElementById('cancel-reason-input').value.trim();
             const fileInput = document.getElementById('cancel-file-input');
 
             if (!reason) return showAlert("Input Required", "Please enter a reason!", "error");
 
-            let imageBase64 = null;
+            let imageUrl = null;
             if (fileInput.files.length > 0) {
                 try {
-                    imageBase64 = await readFileAsBase64(fileInput.files[0]);
+                    // Upload First
+                    const btn = document.querySelector('#cancel-modal .action-btn');
+                    const originalText = btn.innerText;
+                    btn.innerText = "Uploading...";
+                    btn.disabled = true;
+
+                    imageUrl = await uploadImage(fileInput.files[0]);
+
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 } catch (e) {
-                    return showAlert("Error", "Failed to process image", "error");
+                    return showAlert("Error", "Failed to upload image: " + e.message, "error");
                 }
             }
 
-            processStatusUpdate(pendingCancelId, 'Cancelled', reason, null, imageBase64);
+            processStatusUpdate(pendingCancelId, 'Cancelled', reason, null, imageUrl);
             closeCancelModal();
         }
 
@@ -605,16 +638,25 @@
             if (!method) return showAlert("Required", "Please select a Refund Method!", "error");
             if (!trx) return showAlert("Required", "Please enter Transaction ID!", "error");
 
-            let imageBase64 = null;
+            let imageUrl = null;
             if (fileInput.files.length > 0) {
                 try {
-                    imageBase64 = await readFileAsBase64(fileInput.files[0]);
+                    // Upload First
+                    const btn = document.querySelector('#refund-modal .action-btn');
+                    const originalText = btn.innerText;
+                    btn.innerText = "Uploading...";
+                    btn.disabled = true;
+
+                    imageUrl = await uploadImage(fileInput.files[0]);
+
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 } catch (e) {
-                    return showAlert("Error", "Failed to process image", "error");
+                    return showAlert("Error", "Failed to upload image: " + e.message, "error");
                 }
             }
 
-            processStatusUpdate(pendingRefundId, 'Refunded', note, null, imageBase64, method, trx);
+            processStatusUpdate(pendingRefundId, 'Refunded', note, null, imageUrl, method, trx);
             closeRefundModal();
         }
 
@@ -622,26 +664,26 @@
             const info = document.getElementById('delivery-info-input').value.trim();
             const fileInput = document.getElementById('delivery-file-input');
 
-            let imageBase64 = null;
+            let imageUrl = null;
             if (fileInput.files.length > 0) {
                 try {
-                    imageBase64 = await readFileAsBase64(fileInput.files[0]);
+                    // Upload First
+                    const btn = document.querySelector('#delivery-modal .success-btn');
+                    const originalText = btn.innerText;
+                    btn.innerText = "Uploading...";
+                    btn.disabled = true;
+
+                    imageUrl = await uploadImage(fileInput.files[0]);
+
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 } catch (e) {
-                    return showAlert("Error", "Failed to process image", "error");
+                    return showAlert("Error", "Failed to upload image: " + e.message, "error");
                 }
             }
 
-            processStatusUpdate(pendingCompleteId, 'Completed', null, info, imageBase64);
+            processStatusUpdate(pendingCompleteId, 'Completed', null, info, imageUrl);
             closeDeliveryModal();
-        }
-
-        function readFileAsBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
         }
 
         // --- DELETE/ARCHIVE LOGIC ---
@@ -864,63 +906,99 @@
 
             document.getElementById('view-items').innerHTML = itemsHtml;
 
-            // Delivery Info
-            if (order.deliveryInfo) {
-                document.getElementById('view-delivery-container').style.display = 'block';
-                document.getElementById('view-delivery').innerText = order.deliveryInfo;
+            // Delivery Info & Image
+            const delContainer = document.getElementById('view-delivery-container');
+            if (order.deliveryInfo || order.deliveryImage) {
+                delContainer.style.display = 'block';
+                document.getElementById('view-delivery').innerText = order.deliveryInfo || 'No Text Info';
+
+                const delImgWrapper = document.getElementById('view-delivery-img-wrapper');
+                const delImg = document.getElementById('view-delivery-img');
+
+                // Creates wrapper if missing (backwards compatibility)
+                if (!delImgWrapper) {
+                    const wrapper = document.createElement('div');
+                    wrapper.id = 'view-delivery-img-wrapper';
+                    wrapper.style.cssText = "margin-top:10px; display:none; text-align:center;";
+                    wrapper.innerHTML = `<small style="color:#10b981; font-size:10px; font-weight:bold; text-transform:uppercase;">Attached Image</small><br>
+                    <img id="view-delivery-img" src="" style="max-height:200px; max-width:100%; border-radius:8px; margin-top:5px; cursor:pointer;" onclick="window.open(this.src, '_blank')">`;
+                    delContainer.appendChild(wrapper);
+                }
+
+                const finalWrapper = document.getElementById('view-delivery-img-wrapper');
+                const finalImg = document.getElementById('view-delivery-img');
+
+                if (order.deliveryImage) {
+                    finalWrapper.style.display = 'block';
+                    finalImg.src = order.deliveryImage;
+                } else {
+                    finalWrapper.style.display = 'none';
+                }
+
             } else {
-                document.getElementById('view-delivery-container').style.display = 'none';
+                delContainer.style.display = 'none';
             }
 
             // Proof Info
-            if (order.proof) {
-                document.getElementById('view-proof-container').style.display = 'block';
-                document.getElementById('view-proof-img').src = order.proof;
+            const proofContainer = document.getElementById('view-proof-container');
+            if (order.proof || order.paymentProof) {
+                proofContainer.style.display = 'block';
+                const proofUrl = order.proof || order.paymentProof;
+                document.getElementById('view-proof-img').src = proofUrl;
                 document.getElementById('view-proof-img').onclick = function () {
-                    const w = window.open("");
-                    w.document.write('<img src="' + order.proof + '" style="width:100%">');
+                    window.open(proofUrl, '_blank');
                 };
-                document.getElementById('view-proof-img').style.cursor = "pointer";
-                document.getElementById('view-proof-img').title = "Click to enlarge";
             } else {
-                document.getElementById('view-proof-container').style.display = 'none';
+                proofContainer.style.display = 'none';
             }
 
             // Cancel Info
-            if (order.cancelReason) {
-                document.getElementById('view-cancel-container').style.display = 'block';
-                document.getElementById('view-cancel').innerText = order.cancelReason;
+            const cancelContainer = document.getElementById('view-cancel-container');
+            if (order.status === 'Cancelled' && order.cancelReason) {
+                cancelContainer.style.display = 'block';
+                document.getElementById('view-cancel').innerHTML = order.cancelReason + (order.cancelImage ? `<br><img src="${order.cancelImage}" style="max-height:100px; margin-top:5px; border-radius:5px; cursor:pointer;" onclick="window.open(this.src, '_blank')">` : '');
             } else {
-                document.getElementById('view-cancel-container').style.display = 'none';
-            }
-
-            // Refund Info (Reuse cancel container structure or create new, let's reuse/adapt simply by overwriting dynamic UI if needed, but better to add a separate block or clear separation)
-            // For now, let's add logic to show Refund info if status is Refunded
-            // Refund Info
-            if (order.status === 'Refunded') {
-                // Create a temporary view for refund similar to cancel
-                document.getElementById('view-cancel-container').style.display = 'block';
-                document.getElementById('view-cancel-container').style.background = 'rgba(168, 85, 247, 0.1)';
-                document.getElementById('view-cancel-container').style.borderColor = 'rgba(168, 85, 247, 0.2)';
-                document.querySelector('#view-cancel-container small').innerText = 'REFUND DETAILS';
-                document.querySelector('#view-cancel-container small').style.color = '#a855f7';
-
-                let refundHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">Method</small><span style="color:white; font-weight:bold;">${order.refundMethod || 'N/A'}</span></div>
-                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">TrxID</small><span style="color:white; font-family:monospace;">${order.refundTrx || 'N/A'}</span></div>
-                 </div>`;
-                if (order.refundNote) refundHtml += `<div style="margin-top:5px; border-top:1px solid rgba(168, 85, 247, 0.2); padding-top:5px;"><small style="color:#a855f7; font-size:10px;">Note</small><div style="color:#cbd5e1;">${order.refundNote}</div></div>`;
-
-                document.getElementById('view-cancel').innerHTML = refundHtml;
-            } else if (order.status !== 'Refunded') {
-                // Reset styles if not refunded (back to cancel red)
-                document.getElementById('view-cancel-container').style.background = 'rgba(239,68,68,0.1)';
-                document.getElementById('view-cancel-container').style.borderColor = 'rgba(239,68,68,0.2)';
-                document.querySelector('#view-cancel-container small').innerText = 'CANCELLATION REASON';
-                document.querySelector('#view-cancel-container small').style.color = '#ef4444';
+                cancelContainer.style.display = 'none';
             }
 
             document.getElementById('order-view-modal').style.display = 'flex';
+        }
+
+        // Cancel Info
+        if (order.cancelReason) {
+            document.getElementById('view-cancel-container').style.display = 'block';
+            document.getElementById('view-cancel').innerText = order.cancelReason;
+        } else {
+            document.getElementById('view-cancel-container').style.display = 'none';
+        }
+
+        // Refund Info (Reuse cancel container structure or create new, let's reuse/adapt simply by overwriting dynamic UI if needed, but better to add a separate block or clear separation)
+        // For now, let's add logic to show Refund info if status is Refunded
+        // Refund Info
+        if (order.status === 'Refunded') {
+            // Create a temporary view for refund similar to cancel
+            document.getElementById('view-cancel-container').style.display = 'block';
+            document.getElementById('view-cancel-container').style.background = 'rgba(168, 85, 247, 0.1)';
+            document.getElementById('view-cancel-container').style.borderColor = 'rgba(168, 85, 247, 0.2)';
+            document.querySelector('#view-cancel-container small').innerText = 'REFUND DETAILS';
+            document.querySelector('#view-cancel-container small').style.color = '#a855f7';
+
+            let refundHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">Method</small><span style="color:white; font-weight:bold;">${order.refundMethod || 'N/A'}</span></div>
+                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">TrxID</small><span style="color:white; font-family:monospace;">${order.refundTrx || 'N/A'}</span></div>
+                 </div>`;
+            if (order.refundNote) refundHtml += `<div style="margin-top:5px; border-top:1px solid rgba(168, 85, 247, 0.2); padding-top:5px;"><small style="color:#a855f7; font-size:10px;">Note</small><div style="color:#cbd5e1;">${order.refundNote}</div></div>`;
+
+            document.getElementById('view-cancel').innerHTML = refundHtml;
+        } else if (order.status !== 'Refunded') {
+            // Reset styles if not refunded (back to cancel red)
+            document.getElementById('view-cancel-container').style.background = 'rgba(239,68,68,0.1)';
+            document.getElementById('view-cancel-container').style.borderColor = 'rgba(239,68,68,0.2)';
+            document.querySelector('#view-cancel-container small').innerText = 'CANCELLATION REASON';
+            document.querySelector('#view-cancel-container small').style.color = '#ef4444';
+        }
+
+        document.getElementById('order-view-modal').style.display = 'flex';
         }
     </script>
 </body>

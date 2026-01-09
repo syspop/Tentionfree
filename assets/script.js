@@ -1944,37 +1944,7 @@ function updatePaymentInfo() {
     instructionBox.innerHTML = instructions[method] || '<p class="text-gray-400">Select a payment method.</p>';
 
     // --- PRICE CONVERSION LOGIC ---
-    // Recalculate Total
-    let isBuyNowMode = false;
-    let buyNowItem = null;
-    const buyNowData = localStorage.getItem('tentionfree_buyNow');
-    if (buyNowData) {
-        isBuyNowMode = true;
-        buyNowItem = JSON.parse(buyNowData);
-    }
-    const cart = JSON.parse(localStorage.getItem('tentionfree_cart')) || [];
-    const itemsToCheckout = isBuyNowMode ? [buyNowItem] : cart;
-
-    let totalBDT = 0;
-    itemsToCheckout.forEach(item => {
-        totalBDT += item.price * item.quantity;
-    });
-
-    const totalElement = document.getElementById('checkout-total-amount');
-    if (totalElement) {
-        if (method === 'binance') {
-            // Conversion: 100 BDT = 1 USD
-            const totalUSD = totalBDT / 100;
-            totalElement.innerText = '$' + totalUSD.toFixed(2);
-            totalElement.classList.add('text-green-400'); // Optional: Change color for USD
-            totalElement.classList.remove('text-brand-500');
-        } else {
-            // Revert to BDT
-            totalElement.innerText = '৳' + totalBDT.toFixed(2);
-            totalElement.classList.remove('text-green-400');
-            totalElement.classList.add('text-brand-500');
-        }
-    }
+    calculateAndDisplayTotal();
 }
 
 function prefillCheckout() {
@@ -2068,18 +2038,15 @@ function initCheckoutPage() {
     console.log("Init Checkout Page");
 
     renderCheckoutItems();
-
-    // Toggle Payment Section on load
     togglePaymentSection();
-
-    // Prefill user data if logged in
     prefillCheckout();
 
-    // Check URL params for auto-fill (optional)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('ref')) {
         document.getElementById('promo-code-input').value = urlParams.get('ref');
     }
+
+    calculateAndDisplayTotal();
 }
 
 function renderCheckoutItems() {
@@ -2127,17 +2094,88 @@ function renderCheckoutItems() {
         `;
     });
 
-    document.getElementById('checkout-total-amount').innerText = "৳" + total.toFixed(2);
-
-    // Free Order Check
     const isFree = total === 0;
     const freeInput = document.getElementById('is-free-order');
     if (freeInput) freeInput.value = isFree;
 
     if (isFree) {
-        // Hide Payment Method, Auto-Select Free
         const paymentToggle = document.getElementById('payment-method-toggle');
         if (paymentToggle) paymentToggle.classList.add('hidden');
+    }
+
+    // Initial Calc (also called by init)
+    calculateAndDisplayTotal();
+}
+
+function calculateAndDisplayTotal() {
+    // 1. Get Items
+    let isBuyNowMode = false;
+    let buyNowItem = null;
+    const buyNowData = localStorage.getItem('tentionfree_buyNow');
+    if (buyNowData) {
+        isBuyNowMode = true;
+        buyNowItem = JSON.parse(buyNowData);
+    }
+    const cart = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
+    const items = isBuyNowMode ? [buyNowItem] : cart;
+
+    if (items.length === 0) {
+        const totalEl = document.getElementById('checkout-total-amount');
+        if (totalEl) totalEl.innerText = '৳0.00';
+        return;
+    }
+
+    // 2. Base Total
+    let totalBDT = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+    // 3. Coupon
+    let discount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percent') {
+            discount = (totalBDT * appliedCoupon.value) / 100;
+        } else {
+            discount = appliedCoupon.value;
+        }
+        if (discount > totalBDT) discount = totalBDT;
+    }
+
+    let finalBDT = totalBDT - discount;
+
+    // 4. Payment Method & Display
+    let method = 'bkash';
+    const pType = document.querySelector('input[name="paymentType"]:checked');
+    if (pType && pType.value === 'now') {
+        const pSelect = document.getElementById('payment');
+        if (pSelect) method = pSelect.value;
+    } else {
+        method = 'Pay Later';
+    }
+
+    const totalEl = document.getElementById('checkout-total-amount');
+    const discountRow = document.getElementById('discount-row');
+    const discountEl = document.getElementById('discount-amount');
+
+    if (discountRow && discountEl) {
+        if (discount > 0) {
+            discountRow.classList.remove('hidden');
+            discountEl.innerText = '-৳' + discount.toFixed(2);
+        } else {
+            discountRow.classList.add('hidden');
+        }
+    }
+
+    if (totalEl) {
+        if (method === 'binance') {
+            // Conversion: 100 BDT = 1 USD logic
+            const totalUSD = finalBDT / 100;
+            totalEl.innerText = '$' + totalUSD.toFixed(2);
+            totalEl.classList.add('text-green-400');
+            totalEl.classList.remove('text-brand-500');
+        } else {
+            totalEl.innerText = '৳' + finalBDT.toFixed(2);
+            totalEl.classList.remove('text-green-400');
+            totalEl.classList.add('text-brand-500');
+        }
     }
 }
 
@@ -2234,6 +2272,7 @@ async function applyCoupon() {
 }
 
 // --- Submit Order ---
+// --- Submit Order ---
 async function submitOrder(e) {
     console.log("Submit order function called");
     if (e) e.preventDefault();
@@ -2248,7 +2287,7 @@ async function submitOrder(e) {
         return;
     }
 
-    // Determine Items (Buy Now vs Cart)
+    // Determine Items
     let isBuyNowMode = false;
     let buyNowItem = null;
     const buyNowData = localStorage.getItem('tentionfree_buyNow');
@@ -2267,17 +2306,14 @@ async function submitOrder(e) {
     // --- 2. PAYMENT & VALIDATION ---
     const paymentTypeInput = document.querySelector('input[name="paymentType"]:checked');
     if (!paymentTypeInput) {
-        showErrorModal("Payment Required", "Please select a payment method (Pay Now or Pay Later).");
+        showErrorModal("Payment Required", "Please select a payment method.");
         return;
     }
 
     let paymentMethod = 'Pay Later';
-    let paymentSelect = null; // Declare paymentSelect here for broader scope
     if (paymentTypeInput.value === 'now') {
-        paymentSelect = document.getElementById('payment');
-        if (paymentSelect) {
-            paymentMethod = paymentSelect.value;
-        }
+        const sel = document.getElementById('payment');
+        if (sel) paymentMethod = sel.value;
     }
 
     const freeOrderEl = document.getElementById('is-free-order');
@@ -2290,72 +2326,47 @@ async function submitOrder(e) {
         return;
     }
 
-    // User ID
     const user = userStr ? JSON.parse(userStr) : null;
     const userId = user ? user.id : 'guest_' + Date.now();
 
     // Logic for Transaction ID & Proof
     let trxid = "Pending";
     let paymentMethodShort = 'Pay Later';
-    let paymentType = 'later';
     let proofBase64 = null;
     const proofInput = document.getElementById('payment-proof');
 
     if (isFreeOrder) {
-        paymentType = 'now';
         paymentMethodShort = "Free / Auto-Delivery";
         trxid = "FREE";
     } else if (['bkash', 'nagad', 'rocket', 'upay', 'binance'].includes(paymentMethod)) {
-        paymentType = 'now';
         trxid = document.getElementById('trxid').value.trim();
-
-        // Helper mapping
         const methodMap = {
             'bkash': 'Bkash', 'nagad': 'Nagad', 'rocket': 'Rocket',
             'upay': 'Upay', 'binance': 'Binance Pay'
         };
         paymentMethodShort = methodMap[paymentMethod] || paymentMethod;
 
-        if (!trxid) {
-            showErrorModal("Action Required", "Please enter Transaction ID.");
-            return;
-        }
+        if (!trxid) return showErrorModal("Action Required", "Please enter Transaction ID.");
 
-        // Proof Validation
-        if (!proofInput || !proofInput.files || !proofInput.files[0]) {
-            showErrorModal("Proof Required", "Please upload a screenshot of your payment.");
-            return;
-        }
-        if (proofInput.files[0].size > 5 * 1024 * 1024) {
-            showErrorModal("File Too Large", "Payment proof must be smaller than 5MB.");
-            return;
-        }
+        if (!proofInput || !proofInput.files || !proofInput.files[0]) return showErrorModal("Proof Required", "Please upload payment proof.");
 
-        // Duplicate TRX Check
+        // Check Duplicate
         try {
             const res = await fetch('api/orders?t=' + Date.now());
             const orders = await res.json();
-            if (Array.isArray(orders)) {
-                const duplicate = orders.find(o => o.trx && o.trx.toLowerCase() === trxid.toLowerCase());
-                if (duplicate) {
-                    showErrorModal("Duplicate Transaction ID", "This TrxID is already used.");
-                    return;
-                }
+            if (Array.isArray(orders) && orders.find(o => o.trx && o.trx.toLowerCase() === trxid.toLowerCase())) {
+                return showErrorModal("Duplicate Transaction ID", "This TrxID is already used.");
             }
-        } catch (err) {
-            console.error("Warning: Could not check duplicate TRX", err);
-        }
+        } catch (err) { }
 
-        // Read Proof
         proofBase64 = await readFileAsBase64(proofInput.files[0]);
     }
 
-    // --- 3. CUSTOM FIELDS COLLECTION (ASYNC) ---
+    // --- 3. CUSTOM FIELDS COLLECTION ---
     let extraDetails = "";
-
     try {
         const customInputs = document.querySelectorAll('.custom-field-input');
-        const fieldPromises = Array.from(customInputs).map(async input => {
+        for (const input of customInputs) {
             const label = input.getAttribute('data-label');
             const itemName = input.getAttribute('data-item-name');
             const isRequired = input.getAttribute('data-required') === 'true';
@@ -2364,25 +2375,16 @@ async function submitOrder(e) {
             if (type === 'file') {
                 if (input.files.length > 0) {
                     const fileBase64 = await readFileAsBase64(input.files[0]);
-                    return `\n[${label} for ${itemName}]: (Attachment: ${input.files[0].name}) --IMAGE_DATA:${fileBase64}--`;
-                } else if (isRequired) {
-                    throw new Error(`Please upload ${label} for ${itemName}`);
-                }
+                    extraDetails += `\n[${label} for ${itemName}]: (Attachment: ${input.files[0].name}) --IMAGE_DATA:${fileBase64}--`;
+                } else if (isRequired) throw new Error(`Please upload ${label} for ${itemName}`);
             } else {
                 const val = input.value.trim();
-                // Special check for Promo Code Input inside this loop? No, that's separate.
                 if (isRequired && !val) throw new Error(`Please fill in ${label} for ${itemName}`);
-                if (val) return `\n[${label} for ${itemName}]: ${val}`;
+                if (val) extraDetails += `\n[${label} for ${itemName}]: ${val}`;
             }
-            return "";
-        });
-
-        const results = await Promise.all(fieldPromises);
-        extraDetails = results.join("");
-
+        }
     } catch (error) {
-        showErrorModal("Missing Field", error.message);
-        return;
+        return showErrorModal("Missing Field", error.message);
     }
 
     // Legacy Fields
@@ -2390,38 +2392,28 @@ async function submitOrder(e) {
         if (input.value.trim()) extraDetails += `\n[Legacy ID]: ${input.value.trim()}`;
     });
 
-    // --- 4. CALCULATION & CURRENCY & COUPON ---
-    let total = itemsToOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    let currency = 'BDT';
+    // --- 4. CALCULATION & CURRENCY & COUPON (Re-use logic) ---
+    // Recalculate everything same way as UI
+    let totalBDT = itemsToOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
     let discountAmount = 0;
-
-    // Apply Coupon
     if (appliedCoupon) {
-        // Double check against current total to be safe (though API checked it)
-        if (appliedCoupon.type === 'percent') {
-            // Re-calculate percent in case cart changed? 
-            // Ideally we trust appliedCoupon.value (the percent)
-            discountAmount = (total * appliedCoupon.value) / 100;
-        } else {
-            discountAmount = appliedCoupon.value;
-        }
-
-        // Cap discount
-        if (discountAmount > total) discountAmount = total;
-
-        total = total - discountAmount;
+        if (appliedCoupon.type === 'percent') discountAmount = (totalBDT * appliedCoupon.value) / 100;
+        else discountAmount = appliedCoupon.value;
+        if (discountAmount > totalBDT) discountAmount = totalBDT;
     }
 
-    let finalTotal = total;
+    let finalBDT = totalBDT - discountAmount;
+    let currency = 'BDT';
+    let finalPrice = finalBDT;
 
     if (paymentMethod === 'binance') {
         currency = 'USD';
-        finalTotal = total / 100; // 100 BDT = 1 USD
+        finalPrice = finalBDT / 100;
     } else if (isFreeOrder) {
-        finalTotal = 0;
+        finalPrice = 0;
     }
 
-    // --- 5. CONSTRUCT & SEND ---
+    // --- 5. SEND ---
     const orderData = {
         id: Date.now(),
         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
@@ -2431,9 +2423,9 @@ async function submitOrder(e) {
         email: customerEmail,
         gameUid: extraDetails.trim() || 'N/A', // Notes/Details
         product: itemsToOrder.map(i => `${i.name} (x${i.quantity})`).join(', '),
-        price: finalTotal.toFixed(2),
+        price: finalPrice.toFixed(2),
         currency: currency,
-        originalPriceBDT: (itemsToOrder.reduce((sum, item) => sum + item.price * item.quantity, 0)).toFixed(2),
+        originalPriceBDT: totalBDT.toFixed(2),
         couponCode: appliedCoupon ? appliedCoupon.code : null,
         discount: discountAmount.toFixed(2),
         status: "Pending",
@@ -2444,9 +2436,6 @@ async function submitOrder(e) {
         plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard')
     };
 
-
-    // Show Loading or Button Spinner?
-    // For now just send
     fetch('api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2456,21 +2445,14 @@ async function submitOrder(e) {
         .then(data => {
             if (data.success) {
                 localStorage.removeItem('cart');
+                localStorage.removeItem('tentionfree_cart'); // Clear both
                 localStorage.removeItem('tentionfree_buyNow');
                 showSuccessModal();
-                // WhatsApp / Email Logic
-                // (Preserved from original? Original submitOrder didn't show it here, it relied on server or manual logic?)
-                // The logic was in client side before... wait.
-                // Original code had constructWhatsAppMessage inside submitOrder or sendOrderData? 
-                // It was inside submitOrder, but I replaced it.
-                // Let's rely on server for email, but client for WhatsApp.
-                // I'll add the WhatsApp redirect here if needed, but for now just Success Modal.
             } else {
                 showErrorModal("Submission Failed", data.message || "Unknown error.");
             }
         })
         .catch(err => {
-            console.error("Order Error:", err);
             showErrorModal("Network Error", "Failed to submit order.");
         });
 }
@@ -3187,7 +3169,209 @@ function readFileAsBase64(file) {
 }
 
 
-// Duplicate submitReview removed to enforce API usage.
+// --- 8. REVIEWS & ERROR MODAL ---
+
+// 8.1 Error Modal (Dynamic Injection)
+function showErrorModal(title, message) {
+    let modal = document.getElementById('global-error-modal');
+
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'global-error-modal';
+        modal.className = 'fixed inset-0 z-[120] overflow-y-auto hidden';
+        modal.ariaLabelledby = 'modal-title';
+        modal.role = 'dialog';
+        modal.ariaModal = 'true';
+        modal.innerHTML = `
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeErrorModal()"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-red-500/30">
+                    <div class="bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10 border border-red-500/30">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-bold text-white" id="error-modal-title">Error</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-300" id="error-modal-message">Something went wrong.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-800">
+                        <button type="button" onclick="closeErrorModal()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-bold text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-all transform active:scale-95">
+                            OK, Got it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('error-modal-title').innerText = title;
+    document.getElementById('error-modal-message').innerText = message;
+    modal.classList.remove('hidden');
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('global-error-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 8.2 Load Reviews
+async function loadReviews(productId) {
+    const list = document.getElementById('page-reviews-list');
+    const summary = document.getElementById('page-rating-summary');
+    if (!list) return;
+
+    list.innerHTML = '<div class="text-slate-500 text-center text-sm py-4">Loading reviews...</div>';
+
+    try {
+        const res = await fetch(`/api/reviews?productId=${productId}`);
+        const data = await res.json();
+        const reviews = data.reviews || [];
+
+        // Calculate Average
+        if (reviews.length > 0) {
+            const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+            if (summary) summary.innerText = `(${avg.toFixed(1)}/5)`;
+        } else {
+            if (summary) summary.innerText = "(No reviews yet)";
+        }
+
+        if (reviews.length === 0) {
+            list.innerHTML = '<div class="text-slate-500 text-center py-4 text-sm italic">Be the first to review this product!</div>';
+            return;
+        }
+
+        list.innerHTML = reviews.map(r => `
+            <div class="bg-slate-900 rounded-xl p-4 border border-slate-800/50">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h5 class="font-bold text-slate-200 text-sm">${r.userName || 'Anonymous'}</h5>
+                        <div class="text-yellow-500 text-xs mt-0.5">
+                            ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-slate-500">${new Date(r.date).toLocaleDateString()}</span>
+                </div>
+                <p class="text-slate-400 text-sm leading-relaxed">${r.comment}</p>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<div class="text-red-400 text-center text-sm py-2">Failed to load reviews.</div>';
+    }
+}
+
+// 8.3 Submit Review
+async function submitReview() {
+    const name = document.getElementById('review-name').value.trim();
+    const rating = parseInt(document.getElementById('review-rating').value);
+    const comment = document.getElementById('review-comment').value.trim();
+
+    // Get current product ID from URL or global state
+    // We can parse URL: /product/123
+    const path = window.location.pathname;
+    const segments = path.split('/');
+    // Check if slug or ID. If checking API, better to have ID.
+    // product-details.html usually has 'products' global or we can find it.
+    // However, the page logic might not have exposed 'currentProductId'.
+    // Let's rely on finding it from the DOM or URL.
+    // In product-details.html, we likely populated it.
+    // 'products' array is available.
+
+    // Better strategy: The submit button calls submitReviewPage() which calls submitReview().
+    // We need the ID.
+    // Let's assume 'products' is loaded and we can match URL.
+    // Or we can grab it from a data attribute if we added one.
+    // I will add a safe retrieval method.
+
+    let productId = null;
+    if (segments.includes('product')) {
+        // try from URL param ?id=...
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('id')) productId = urlParams.get('id');
+        else {
+            // try parsing path /product/123
+            const last = segments[segments.length - 1];
+            if (!isNaN(last)) productId = last;
+            else {
+                // slug?
+            }
+        }
+    }
+
+    // Fallback: Check if there's a button with onclick containing the ID?
+    // Or check global state if available.
+    // Let's try to get it from 'page-product-name-crumb' or similar if we have to, but matching URL is best.
+
+    if (!productId) {
+        // Try to find from products array matching URL slug
+        const slug = segments[segments.length - 1];
+        // We need 'products'
+        if (typeof products !== 'undefined') {
+            const p = products.find(prod => prod.id == slug || prod.slug == slug);
+            if (p) productId = p.id;
+        }
+    }
+
+    if (!productId) return showErrorModal("Global Error", "Product ID not found.");
+
+    if (!rating) return showErrorModal("Invalid Rating", "Please select a rating.");
+    if (!comment) return showErrorModal("Missing Comment", "Please write a comment.");
+
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        showLoginRequiredModal(); // Assumes this exists or use ErrorModal
+        return;
+    }
+    const user = JSON.parse(userStr);
+
+    try {
+        const res = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('userToken')
+            },
+            body: JSON.stringify({
+                productId,
+                rating,
+                comment,
+                userName: name || user.name || 'Anonymous'
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            showSuccessModal(); // Assumes exists
+            document.getElementById('page-review-form').classList.add('hidden');
+            document.getElementById('review-comment').value = '';
+            loadReviews(productId);
+        } else {
+            // HERE IS THE REQ: Custom Error Modal
+            if (res.status === 403 || data.message.includes('purchase')) {
+                showErrorModal("Verified Purchase Required", "You can only review products you have purchased and received.");
+            } else {
+                showErrorModal("Review Failed", data.message || "Could not submit review.");
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        showErrorModal("Network Error", "Please check your connection.");
+    }
+}
+
+// Expose to window
+window.submitReview = submitReview;
+window.loadReviews = loadReviews;
+window.showErrorModal = showErrorModal;
 
 // --- Page Specific Button Handlers ---
 function addToCartPage(id) {
