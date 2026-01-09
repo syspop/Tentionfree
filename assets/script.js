@@ -1220,7 +1220,8 @@ function initCheckoutPage() {
                 // FALLBACK: Legacy Game UID Logic for older products without customFields schema
                 // (Only apply if NO custom fields were manually defined to avoid duplication if migration happened)
                 const lowerName = item.name.toLowerCase();
-                let isGaming = item.category === 'gaming' || lowerName.includes('pubg') || lowerName.includes('freefire') || lowerName.includes('topup');
+                const lowerCat = (item.category || '').toLowerCase();
+                let isGaming = lowerCat.includes('game') || lowerCat.includes('gaming') || lowerName.includes('pubg') || lowerName.includes('freefire') || lowerName.includes('topup');
 
                 // However, user specifically wants to control this via admin now. 
                 // We should probably rely ONLY on customFields if we want full control.
@@ -1228,13 +1229,27 @@ function initCheckoutPage() {
 
                 if (isGaming && (!item.customFields || item.customFields.length === 0)) {
                     hasCustomFields = true;
-                    // ... (keep minimal legacy logic or just force them to update product?)
-                    // Let's keep it for compatibility but mark it.
+
+                    // Add Header if multiple items (Consistency with Custom Fields block)
+                    if (itemsToCheckout.length > 1) {
+                        const header = document.createElement('div');
+                        header.className = "text-sm font-bold text-gray-400 mt-2 border-b border-gray-700 pb-1 mb-2";
+                        header.innerText = item.name;
+                        customFieldsContainer.appendChild(header);
+                    }
+
                     const wrapper = document.createElement('div');
-                    let labelText = item.name + " ID";
-                    let placeholder = "Enter ID";
-                    if (lowerName.includes('pubg')) { labelText = "PUBG Player ID"; placeholder = "Enter PUBG ID"; }
-                    else if (lowerName.includes('free fire')) { labelText = "FreeFire UID"; placeholder = "Enter FreeFire UID"; }
+                    let labelText = item.name + " Player ID / UID";
+                    let placeholder = "Enter Player ID";
+
+                    if (lowerName.includes('pubg')) {
+                        labelText = "PUBG UID / Player ID";
+                        placeholder = "Enter PUBG UID";
+                    }
+                    else if (lowerName.includes('free fire') || lowerName.includes('freefire')) {
+                        labelText = "Freefire UID / Player ID";
+                        placeholder = "Enter Freefire UID";
+                    }
 
                     wrapper.innerHTML = `
                         <label class="block text-xs font-bold text-brand-500 mb-1 uppercase tracking-wide">${labelText}</label>

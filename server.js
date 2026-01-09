@@ -1196,25 +1196,14 @@ app.get('/api/my-profile', authenticateUser, async (req, res) => {
 // PUT Update Customer (Admin OR User Self-Update)
 // PUT Update Customer (Admin OR User Self-Update)
 // PUT Update Customer (Inbuilt)
-app.put('/api/customers/:id', async (req, res) => {
+app.put('/api/customers/:id', authenticateUser, async (req, res) => {
     const id = req.params.id;
-    const { name, email, phone, password, dob } = req.body;
+    const updates = req.body;
 
-    // Authorization Check
-    let isSelfUpdate = false;
-    const authHeader = req.headers['authorization'];
-    if (authHeader) {
-        const token = authHeader.split(' ')[1];
-        try {
-            const decoded = jwt.verify(token, JWT_SECRET);
-            if (decoded.id === id || decoded.role === 'admin') {
-                isSelfUpdate = true;
-            }
-        } catch (e) { }
-    }
-
-    if (!isSelfUpdate) {
-        return res.status(401).json({ success: false, message: "Unauthorized Update" });
+    // Auth Check: Admin or Self
+    const isAdmin = req.user.role === 'admin';
+    if (req.user.id !== id && !isAdmin) {
+        return res.status(403).json({ success: false, message: "Unauthorized Update" });
     }
 
     try {
@@ -1222,38 +1211,56 @@ app.put('/api/customers/:id', async (req, res) => {
         const index = allCustomers.findIndex(c => c.id === id);
 
         if (index === -1) {
-            return res.json({ success: false, message: "User not found" });
+            return res.status(404).json({ success: false, message: "User not found" });
         }
 
         const user = allCustomers[index];
 
-        // Check email uniqueness
-        if (email && email !== user.email) {
-            const exists = allCustomers.find(c => c.email === email);
-            if (exists) return res.json({ success: false, message: "Email already taken" });
+        // Check email uniqueness (if changing)
+        if (updates.email && updates.email !== user.email) {
+            const exists = allCustomers.find(c => c.email === updates.email && c.id !== id);
+            if (exists) return res.status(400).json({ success: false, message: "Email already taken" });
         }
         // Check phone uniqueness
-        if (phone && phone !== user.phone) {
-            const exists = allCustomers.find(c => c.phone === phone);
-            if (exists) return res.json({ success: false, message: "Phone already taken" });
+        if (updates.phone && updates.phone !== user.phone) {
+            const exists = allCustomers.find(c => c.phone === updates.phone && c.id !== id);
+            if (exists) return res.status(400).json({ success: false, message: "Phone already taken" });
         }
 
-        if (name) user.name = name;
-        if (email) user.email = email;
-        if (phone !== undefined) user.phone = phone;
-        if (dob !== undefined) user.dob = dob;
+        // Define Allowed Fields
+        // Admin can update everything. User can update specific fields.
+        // We trust the body for Admin, but sanitize for User? 
+        // For simplicity and to match previous logic, we allow what was allowed.
+        // User allowed: name, email, phone, photo, dob, password.
+        // Admin allowed: everything (including isBanned etc, handled by other route, but here generally profile info).
 
-        if (password && !password.startsWith('$2a$')) {
-            user.password = bcrypt.hashSync(password, 10);
-        } else if (password) {
-            user.password = password;
+        const allowedFields = ['name', 'email', 'phone', 'dob', 'photo', 'password'];
+        if (isAdmin) allowedFields.push('isBanned', 'role', 'joined', 'provider');
+
+        const safeUpdates = {};
+        for (const [key, value] of Object.entries(updates)) {
+            if (allowedFields.includes(key) && value !== undefined) {
+                safeUpdates[key] = value;
+            }
         }
 
-        // Save
-        allCustomers[index] = user;
+        // Password Handling
+        if (safeUpdates.password) {
+            if (!safeUpdates.password.startsWith('$2a$') && safeUpdates.password.length > 0) {
+                safeUpdates.password = bcrypt.hashSync(safeUpdates.password, 10);
+            } else if (safeUpdates.password.length === 0) {
+                delete safeUpdates.password; // Don't set empty password
+            }
+        }
+
+        // MERGE UPDATES (Critical for preventing data loss)
+        allCustomers[index] = { ...user, ...safeUpdates };
+
         await writeLocalJSON('customers.json', allCustomers);
 
-        res.json({ success: true, message: "Customer updated" });
+        // Return updated user sans password
+        const { password, ...userWithoutPass } = allCustomers[index];
+        res.json({ success: true, message: "Customer updated", user: userWithoutPass });
 
     } catch (err) {
         console.error(err);
@@ -1313,47 +1320,7 @@ app.delete('/api/customers/:id', async (req, res) => {
     }
 });
 
-// PUT Update Customer (Profile) - PROTECTED
-app.put('/api/customers/:id', authenticateUser, async (req, res) => {
-    const id = req.params.id;
-    const updates = req.body;
-
-    // Security: Ensure user can only update their own profile
-    if (req.user.id !== id && req.user.role !== 'admin') {
-        return res.status(403).json({ success: false, message: "Access Denied: You can only update your own profile." });
-    }
-
-    try {
-        const allCustomers = await readLocalJSON('customers.json');
-        const index = allCustomers.findIndex(c => c.id === id);
-
-        if (index === -1) {
-            return res.status(404).json({ success: false, message: "Customer not found" });
-        }
-
-        // Allowed fields to update
-        const allowedUpdates = ['name', 'phone', 'dob', 'photo', 'password'];
-        const safeUpdates = {};
-
-        allowedUpdates.forEach(field => {
-            if (updates[field] !== undefined) safeUpdates[field] = updates[field];
-        });
-
-        // Update
-        const updatedCustomer = { ...allCustomers[index], ...safeUpdates };
-        allCustomers[index] = updatedCustomer;
-
-        await writeLocalJSON('customers.json', allCustomers);
-
-        // Return updated user (excluding password)
-        const { password, ...userWithoutPass } = updatedCustomer;
-        res.json({ success: true, message: "Profile updated successfully", user: userWithoutPass });
-
-    } catch (err) {
-        console.error("Profile Update Error:", err);
-        res.status(500).json({ success: false, message: "Failed to update profile" });
-    }
-});
+// Duplicate PUT removed. Handled above.
 
 // Admin: Ban/Unban Customer
 app.put('/api/customers/:id/ban', authenticateAdmin, async (req, res) => {
