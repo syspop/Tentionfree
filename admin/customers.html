@@ -304,8 +304,12 @@
             document.getElementById('edit-email').value = user.email;
             document.getElementById('edit-phone').value = user.phone || '';
             let editDob = user.dob || '';
-            if (editDob) editDob = editDob.replace(/\s+/g, '');
-            if (editDob.length > 10) editDob = editDob.substring(0, 10);
+            if (editDob) {
+                const d = new Date(editDob.replace(/\s+/g, ''));
+                if (!isNaN(d.getTime())) {
+                    editDob = d.toISOString().split('T')[0];
+                }
+            }
             document.getElementById('edit-dob').value = editDob;
             document.getElementById('edit-password').value = user.password || ''; // Show current password as requested
 

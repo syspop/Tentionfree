@@ -208,7 +208,7 @@
 
             container.innerHTML = filtered.map(r => {
                 const productName = productsMap[String(r.productId)] || 'Unknown Product';
-                const date = new Date(r.date).toLocaleDateString() + ' ' + new Date(r.date).toLocaleTimeString();
+                const date = new Date(r.date).toLocaleDateString('en-GB') + ' ' + new Date(r.date).toLocaleTimeString();
 
                 const replyHtml = r.reply ?
                     `<div style="margin-top:10px; padding:10px; background:rgba(59, 130, 246, 0.1); border-left: 2px solid #3b82f6; border-radius:4px;">
