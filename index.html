@@ -680,142 +680,178 @@
         </div>
     </div>
 
-    <!-- Checkout Modal -->
+    <!-- Checkout Modal (Redesigned) -->
     <div id="checkout-modal" class="fixed inset-0 z-[110] overflow-y-auto hidden" aria-labelledby="modal-title"
         role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/60 transition-opacity" aria-hidden="true" onclick="closeCheckout()">
-            </div>
+            <!-- Overlay -->
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" aria-hidden="true"
+                onclick="closeCheckout()"></div>
+
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
+            <!-- Modal Panel -->
             <div
-                class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full border border-slate-800">
+                class="inline-block align-bottom bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl w-full border border-slate-800 relative">
+
+                <!-- Background Blurs -->
+                <div
+                    class="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2">
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none translate-y-1/2 -translate-x-1/2">
+                </div>
+
                 <!-- Modal Header -->
-                <div class="bg-slate-900 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-                    <h3 class="text-lg leading-6 font-bold text-slate-200" id="modal-title">
-                        <i class="fa-solid fa-lock mr-2 text-brand-600"></i> Secure Checkout
+                <div
+                    class="bg-slate-900/50 px-8 py-6 border-b border-slate-800/50 flex justify-between items-center relative z-10 backdrop-blur-md">
+                    <h3 class="text-xl leading-6 font-bold text-white flex items-center gap-3" id="modal-title">
+                        <div
+                            class="w-10 h-10 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500">
+                            <i class="fa-solid fa-lock text-lg"></i>
+                        </div>
+                        Secure Checkout
                     </h3>
-                    <button onclick="closeCheckout()" class="text-slate-400 hover:text-slate-300 transition-colors">
-                        <i class="fa-solid fa-xmark text-xl"></i>
+                    <button onclick="closeCheckout()"
+                        class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded-full transition-all w-8 h-8 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
 
                 <!-- Modal Body -->
-                <div class="px-6 py-6 sm:px-8">
+                <div class="px-8 py-8 sm:px-10 relative z-10">
                     <form id="checkout-form" onsubmit="event.preventDefault(); submitOrder();">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
                             <!-- Left Column: Customer Details -->
                             <div class="space-y-6">
                                 <h4
-                                    class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
-                                    Customer Details</h4>
-                                <div>
-                                    <label for="name" class="block text-xs font-medium text-slate-400 mb-1">Full
-                                        Name</label>
+                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <i class="fa-regular fa-id-card"></i> Customer Info
+                                </h4>
+
+                                <!-- Name -->
+                                <div class="relative group">
                                     <input type="text" id="name" required
-                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
-                                        placeholder="Enter your full name">
+                                        class="peer w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-transparent"
+                                        placeholder="Full Name">
+                                    <label for="name"
+                                        class="absolute left-4 top-[-10px] bg-slate-900 px-1 text-xs text-slate-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-brand-500 peer-focus:text-xs">
+                                        Full Name
+                                    </label>
                                 </div>
-                                <div>
-                                    <label for="phone" class="block text-xs font-medium text-slate-400 mb-1">Phone
-                                        Number</label>
+
+                                <!-- Phone -->
+                                <div class="relative group">
                                     <input type="tel" id="phone" required
-                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
-                                        placeholder="017xxxxxxxx">
+                                        class="peer w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-transparent"
+                                        placeholder="Phone Number">
+                                    <label for="phone"
+                                        class="absolute left-4 top-[-10px] bg-slate-900 px-1 text-xs text-slate-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-brand-500 peer-focus:text-xs">
+                                        Phone Number
+                                    </label>
                                 </div>
-                                <div>
-                                    <label for="customer_email"
-                                        class="block text-xs font-medium text-slate-400 mb-1">Email Address</label>
+
+                                <!-- Email -->
+                                <div class="relative group">
                                     <input type="email" id="customer_email" required
-                                        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
-                                        placeholder="you@example.com">
+                                        class="peer w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-transparent"
+                                        placeholder="Email Address">
+                                    <label for="customer_email"
+                                        class="absolute left-4 top-[-10px] bg-slate-900 px-1 text-xs text-slate-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-brand-500 peer-focus:text-xs">
+                                        Email Address
+                                    </label>
                                 </div>
-                                <div id="game-uid-field" class="hidden animate-fade-in">
-                                    <label for="game_uid" class="block text-xs font-medium text-brand-600 mb-1">Player
-                                        ID / UID</label>
-                                    <input type="text" id="game_uid"
-                                        class="w-full bg-brand-50 border border-brand-200 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-slate-400"
-                                        placeholder="Enter Player ID">
-                                    <p class="text-[10px] text-slate-400 mt-1">Required for direct top-up.</p>
+
+                                <!-- Game UID (Conditional) -->
+                                <div id="game-uid-field" class="hidden animate-fade-in space-y-2">
+                                    <div class="relative group">
+                                        <input type="text" id="game_uid"
+                                            class="peer w-full bg-brand-900/10 border border-brand-500/30 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all placeholder-transparent"
+                                            placeholder="Player ID">
+                                        <label for="game_uid"
+                                            class="absolute left-4 top-[-10px] bg-slate-900 px-1 text-xs text-brand-400 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-brand-400 peer-focus:text-xs">
+                                            Player ID / UID
+                                        </label>
+                                    </div>
+                                    <p class="text-[10px] text-brand-400 pl-2"><i
+                                            class="fa-solid fa-circle-info mr-1"></i> Required for instant top-up.</p>
+                                </div>
+
+                                <!-- Coupon -->
+                                <div class="pt-4 border-t border-slate-800/50">
+                                    <label
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Discount
+                                        Code</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="coupon-code" placeholder="Enter Code"
+                                            class="flex-1 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-brand-500 focus:outline-none transition-all uppercase placeholder-slate-600">
+                                        <button type="button" onclick="verifyCoupon()"
+                                            class="bg-slate-800 hover:bg-slate-700 text-white px-5 rounded-xl font-medium transition-colors border border-slate-700">
+                                            Apply
+                                        </button>
+                                    </div>
+                                    <div id="coupon-msg" class="mt-2 text-xs h-4"></div>
                                 </div>
                             </div>
 
                             <!-- Right Column: Payment & Summary -->
                             <div class="space-y-6">
                                 <h4
-                                    class="text-sm font-bold text-brand-600 uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">
-                                    Payment & Order</h4>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-2">Payment
-                                        Preference</label>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <label class="cursor-pointer">
-                                            <input type="radio" name="paymentType" value="now" class="peer sr-only"
-                                                checked onchange="togglePaymentSection()">
-                                            <div
-                                                class="text-center px-3 py-2 rounded-lg border border-slate-800 bg-slate-50 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-400 transition-all bg-slate-900/50">
-                                                <i class="fa-solid fa-credit-card mb-1 block text-sm"></i>
-                                                <span class="text-xs font-medium">Pay Now</span>
-                                            </div>
-                                        </label>
-                                        <label class="cursor-pointer">
-                                            <input type="radio" name="paymentType" value="later" class="peer sr-only"
-                                                onchange="togglePaymentSection()">
-                                            <div
-                                                class="text-center px-3 py-2 rounded-lg border border-slate-800 bg-slate-50 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-400 transition-all bg-slate-900/50">
-                                                <i class="fa-solid fa-comments-dollar mb-1 block text-sm"></i>
-                                                <span class="text-xs font-medium">Pay Later</span>
-                                            </div>
-                                        </label>
-                                    </div>
+                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <i class="fa-regular fa-credit-card"></i> Payment Method
+                                </h4>
+
+                                <!-- Payment Type Toggle (Refined) -->
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <label class="cursor-pointer relative group">
+                                        <input type="radio" name="paymentType" value="now" class="peer sr-only" checked
+                                            onchange="togglePaymentSection()">
+                                        <div
+                                            class="text-center px-4 py-4 rounded-2xl border border-slate-700 bg-slate-800/50 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:shadow-lg peer-checked:shadow-brand-500/20 text-slate-400 peer-checked:text-white transition-all duration-300">
+                                            <i
+                                                class="fa-solid fa-bolt mb-2 block text-xl transform peer-checked:scale-110 transition-transform"></i>
+                                            <span class="text-sm font-bold block">Pay Now</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer relative group">
+                                        <input type="radio" name="paymentType" value="later" class="peer sr-only"
+                                            onchange="togglePaymentSection()">
+                                        <div
+                                            class="text-center px-4 py-4 rounded-2xl border border-slate-700 bg-slate-800/50 peer-checked:bg-yellow-600 peer-checked:border-yellow-500 peer-checked:shadow-lg peer-checked:shadow-yellow-500/20 text-slate-400 peer-checked:text-white transition-all duration-300">
+                                            <i
+                                                class="fa-solid fa-comments-dollar mb-2 block text-xl transform peer-checked:scale-110 transition-transform"></i>
+                                            <span class="text-sm font-bold block">Pay Later</span>
+                                        </div>
+                                    </label>
                                 </div>
 
                                 <div id="payment-details-section"
-                                    class="space-y-4 bg-slate-900 p-4 rounded-lg border border-slate-800">
-                                    <div>
-                                        <label for="payment"
-                                            class="block text-xs font-medium text-slate-400 mb-1">Select
-                                            Method</label>
-                                        <select id="payment" onchange="updatePaymentInfo()"
-                                            class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm focus:outline-none focus:border-brand-500">
-                                            <option value="bkash">Bkash</option>
-                                            <option value="nagad">Nagad</option>
-                                            <option value="rocket">Rocket</option>
-                                            <option value="binance">Binance Pay</option>
-                                        </select>
+                                    class="space-y-4 animate-fade-in bg-slate-800/30 p-5 rounded-2xl border border-slate-800">
+                                    <div class="space-y-2">
+                                        <label class="text-xs text-slate-400 font-bold uppercase tracking-wide">Select
+                                            Provider</label>
+                                        <div class="relative">
+                                            <select id="payment" onchange="updatePaymentInfo()"
+                                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white appearance-none focus:outline-none focus:border-brand-500 cursor-pointer">
+                                                <option value="bkash">bKash (Personal)</option>
+                                                <option value="nagad">Nagad (Personal)</option>
+                                                <option value="rocket">Rocket (Personal)</option>
+                                                <option value="binance">Binance Pay</option>
+                                            </select>
+                                            <div
+                                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div id="payment-instruction"
-                                        class="text-xs bg-slate-900 p-3 rounded border border-slate-800 text-slate-300">
-                                    </div>
-                                    <div>
-                                        <label for="trxid"
-                                            class="block text-xs font-medium text-slate-400 mb-1">Transaction ID
-                                            (TrxID)</label>
-                                        <input type="text" id="trxid"
-                                            class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 text-sm focus:outline-none focus:border-brand-500 placeholder-slate-400"
-                                            placeholder="e.g. 8JHS72...">
-                                    </div>
-                                </div>
 
-                                <div id="confirmation-method-section">
-                                    <label class="block text-xs font-medium text-slate-400 mb-2">Confirm Order
-                                        Via</label>
-                                    <div class="flex space-x-4">
-                                        <label class="flex items-center cursor-pointer group">
-                                            <input type="radio" name="orderMethod" value="whatsapp" checked
-                                                class="form-radio text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-300">
-                                            <span
-                                                class="ml-2 text-sm text-slate-300 group-hover:text-slate-100 transition"><i
-                                                    class="fa-brands fa-whatsapp text-green-500 mr-1"></i>
-                                                WhatsApp</span>
-                                        </label>
-                                        <label class="flex items-center cursor-pointer group">
-                                            <input type="radio" name="orderMethod" value="email"
-                                                class="form-radio text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-300">
-                                            <span
-                                                class="ml-2 text-sm text-slate-300 group-hover:text-slate-100 transition"><i
-                                                    class="fa-regular fa-envelope text-blue-500 mr-1"></i> Email</span>
-                                        </label>
+                                    <div id="payment-instruction"
+                                        class="text-xs bg-slate-900/80 p-4 rounded-xl border border-dashed border-slate-700 text-slate-300 leading-relaxed font-mono">
+                                        <!-- Injected by JS -->
+                                    </div>
+
+                                    <div class="relative group pt-2">
+                                        <input type="text" id="trxid" </label>
                                     </div>
                                 </div>
 

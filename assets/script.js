@@ -2589,33 +2589,40 @@ function updateNavbar() {
 
 
 function prefillCheckout() {
-    // If on checkout modal (index.html), prefill fields
+    // 1. Immediate Prefill (for Checkout Page or if Modal is open)
     const userStr = localStorage.getItem('user');
-    if (!userStr) return;
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            console.log("Prefilling checkout for:", user.name);
 
-    const user = JSON.parse(userStr);
-    const inputs = {
-        'name': user.name,
-        'phone': user.phone,
-        'customer_email': user.email
-    };
-
-    // Shim openCheckout
-    const originalOpen = window.openCheckout;
-    window.openCheckout = function (product, variantIndex = 0) {
-        // Call original
-        if (originalOpen) originalOpen(product, variantIndex);
-
-        // Timeout to fetch elements after modal renders
-        setTimeout(() => {
-            Object.keys(inputs).forEach(id => {
+            // Helper to fill if empty
+            const fill = (id, val) => {
                 const el = document.getElementById(id);
-                if (el && !el.value) { // Only if empty
-                    el.value = inputs[id];
-                }
-            });
-        }, 100);
-    };
+                if (el && !el.value && val) el.value = val;
+            };
+
+            fill('name', user.name);
+            fill('phone', user.phone || user.mobile || user.phoneNumber);
+            fill('customer_email', user.email);
+        } catch (e) {
+            console.error("Error parsing user data for prefill:", e);
+        }
+    }
+
+    // 2. Shim openCheckout (for Modal - ensures fill happens after modal opens)
+    // Avoid double-shimming
+    if (!window.isCheckoutShimmed) {
+        const originalOpen = window.openCheckout;
+        window.openCheckout = function (product, variantIndex = 0) {
+            // Call original logic
+            if (originalOpen) originalOpen(product, variantIndex);
+
+            // Attempt prefill after a delay (animation time)
+            setTimeout(prefillCheckout, 200);
+        };
+        window.isCheckoutShimmed = true;
+    }
 }
 
 
@@ -2875,166 +2882,161 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- NEW FUNCTION: Load Product Details Page (Premium Design) ---
 async function loadProductDetailsPage() {
     console.log("Loading Product Details Page...");
-
-    // 1. Get ID/Slug from URL (support both query param & path)
     const params = new URLSearchParams(window.location.search);
-    let searchId = params.get('id');
+    let id = params.get('id');
 
-    if (!searchId) {
-        // Try extracting from pathname (e.g. /product/slug)
-        const path = window.location.pathname;
-        const parts = path.split('/').filter(p => p.length > 0);
-        // If path is like /product/slug, take the last part
-        if (parts.length > 0) {
-            searchId = parts[parts.length - 1];
-        }
+    // SSR Fallback
+    if (!id) {
+        const parts = window.location.pathname.split('/');
+        const lastPart = parts.pop() || parts.pop();
+        id = lastPart;
     }
 
-    if (!searchId) {
-        console.warn("No Product ID/Slug found.");
-        // STOP REDIRECT LOOP: Just show error
-        document.body.innerHTML = `
-            <div style="color:white; padding:50px; text-align:center;">
-                <h1>Debug: No ID Found</h1>
-                <p>Path: ${window.location.pathname}</p>
-                <p><a href="/products" style="color:#3b82f6">Go to Products</a></p>
-            </div>
-        `;
-        return;
+    if (!id) return;
+
+    // Normalize
+    const numericId = parseInt(id);
+    const searchId = isNaN(numericId) ? id.toLowerCase() : numericId;
+
+    if (!products || products.length === 0) {
+        await fetchProducts();
     }
 
-    // Wait for products to load if they are not yet available
-    if (typeof products === 'undefined' || products.length === 0) {
-        if (typeof fetchProducts === 'function') {
-            await fetchProducts();
-        } else {
-            await new Promise(r => setTimeout(r, 500));
-        }
-    }
-
-    // Robust Look up
     const product = products.find(p => {
-        // 1. Direct ID match
         if (p.id == searchId) return true;
-        // 2. Slug Match
+        if (p.name && p.name.toLowerCase().replace(/ /g, '-') === searchId) return true;
         const cleanName = p.name ? p.name.replace(/\s*\(.*?\)\s*/g, '').trim().toLowerCase() : '';
         const nameSlug = cleanName.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
         return nameSlug === searchId;
     });
 
+    const container = document.getElementById('product-details-container');
     if (!product) {
-        document.getElementById('product-details-container').innerHTML = `
-            <div class="col-span-full text-center py-20">
-                <i class="fa-solid fa-triangle-exclamation text-4xl text-yellow-500 mb-4"></i>
-                <h2 class="text-2xl font-bold text-white">Product Not Found</h2>
-                <a href="products.html" class="inline-block mt-4 text-brand-400 hover:text-white underline">Back to Shop</a>
+        container.innerHTML = `
+            <div class="col-span-full text-center py-32">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-500/10 mb-6 border border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                    <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">Product Not Found</h2>
+                <p class="text-slate-400 mb-8">The product you are looking for might have been removed.</p>
+                <a href="products.html" class="inline-flex items-center gap-2 px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-full font-bold transition-all shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Shop
+                </a>
             </div>`;
         return;
     }
 
-    // Update Page Title
+    // Update Meta
     document.title = `${product.name} - Tention Free`;
     const crumb = document.getElementById('page-product-name-crumb');
     if (crumb) crumb.innerText = product.name;
 
-    // Render logic
-    const container = document.getElementById('product-details-container');
     const isOutOfStock = product.inStock === false;
 
     // Determine Badge
+    const discountPercent = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
     const badgeHtml = isOutOfStock
-        ? `<span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Out of Stock</span>`
-        : `<span class="bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">${product.badge || Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) + '% OFF'}</span>`;
+        ? `<span class="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg shadow-red-500/10"><i class="fa-solid fa-circle-xmark"></i> Out of Stock</span>`
+        : `<span class="inline-flex items-center gap-1.5 bg-brand-500 text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg shadow-brand-500/30"><i class="fa-solid fa-tag"></i> ${product.badge || discountPercent + '% OFF'}</span>`;
 
     // Features List
     const featuresHtml = product.features
-        ? `<ul class="space-y-3 mb-8">
-            ${product.features.map(f => `
-                <li class="flex items-start text-slate-300">
-                    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center mr-3 mt-0.5">
-                        <i class="fa-solid fa-check text-brand-500 text-xs"></i>
-                    </div>
-                    <span class="text-sm leading-relaxed">${f}</span>
-                </li>`).join('')}
-           </ul>`
+        ? `<div class="mb-8 p-6 bg-slate-900/40 rounded-2xl border border-slate-800/50 backdrop-blur-sm">
+            <h4 class="text-slate-200 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wide opacity-80">
+                <i class="fa-solid fa-star text-brand-500"></i> Key Features
+            </h4>
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                ${product.features.map(f => `
+                    <li class="flex items-start text-slate-300 group">
+                        <div class="flex-shrink-0 w-5 h-5 rounded-full bg-brand-500/10 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-brand-500/20 transition-colors">
+                            <i class="fa-solid fa-check text-brand-500 text-[10px]"></i>
+                        </div>
+                        <span class="text-sm leading-relaxed group-hover:text-slate-100 transition-colors">${f}</span>
+                    </li>`).join('')}
+            </ul>
+           </div>`
         : '';
 
     // Instructions
     const instructionsHtml = product.instructions
-        ? `<div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-8">
-                <h4 class="text-slate-200 font-bold mb-3 flex items-center">
-                    <i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> How to Use / Receive
+        ? `<div class="bg-blue-900/10 rounded-2xl p-6 border border-blue-500/10 mb-8 backdrop-blur-sm relative overflow-hidden group">
+                <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+                <h4 class="text-blue-200 font-bold mb-3 flex items-center">
+                    <i class="fa-solid fa-circle-info text-blue-500 mr-2 text-xl shadow-blue-500/50"></i> How to Receive
                 </h4>
-                <div class="text-sm text-slate-400 leading-relaxed space-y-2">
+                <div class="text-sm text-slate-300 leading-relaxed space-y-2 relative z-10">
                     ${product.instructions.split('\n').map(line => `<p>${line}</p>`).join('')}
                 </div>
            </div>`
         : '';
 
-    // Variants & Price HTML Construction
+    // Variants Logic
     let variantSectionHtml = '';
     let priceSectionHtml = '';
-
-    // Default Price
     let displayPrice = product.price;
     let displayOrgPrice = product.originalPrice;
 
     if (product.variants && product.variants.length > 0) {
-        // Has Variants
         const options = product.variants.map((v, i) => `<option value="${i}">${v.label} - ৳${v.price}</option>`).join('');
-
         variantSectionHtml = `
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-slate-400 mb-2">Select Option</label>
-                <div class="relative">
-                    <select id="page-variant-select" onchange="updatePagePrice(${product.id})" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-4 text-white appearance-none focus:outline-none focus:border-brand-500 transition-colors cursor-pointer text-base">
+            <div class="mb-8">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Select Package</label>
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-brand-600 to-cyan-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                    <select id="page-variant-select" onchange="updatePagePrice(${product.id})" 
+                        class="relative w-full bg-slate-900 border border-slate-700 rounded-xl px-5 py-4 text-white appearance-none focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all cursor-pointer text-base font-medium shadow-xl">
                         ${options}
                     </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                        <i class="fa-solid fa-chevron-down text-sm"></i>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-5 text-slate-400">
+                        <i class="fa-solid fa-chevron-down text-sm group-hover:text-brand-400 transition-colors"></i>
                     </div>
                 </div>
             </div>
         `;
-
-        // Initial Price (First Variant)
         const v0 = product.variants[0];
         displayPrice = v0.price;
         displayOrgPrice = v0.originalPrice;
     }
 
     priceSectionHtml = `
-        <div>
-             <span class="text-sm text-slate-500 line-through block mb-1" id="page-display-org-price">৳${displayOrgPrice}</span>
-             <span class="text-4xl font-bold text-white tracking-tight" id="page-display-price">৳${displayPrice}</span>
+        <div class="flex flex-col">
+             <span class="text-sm text-slate-500 line-through mb-1 font-medium" id="page-display-org-price">৳${displayOrgPrice}</span>
+             <div class="flex items-baseline gap-1">
+                <span class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 tracking-tight" id="page-display-price">৳${displayPrice}</span>
+             </div>
         </div>
     `;
 
     // Buttons
     const buttonsHtml = isOutOfStock
-        ? `<button class="w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl cursor-not-allowed border border-slate-700">Out of Stock</button>`
-        : `<div class="grid grid-cols-2 gap-4">
-                <button onclick="addToCartPage(${product.id})" class="flex items-center justify-center px-6 py-4 border border-brand-500 text-brand-500 rounded-xl font-bold hover:bg-brand-500/10 transition active:scale-95">
-                    <i class="fa-solid fa-cart-plus mr-2"></i> Add to Cart
+        ? `<button class="w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl cursor-not-allowed border border-slate-700 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-ban"></i> Out of Stock
+           </button>`
+        : `<div class="grid grid-cols-2 gap-4 mt-2">
+                <button onclick="addToCartPage(${product.id})" class="flex items-center justify-center px-6 py-4 border border-brand-500/50 text-brand-400 bg-brand-500/5 rounded-xl font-bold hover:bg-brand-500 hover:text-white hover:border-brand-500 transition-all active:scale-95 group">
+                    <i class="fa-solid fa-cart-plus mr-2 group-hover:rotate-12 transition-transform"></i> Add to Cart
                 </button>
-                <button onclick="buyNowPage(${product.id})" class="flex items-center justify-center px-6 py-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-500 shadow-lg shadow-brand-500/30 transition active:scale-95 transform hover:-translate-y-0.5">
-                    Buy Now <i class="fa-solid fa-bolt ml-2"></i>
+                <button onclick="buyNowPage(${product.id})" class="relative flex items-center justify-center px-6 py-4 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:brightness-110 overflow-hidden group">
+                    <span class="absolute w-64 h-64 bg-white/20 rounded-full blur-3xl -top-10 -left-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+                    <span class="relative flex items-center">Buy Now <i class="fa-solid fa-bolt ml-2 animate-pulse"></i></span>
                 </button>
            </div>`;
 
-
     // Final HTML Assembly
     const content = `
-        <!-- Left: Image -->
-        <div class="relative group">
-            <div class="absolute inset-0 bg-brand-500/20 rounded-3xl blur-3xl group-hover:bg-brand-500/30 transition-all duration-500 -z-10"></div>
-            <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 md:p-12 flex items-center justify-center border border-slate-700 h-full relative overflow-hidden">
-                <!-- Background Decoration -->
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <!-- Left: Image Section -->
+        <div class="relative group h-full">
+            <div class="absolute inset-0 bg-brand-500/10 rounded-[2rem] blur-3xl group-hover:bg-brand-500/20 transition-all duration-700 -z-10"></div>
+            
+            <div class="bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-xl rounded-[2rem] p-8 md:p-12 flex items-center justify-center border border-white/5 h-full relative overflow-hidden shadow-2xl">
+                <!-- Background Decorations -->
+                <div class="absolute top-0 right-0 w-96 h-96 bg-brand-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
                 
-                <img src="${product.image}" alt="${product.name}" class="w-full max-w-sm object-contain drop-shadow-2xl z-10 transform group-hover:scale-105 transition duration-500">
+                <img src="${product.image}" alt="${product.name}" class="relative w-full max-w-sm object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 transform group-hover:scale-105 transition duration-700 ease-out">
                 
                 <div class="absolute top-6 left-6 z-20">
                     ${badgeHtml}
@@ -3042,28 +3044,36 @@ async function loadProductDetailsPage() {
             </div>
         </div>
 
-        <!-- Right: Info -->
-        <div class="flex flex-col h-full animate-fade-in" style="animation-delay: 100ms;">
-            <div class="mb-1">
-                <span class="text-brand-400 font-bold tracking-wider text-xs uppercase bg-brand-500/10 px-3 py-1 rounded-full">${product.category}</span>
+        <!-- Right: Info Section -->
+        <div class="flex flex-col h-full animate-fade-in pl-0 md:pl-8 py-4" style="animation-delay: 100ms;">
+            <div class="mb-2 flex items-center gap-3">
+                <span class="text-brand-400 font-bold tracking-widest text-[10px] uppercase bg-brand-500/10 border border-brand-500/20 px-3 py-1 rounded-full">${product.category}</span>
+                <div class="h-px bg-slate-800 flex-1"></div>
             </div>
             
-            <h1 class="text-3xl md:text-5xl font-bold text-white mb-4 mt-4 leading-tight">${product.name}</h1>
+            <h1 class="text-3xl md:text-5xl font-black text-white mb-4 leading-tight tracking-tight">${product.name}</h1>
             
-            <p class="text-slate-400 text-base leading-relaxed mb-8">${product.desc}</p>
+            <p class="text-slate-400 text-lg leading-relaxed mb-8 font-light border-l-2 border-slate-700 pl-4">${product.longDesc || product.desc}</p>
             
             ${featuresHtml}
             ${instructionsHtml}
             
-            <div class="mt-auto bg-slate-950/50 rounded-2xl p-6 border border-slate-800 backdrop-blur-sm">
+            <!-- Sticky/Prominent Action Area -->
+            <div class="mt-auto bg-slate-900/80 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-slate-700/50 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-brand-500 via-cyan-500 to-transparent opacity-50"></div>
+                
                 ${variantSectionHtml}
                 
                 <div class="flex items-end justify-between mb-8">
                      ${priceSectionHtml}
-                     <!-- Rating Summary (Small) -->
+                     
                      <div class="text-right">
-                         <div class="text-yellow-500 text-sm mb-1"><i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i> <i class="fa-solid fa-star"></i></div>
-                         <p class="text-slate-500 text-xs text-right">Instant Delivery</p>
+                         <div class="flex items-center gap-1 text-yellow-500 text-sm mb-1.5 justify-end">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                         </div>
+                         <p class="text-slate-500 text-xs font-semibold uppercase tracking-wide flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt text-brand-500"></i> Instant Delivery
+                         </p>
                      </div>
                 </div>
 
@@ -3077,7 +3087,7 @@ async function loadProductDetailsPage() {
     // Load Reviews
     const reviewSection = document.getElementById('reviews-section');
     if (reviewSection) reviewSection.classList.remove('hidden');
-    loadReviews(id);
+    loadReviews(product.id);
 }
 
 // --- Helper Functions for Details Page ---
@@ -3119,52 +3129,7 @@ function readFileAsBase64(file) {
 }
 
 
-function submitReview() {
-    console.log("Submit Review Called");
-
-    // Get Product ID from URL
-    const params = new URLSearchParams(window.location.search);
-    const productId = params.get('id');
-
-    if (!productId) {
-        showToast("Error: Product not found");
-        return;
-    }
-
-    const nameInput = document.getElementById('review-name');
-    const ratingInput = document.getElementById('review-rating');
-    const commentInput = document.getElementById('review-comment');
-
-    const name = nameInput.value.trim() || 'Anonymous';
-    const rating = ratingInput.value;
-    const comment = commentInput.value.trim();
-
-    if (!comment) {
-        showToast("Please write a comment");
-        return;
-    }
-
-    const newReview = {
-        id: Date.now(),
-        productId: productId,
-        name: name,
-        rating: rating,
-        comment: comment,
-        date: new Date().toLocaleDateString()
-    };
-
-    // Save to LocalStorage
-    const allReviews = JSON.parse(localStorage.getItem('tentionfree_reviews')) || [];
-    allReviews.push(newReview);
-    localStorage.setItem('tentionfree_reviews', JSON.stringify(allReviews));
-
-    showToast("Review Submitted!");
-
-    // Clear Form & Reload
-    nameInput.value = '';
-    commentInput.value = '';
-    loadReviews(productId);
-}
+// Duplicate submitReview removed to enforce API usage.
 
 // --- Page Specific Button Handlers ---
 function addToCartPage(id) {

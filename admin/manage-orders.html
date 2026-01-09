@@ -835,6 +835,16 @@
             } else {
                 itemsHtml = order.product || 'Unknown Item';
             }
+
+            // Discount Row
+            if (order.discount > 0) {
+                itemsHtml += `
+                    <div style="display:flex; justify-content:space-between; margin-top:5px; padding-top:5px; color:#ef4444; font-size:12px;">
+                        <span>Discount ${order.couponCode ? '(' + order.couponCode + ')' : ''}</span>
+                        <span>- ৳${order.discount}</span>
+                    </div>`;
+            }
+
             // Add Total
             itemsHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:#10b981;">Total: ৳${order.price || order.totalAmount}</div>`;
 

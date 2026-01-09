@@ -1706,7 +1706,7 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
             const isUser = (o.email && o.email.toLowerCase().trim() === userEmail) ||
                 (o.customerEmail && o.customerEmail.toLowerCase().trim() === userEmail);
 
-            const isCompleted = o.status === 'completed';
+            const isCompleted = o.status && o.status.toLowerCase() === 'completed';
 
             const hasProduct = o.items && Array.isArray(o.items) && o.items.some(item => String(item.id) === String(productId));
 

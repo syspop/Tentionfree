@@ -158,8 +158,10 @@
             try {
                 const res = await fetch('/api/products');
                 const products = await res.json();
+                productsMap = {}; // Reset
                 products.forEach(p => {
-                    productsMap[p.id] = p.name;
+                    // Normalize to string for safe lookup
+                    productsMap[String(p.id)] = p.name;
                 });
             } catch (err) {
                 console.error("Failed to load products for mapping", err);
@@ -168,6 +170,11 @@
 
         async function loadReviews() {
             try {
+                // Ensure products are loaded first
+                if (Object.keys(productsMap).length === 0) {
+                    await loadProducts();
+                }
+
                 const res = await fetch('/api/all-reviews', {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
@@ -200,7 +207,7 @@
             }
 
             container.innerHTML = filtered.map(r => {
-                const productName = productsMap[r.productId] || 'Unknown Product';
+                const productName = productsMap[String(r.productId)] || 'Unknown Product';
                 const date = new Date(r.date).toLocaleDateString() + ' ' + new Date(r.date).toLocaleTimeString();
 
                 const replyHtml = r.reply ?

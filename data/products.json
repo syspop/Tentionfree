@@ -39,7 +39,9 @@
         "price": 3600,
         "originalPrice": 6000
       }
-    ]
+    ],
+    "rating": "5.0",
+    "ratingCount": 1
   },
   {
     "id": 2,
