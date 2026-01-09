@@ -222,7 +222,7 @@ app.get(['/services', '/services/'], (req, res) => {
 // Serve static files (try .html automatically)
 app.use(express.static(__dirname, {
     extensions: ['html', 'htm'],
-    maxAge: '1d' // Cache for 1 day
+    maxAge: '30d' // Cache for 30 days (Improved Speed)
 }));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
