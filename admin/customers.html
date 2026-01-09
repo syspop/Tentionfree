@@ -164,7 +164,7 @@
                             <div style="font-size:11px; color:var(--gray);">${u.phone || '-'}</div>
                         </td>
                         <td>${statusBadge}</td>
-                        <td>${new Date(u.joined).toLocaleDateString()}</td>
+                        <td>${new Date(u.joined).toLocaleDateString('en-GB')}</td>
                          <td>
                             <div style="display:flex; gap:5px;">
                                 <button onclick="viewCustomer('${u.id}')" title="View Profile" style="background:rgba(59, 130, 246, 0.2); color:#3b82f6; border:none; width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-eye"></i></button>
@@ -220,8 +220,8 @@
             const dobDate = safeDob ? new Date(safeDob) : null;
 
             document.getElementById('cp-phone').innerText = user.phone || 'N/A';
-            document.getElementById('cp-dob').innerText = (dobDate && !isNaN(dobDate.getTime())) ? dobDate.toLocaleDateString() : (user.dob || 'N/A');
-            document.getElementById('cp-joined').innerText = !isNaN(joinedDate.getTime()) ? joinedDate.toLocaleDateString() : 'N/A';
+            document.getElementById('cp-dob').innerText = (dobDate && !isNaN(dobDate.getTime())) ? dobDate.toLocaleDateString('en-GB') : (user.dob || 'N/A');
+            document.getElementById('cp-joined').innerText = !isNaN(joinedDate.getTime()) ? joinedDate.toLocaleDateString('en-GB') : 'N/A';
 
             // Load User Orders
             const container = document.getElementById('cp-order-list');
