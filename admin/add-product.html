@@ -373,6 +373,12 @@
                         // Add the row to the UI
                         addCustomInputRow(label, placeholder, true, 'text');
 
+                        // Also add Implicit Identity Fields (Name, Phone, Email)
+                        // This allows the admin to edit their labels or placeholders
+                        addCustomInputRow("Full Name", "Enter Name", true, 'text');
+                        addCustomInputRow("Phone Number", "Enter Phone", true, 'tel');
+                        addCustomInputRow("Email Address", "Enter Email", true, 'email');
+
                         // Inform user
                         // showToast("Auto-detected Game Field"); 
                     }

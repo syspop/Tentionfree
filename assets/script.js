@@ -1208,6 +1208,38 @@ function initCheckoutPage() {
                             class="${baseClass}" placeholder="${field.placeholder || ''}">`;
                     }
 
+                    // --- MAPPING LOGIC START ---
+                    // If label maps to global fields, hide global and sync
+                    const labelLower = field.label.toLowerCase();
+                    let targetGlobalId = null;
+
+                    if (labelLower.includes('name') && !labelLower.includes('game') && !labelLower.includes('user')) targetGlobalId = 'name';
+                    else if (labelLower.includes('phone') || labelLower.includes('mobile') || labelLower.includes('number')) targetGlobalId = 'phone';
+                    else if ((labelLower.includes('email') || labelLower.includes('mail')) && !labelLower.includes('game')) targetGlobalId = 'customer_email';
+
+                    if (targetGlobalId) {
+                        // Hide the Global Field's Container (approximate traversal)
+                        const globalInput = document.getElementById(targetGlobalId);
+                        if (globalInput) {
+                            const container = globalInput.closest('div');
+                            if (container) container.classList.add('hidden');
+
+                            // Sync Event
+                            setTimeout(() => {
+                                const customInput = document.getElementById(fieldId);
+                                if (customInput) {
+                                    customInput.addEventListener('input', () => {
+                                        globalInput.value = customInput.value;
+                                    });
+                                    // Initial Sync (e.g. if prefilled)
+                                    globalInput.value = customInput.value;
+                                    if (globalInput.value) customInput.value = globalInput.value; // Bi-directional prefill check
+                                }
+                            }, 100);
+                        }
+                    }
+                    // --- MAPPING LOGIC END ---
+
                     wrapper.innerHTML = `
                         <label class="block text-xs font-bold text-brand-500 mb-1 uppercase tracking-wide">
                             ${field.label} ${field.required ? '<span class="text-red-500">*</span>' : ''}
