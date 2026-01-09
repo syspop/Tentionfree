@@ -345,6 +345,37 @@
                     p.customFields.forEach(f => {
                         addCustomInputRow(f.label, f.placeholder, f.required, f.type);
                     });
+                } else {
+                    // MIGRATION / VISUALIZATION LOGIC:
+                    // If no custom fields exist, but it IS a game (by name), 
+                    // pre-fill the "Implicit" field so the admin can see/edit it.
+                    const lowerName = p.name.toLowerCase();
+                    const lowerCat = (p.category || '').toLowerCase();
+
+                    const isGaming = lowerCat.includes('game') || lowerCat.includes('gaming') ||
+                        lowerName.includes('pubg') || lowerName.includes('free') ||
+                        lowerName.includes('topup') || lowerName.includes('uc') ||
+                        lowerName.includes('diamond');
+
+                    if (isGaming) {
+                        let label = "Player ID / UID";
+                        let placeholder = "Enter Player ID";
+
+                        // Heuristic matches
+                        if (lowerName.includes('pubg')) {
+                            label = "PUBG UID / Player ID";
+                            placeholder = "Enter PUBG UID";
+                        } else if (lowerName.includes('free')) {
+                            label = "Freefire UID / Player ID";
+                            placeholder = "Enter Freefire UID";
+                        }
+
+                        // Add the row to the UI
+                        addCustomInputRow(label, placeholder, true, 'text');
+
+                        // Inform user
+                        // showToast("Auto-detected Game Field"); 
+                    }
                 }
 
                 // Trigger check after population
