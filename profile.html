@@ -1521,7 +1521,7 @@
             const month = document.getElementById('cp-month').value;
             const year = document.getElementById('cp-year').value;
 
-            const dob = `${year} -${month.toString().padStart(2, '0')} -${day.toString().padStart(2, '0')} `;
+            const dob = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
             // Age Check
             const birthDate = new Date(dob);
