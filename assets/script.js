@@ -755,7 +755,7 @@ async function loadProductDetailsPage() {
                 
                 <img src="${product.image}" alt="${product.name}" class="w-full max-w-sm object-contain drop-shadow-2xl z-10 transform group-hover:scale-105 transition duration-500">
                 
-                <div class="absolute top-6 left-6 z-20">
+                <div class="absolute top-6 right-6 z-20">
                     ${badgeHtml}
                 </div>
             </div>

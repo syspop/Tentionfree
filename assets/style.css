@@ -469,7 +469,10 @@ input[type="search"]::-webkit-search-cancel-button {
     color: var(--color-brand);
     font-weight: 700;
 }
-.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+.safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
 
 /* --- MODERN UI ADDITIONS ( appended ) --- */
 :root {
@@ -490,13 +493,13 @@ body {
     background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: space-around;
     align-items: center;
     z-index: 9999;
     padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .bottom-nav-item {
@@ -551,7 +554,7 @@ body {
     border-radius: 20px;
     overflow: hidden;
     position: relative;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -575,7 +578,7 @@ body {
     max-height: 100%;
     max-width: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
     transition: transform 0.5s ease;
 }
 
@@ -586,7 +589,8 @@ body {
 .card-badge {
     position: absolute;
     top: 10px;
-    left: 10px;
+    right: 10px;
+    left: auto;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -704,8 +708,8 @@ body {
 
 .btn-add-cart {
     width: 36px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: #3b82f6;
     border-radius: 8px;
     display: flex;
