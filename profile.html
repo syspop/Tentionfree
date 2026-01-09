@@ -1543,7 +1543,7 @@
                 const user = JSON.parse(localStorage.getItem('user'));
                 const token = localStorage.getItem('userToken');
 
-                const res = await fetch(`/ api / customers / ${user.id}`, {
+                const res = await fetch(`api/customers/${user.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

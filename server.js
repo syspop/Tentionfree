@@ -1313,6 +1313,48 @@ app.delete('/api/customers/:id', async (req, res) => {
     }
 });
 
+// PUT Update Customer (Profile) - PROTECTED
+app.put('/api/customers/:id', authenticateUser, async (req, res) => {
+    const id = req.params.id;
+    const updates = req.body;
+
+    // Security: Ensure user can only update their own profile
+    if (req.user.id !== id && req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: "Access Denied: You can only update your own profile." });
+    }
+
+    try {
+        const allCustomers = await readLocalJSON('customers.json');
+        const index = allCustomers.findIndex(c => c.id === id);
+
+        if (index === -1) {
+            return res.status(404).json({ success: false, message: "Customer not found" });
+        }
+
+        // Allowed fields to update
+        const allowedUpdates = ['name', 'phone', 'dob', 'photo', 'password'];
+        const safeUpdates = {};
+
+        allowedUpdates.forEach(field => {
+            if (updates[field] !== undefined) safeUpdates[field] = updates[field];
+        });
+
+        // Update
+        const updatedCustomer = { ...allCustomers[index], ...safeUpdates };
+        allCustomers[index] = updatedCustomer;
+
+        await writeLocalJSON('customers.json', allCustomers);
+
+        // Return updated user (excluding password)
+        const { password, ...userWithoutPass } = updatedCustomer;
+        res.json({ success: true, message: "Profile updated successfully", user: userWithoutPass });
+
+    } catch (err) {
+        console.error("Profile Update Error:", err);
+        res.status(500).json({ success: false, message: "Failed to update profile" });
+    }
+});
+
 // Admin: Ban/Unban Customer
 app.put('/api/customers/:id/ban', authenticateAdmin, async (req, res) => {
     const id = req.params.id;
