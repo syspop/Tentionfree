@@ -171,7 +171,10 @@
                 const btn = document.querySelector('#pin-modal button:last-child');
                 const origText = btn.innerText;
                 btn.innerText = "DOWNLOADING...";
-                const res = await fetch('/api/backup', {
+                const apiUrl = window.location.origin + '/api/backup?t=' + Date.now();
+                console.log("Fetching from:", apiUrl);
+
+                const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pin: pin })
