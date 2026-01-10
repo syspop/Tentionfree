@@ -3335,15 +3335,19 @@ async function submitReview() {
         const data = await res.json();
 
         if (res.ok && data.success) {
+            console.log("Review submitted successfully");
             showSuccessModal();
             document.getElementById('page-review-form').classList.add('hidden');
             document.getElementById('review-comment').value = '';
             loadReviews(productId);
         } else {
+            console.error("Review submission failed:", res.status, data);
             // Error Handling
             if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
+                console.log("Triggering 403 Purchase Required Modal");
                 showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
             } else {
+                console.log("Triggering Generic Error Modal");
                 showErrorModal("Review Failed", data.message || "Could not submit review.");
             }
         }
