@@ -178,4 +178,12 @@ These functions are available globally in the browser when `script.js` is loaded
     - **Buyer Verification**: User MUST have a 'Completed' order for the product to leave a review.
     - **One Review Per User**: Enforced per product.
     - **Frontend**: `submitReview()` defines the UI interaction and sends the token for validation.
-te
+
+## 10. Secure Backup System
+- **Purpose**: Disaster recovery tool. Downloads a complete JSON snapshot of the database (active + archived).
+- **Access**: `chodir-vai-backup.html` (Hidden Administrative URL).
+- **Security Architecture**:
+    - **Dual-Layer Auth**: Requires dedicated credentials (verified via `/api/backup-login`) + a physical PIN code.
+    - **Server-Side Validation**: Credentials are NOT exposed in client-side code; they are securely validated by the backend.
+    - **Strict Protection**: The download endpoint `/api/backup` strictly enforces the PIN.
+- **PIN Code**: `258000` (Defined in `server.js`).
