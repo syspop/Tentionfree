@@ -1737,15 +1737,46 @@ function togglePaymentSection() {
         }
     }
 
+    const couponSection = document.getElementById('coupon-section');
+
     if (paymentType === 'now') {
         // Pay Now: SHOW Payment Details (Method/TrxID), HIDE Confirmation Method (WhatsApp/Email)
         detailsSection.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
         updatePaymentInfo(); // Force update instructions
         if (confirmationSection) confirmationSection.classList.add('hidden');
+
+        // Show Coupon Section
+        if (couponSection) couponSection.classList.remove('hidden');
+
     } else {
         // Pay Later: HIDE Payment Details, SHOW Confirmation Method
         detailsSection.classList.add('hidden', 'opacity-50', 'pointer-events-none');
         if (confirmationSection) confirmationSection.classList.remove('hidden');
+
+        // Hide Coupon Section & Reset if applied
+        if (couponSection) couponSection.classList.add('hidden');
+
+        // If coupon was applied, remove it
+        if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
+            appliedCoupon = null;
+            document.getElementById('discount-row').classList.add('hidden');
+            document.getElementById('coupon-message').innerText = '';
+            document.getElementById('coupon-message').className = 'text-xs mt-1 h-4';
+
+            // Allow re-entering code later if they switch back
+            const codeInput = document.getElementById('promo-code-input');
+            if (codeInput) {
+                codeInput.value = '';
+                codeInput.disabled = false;
+            }
+
+            // Recalculate Total (Reset to original)
+            // We need to re-trigger calculation logic. 
+            // Ideally we'd call a calculateTotal function, but for now let's reuse initCheckoutPage logic or valid items sum
+            // Since initCheckoutPage sets up the summary, we can just grab the valid total from itemsToCheckout logic or force a reload? 
+            // Reload is jarring. Let's recalculate inline briefly or call initCheckoutPage() which is safe?
+            initCheckoutPage(); // Re-runs calculation without coupon
+        }
     }
 }
 

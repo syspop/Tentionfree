@@ -607,8 +607,8 @@ app.post('/api/orders', async (req, res) => {
         }
 
         // --- AUTO-DELIVERY LOGIC ---
-        // Check if price is 0 (Free Order)
-        if (parseFloat(newOrder.price) === 0) {
+        // Check if price is 0 AND it's naturally a free order (not just coupon discounted)
+        if (parseFloat(newOrder.price) === 0 && newOrder.paymentMethod === 'Free / Auto-Delivery') {
             newOrder.status = 'Completed';
 
             // Fetch delivery content from Products

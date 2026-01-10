@@ -1,8 +1,8 @@
 [
   {
-    "id": 1767941612052,
-    "code": "101",
-    "discount": 25,
+    "id": 1768035302946,
+    "code": "10",
+    "discount": 100,
     "type": "flat",
     "minSpend": 0,
     "applicableProducts": [
@@ -13,7 +13,7 @@
     "usageCount": 1,
     "usageByUsers": {},
     "isActive": true,
-    "createdAt": "2026-01-09T06:53:32.052Z",
+    "createdAt": "2026-01-10T08:55:02.946Z",
     "expiryDate": null
   }
 ]
