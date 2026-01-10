@@ -537,9 +537,9 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 });
 
 // --- BACKUP ENDPOINT ---
-app.get('/api/backup', async (req, res) => {
+app.post('/api/backup', async (req, res) => {
     try {
-        const pin = req.headers['x-backup-pin'];
+        const { pin } = req.body;
         // Hardcoded PIN as requested for standalone secure backup
         if (pin !== '200013') {
             console.warn("⚠️ Unauthorized Backup Attempt. Invalid PIN.");
