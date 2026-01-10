@@ -537,9 +537,16 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 });
 
 // --- BACKUP ENDPOINT ---
-app.get('/api/backup', authenticateAdmin, async (req, res) => {
+app.get('/api/backup', async (req, res) => {
     try {
-        console.log("Generating Backup...");
+        const pin = req.headers['x-backup-pin'];
+        // Hardcoded PIN as requested for standalone secure backup
+        if (pin !== '200013') {
+            console.warn("⚠️ Unauthorized Backup Attempt. Invalid PIN.");
+            return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
+        }
+
+        console.log("Generating Backup (Secure PIN Access)...");
         const backupData = {
             timestamp: new Date().toISOString(),
             customers: await readLocalJSON('customers.json') || [],
