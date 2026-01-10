@@ -157,3 +157,24 @@ The application uses a flat-file JSON database system.
 ### Coupons (`data/coupons.json`)
 - **Fields**: `code`, `discount` (Amount or %), `type`, `expiryDate`, `maxUsage`, `applicableProducts`.
 - **Validation**: Checked securely on backend (`/api/coupons/verify`) against cart contents and user limits.
+
+## 8. Frontend Utilities & Global Functions (`assets/script.js`)
+These functions are available globally in the browser when `script.js` is loaded.
+
+### UI Modals
+- `showSuccessModal(title, msg)`: Displays a green success popup with a "View Order" button (redirects to Profile).
+- `showErrorModal(title, msg)`: Displays a red error popup with a "Close" button.
+- `showToast(msg, type)`: Shows a fleeting notification at the bottom screen. `type` can be 'success' or 'error'.
+- `closeGlobalModal()`: Closes the active global modal.
+
+### Core Logic
+- `submitOrder()`: Handles Cart -> Order conversion. Validates payment, calculates totals (USD/BDT), and sends POST request. Now includes robust error handling for network failures.
+- `checkLogin()`: Updates UI (Header/Mobile Nav) based on `localStorage.getItem('user')`.
+- `loadProductDetailsPage()`: Hybrid function that handles both SSR and Client-side rendering of product details.
+
+## 9. Review System
+- **Endpoint**: `POST /api/reviews`
+- **Logic**:
+    - **Buyer Verification**: User MUST have a 'Completed' order for the product to leave a review.
+    - **One Review Per User**: Enforced per product.
+    - **Frontend**: `submitReview()` defines the UI interaction and sends the token for validation.
