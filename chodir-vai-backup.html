@@ -119,11 +119,6 @@
     </div>
 
     <script>
-        // CREDENTIALS
-        const VALID_USER = "ppop@12";
-        const VALID_PASS = "ppop@12MW"; // Secure enough for this specific request context
-        const VALID_PIN = "258000";
-
         // DOM Elements
         const loginScreen = document.getElementById('login-screen');
         const dashboardScreen = document.getElementById('dashboard-screen');
@@ -132,14 +127,26 @@
         const pinError = document.getElementById('pin-error');
         const pinInput = document.getElementById('pin-input');
 
-        function attemptLogin() {
+        async function attemptLogin() {
             const u = document.getElementById('user-input').value;
             const p = document.getElementById('pass-input').value;
 
-            if (u === VALID_USER && p === VALID_PASS) {
-                loginScreen.classList.add('hidden');
-                dashboardScreen.classList.remove('hidden');
-            } else {
+            // Server-side check (Secure)
+            try {
+                const res = await fetch('/api/backup-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ u, p })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    loginScreen.classList.add('hidden');
+                    dashboardScreen.classList.remove('hidden');
+                } else {
+                    throw new Error("Invalid");
+                }
+            } catch (e) {
                 loginError.classList.remove('hidden');
                 setTimeout(() => loginError.classList.add('hidden'), 2000);
             }
@@ -158,13 +165,7 @@
 
         async function verifyPinAndDownload() {
             const pin = pinInput.value;
-
-            // Pre-check Client Side (Optional, but valid since we trust the backend to fail if pin is wrong too)
-            if (pin !== VALID_PIN) {
-                pinError.innerHTML = "> ACCESS DENIED: INCORRECT PIN";
-                pinError.classList.remove('hidden');
-                return;
-            }
+            // No client-side check. Send directly to server.
 
             // Real Download
             try {

@@ -120,6 +120,16 @@ app.all('/api/backup', async (req, res) => {
     }
 });
 
+// --- BACKUP LOGIN (Secure) ---
+app.post('/api/backup-login', (req, res) => {
+    const { u, p } = req.body;
+    // Hardcoded credentials server-side (Safe from Inspect Element)
+    if (u === "ppop@12" && p === "ppop@12MW") {
+        return res.json({ success: true });
+    }
+    return res.status(401).json({ success: false });
+});
+
 // Explicit Root Route
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
