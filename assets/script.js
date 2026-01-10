@@ -3173,52 +3173,30 @@ function readFileAsBase64(file) {
 // --- 8. REVIEWS & ERROR MODAL ---
 
 // 8.1 Error Modal (Dynamic Injection)
+// 8.1 Error Modal (Static Logic)
 function showErrorModal(title, message) {
-    let modal = document.getElementById('global-error-modal');
-
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'global-error-modal';
-        modal.className = 'fixed inset-0 z-[999999] overflow-y-auto hidden';
-        modal.ariaLabelledby = 'modal-title';
-        modal.role = 'dialog';
-        modal.ariaModal = 'true';
-        modal.innerHTML = `
-            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-slate-900/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeErrorModal()"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-red-500/30">
-                    <div class="bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10 border border-red-500/30">
-                                <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
-                            </div>
-                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 class="text-lg leading-6 font-bold text-white" id="error-modal-title">Error</h3>
-                                <div class="mt-2">
-                                    <p class="text-sm text-slate-300" id="error-modal-message">Something went wrong.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-800">
-                        <button type="button" onclick="closeErrorModal()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-bold text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-all transform active:scale-95">
-                            OK, Got it
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
+    const modal = document.getElementById('global-error-modal');
+    if (modal) {
+        document.getElementById('error-modal-title').innerText = title;
+        document.getElementById('error-modal-message').innerText = message;
+        modal.classList.remove('hidden');
+    } else {
+        alert(`${title}: ${message}`); // Fallback if HTML is missing
     }
-
-    document.getElementById('error-modal-title').innerText = title;
-    document.getElementById('error-modal-message').innerText = message;
-    modal.classList.remove('hidden');
 }
 
 function closeErrorModal() {
     const modal = document.getElementById('global-error-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function showSuccessModal() {
+    const modal = document.getElementById('global-success-modal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('global-success-modal');
     if (modal) modal.classList.add('hidden');
 }
 
