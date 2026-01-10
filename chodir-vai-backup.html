@@ -118,6 +118,22 @@
         </div>
     </div>
 
+    <!-- SUCCESS MODAL (Hidden) -->
+    <div id="success-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center hidden">
+        <div class="terminal p-8 max-w-sm w-full mx-4 text-center border-green-500 shadow-[0_0_20px_rgba(0,255,0,0.3)]">
+            <div class="text-green-500 text-6xl mb-6">
+                <i class="fa-solid fa-check-circle animate-pulse"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2 tracking-widest text-green-400">ARCHIVE SECURED</h3>
+            <p class="text-xs text-green-600 mb-8 font-mono">> DOWNLOAD_COMPLETE.JSON<br>> KEEP_FILE_SAFE</p>
+
+            <button onclick="closeSuccessModal()"
+                class="btn-term w-full py-3 text-sm font-bold bg-green-900/20 hover:bg-green-500 hover:text-black transition-all">
+                ACKNOWLEDGE
+            </button>
+        </div>
+    </div>
+
     <script>
         // DOM Elements
         const loginScreen = document.getElementById('login-screen');
@@ -211,7 +227,7 @@
                 document.body.removeChild(a);
 
                 closePinModal();
-                alert("> DOWNLOAD COMPLETE. KEEP THIS FILE SAFE.");
+                showSuccessModal();
 
                 btn.innerText = origText;
 
@@ -220,6 +236,14 @@
                 pinError.innerHTML = "> SERVER ERROR: " + err.message;
                 pinError.classList.remove('hidden');
             }
+        }
+
+        function showSuccessModal() {
+            document.getElementById('success-modal').classList.remove('hidden');
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('success-modal').classList.add('hidden');
         }
 
         // Enter key support
