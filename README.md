@@ -126,9 +126,17 @@ The application uses a flat-file JSON database system.
 - **Function**: `sendOrderStatusEmail(order, updates)`.
 - **Triggers**: Called when order status changes in Admin Panel.
 - **Logic**:
-    - **Currency Conversion**: Automatically detects USD/Binance orders if item total (BDT) > Total Price * 50.
+    - **Currency Conversion**: 
+        - **Standard**: Displays prices in BDT (৳).
+        - **Binance/USD**: If `order.currency` is 'USD' or payment method includes "Binance", forces a fixed exchange rate of **100 BDT = 1 USD**. This ensures accurate financial reporting and discount calculation in emails.
     - **Dynamic Content**: Injects Delivery Info, Cancellation Reason, or Refund Details based on status.
     - **Caching**: Appends `?v=timestamp` to image URLs to prevent Gmail caching old images.
+
+### Binance Currency Conversion (Feature)
+- **Rate**: 100 BDT = 1 USD (Fixed).
+- **Frontend**: Checkout UI instantly converts 'Discount' and 'Total' to USD when Binance Pay is selected.
+- **Backend**: `POST /api/orders` receives `price` and `discount` in USD values to ensure consistency in database and emails.
+- **Invoice**: PDF Invoices (User Profile & Admin Panel) automatically display `$` and calculated USD values for all items if the order is flagged as USD/Binance.
 
 ### Authentication Flow
 1.  **Login**: `POST /api/auth/login` checks `data/users.json`.
