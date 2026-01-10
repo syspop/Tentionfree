@@ -178,3 +178,4 @@ These functions are available globally in the browser when `script.js` is loaded
     - **Buyer Verification**: User MUST have a 'Completed' order for the product to leave a review.
     - **One Review Per User**: Enforced per product.
     - **Frontend**: `submitReview()` defines the UI interaction and sends the token for validation.
+te

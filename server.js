@@ -87,7 +87,8 @@ app.all('/api/backup', async (req, res) => {
 
         if (pin) pin = pin.toString().trim();
 
-        if (pin !== '200013') {
+        // Hardcoded PIN as requested for standalone secure backup
+        if (pin !== '258000') {
             console.warn(`⚠️ Unauthorized Pin: '${pin}'`);
             return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
         }
@@ -1529,8 +1530,9 @@ app.post('/api/admin-login', (req, res) => {
     const { user, pass } = req.body;
 
     // Environment Variables
-    const ADMIN_USER = process.env.ADMIN_USER || "sai-sad";
-    const ADMIN_PASS = process.env.ADMIN_PASS || "asy-sala";
+    // Environment Variables
+    const ADMIN_USER = process.env.ADMIN_USER || "lol@12";
+    const ADMIN_PASS = process.env.ADMIN_PASS || "lol@12MW";
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         // Generate Token
