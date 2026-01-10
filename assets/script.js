@@ -3277,41 +3277,361 @@ async function submitReview() {
     const rating = parseInt(document.getElementById('review-rating').value);
     const comment = document.getElementById('review-comment').value.trim();
 
-    // Get current product ID from URL or global state
-    // We can parse URL: /product/123
-    const path = window.location.pathname;
-    const segments = path.split('/');
-    // Check if slug or ID. If checking API, better to have ID.
-    // product-details.html usually has 'products' global or we can find it.
-    // However, the page logic might not have exposed 'currentProductId'.
-    // Let's rely on finding it from the DOM or URL.
-    // In product-details.html, we likely populated it.
-    // 'products' array is available.
+    // Strategy 1: Global Variable from loadProductDetailsPage
+    let productId = window.currentProductId;
 
-    // Better strategy: The submit button calls submitReviewPage() which calls submitReview().
-    // We need the ID.
-    // Let's assume 'products' is loaded and we can match URL.
-    // Or we can grab it from a data attribute if we added one.
-    // I will add a safe retrieval method.
+    // Strategy 2: URL Fallback
+    if (!productId) {
+        const path = window.location.pathname;
+        const segments = path.split('/');
+        if (segments.includes('product')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('id')) productId = urlParams.get('id');
+            else {
+                const last = segments[segments.length - 1];
+                if (!isNaN(last)) productId = last;
+            }
+        }
+    }
 
-    let productId = null;
-    if (segments.includes('product')) {
-        // try from URL param ?id=...
-        // --- 8. REVIEWS & ERROR MODAL ---
+    if (!productId) {
+        // Strategy 3: Try finding from products list by slug
+        const segments = window.location.pathname.split('/');
+        const slug = segments[segments.length - 1];
+        // We need 'products'
+        if (typeof products !== 'undefined') {
+            const p = products.find(prod => prod.id == slug || prod.slug == slug);
+            if (p) productId = p.id;
+        }
+    }
 
-        // 8.1 Error Modal (Dynamic Injection)
-        function showErrorModal(title, message) {
-            let modal = document.getElementById('global-error-modal');
+    if (!productId) return showErrorModal("Global Error", "Product ID not found. Please refresh.");
 
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'global-error-modal';
-                // Increased Z-index to ensure it shows up over everything
-                modal.className = 'fixed inset-0 z-[9999] overflow-y-auto hidden';
-                modal.ariaLabelledby = 'modal-title';
-                modal.role = 'dialog';
-                modal.ariaModal = 'true';
-                modal.innerHTML = `
+    if (!rating) return showErrorModal("Invalid Rating", "Please select a rating.");
+    if (!comment) return showErrorModal("Missing Comment", "Please write a comment.");
+
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        // Just use ErrorModal to prompt login if generic modal fails
+        if (window.showLoginRequiredModal) window.showLoginRequiredModal();
+        else showErrorModal("Login Required", "You must be logged in to leave a review.");
+        return;
+    }
+    const user = JSON.parse(userStr);
+
+    try {
+        const res = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('userToken')
+            },
+            body: JSON.stringify({
+                productId,
+                rating,
+                comment,
+                userName: name || user.name || 'Anonymous'
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            showSuccessModal();
+            document.getElementById('page-review-form').classList.add('hidden');
+            document.getElementById('review-comment').value = '';
+            loadReviews(productId);
+        } else {
+            // Error Handling
+            if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
+                showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
+            } else {
+                showErrorModal("Review Failed", data.message || "Could not submit review.");
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        showErrorModal("Network Error", "Please check your connection.");
+    }
+}
+
+// Expose to window
+window.submitReview = submitReview;
+window.loadReviews = loadReviews;
+window.showErrorModal = showErrorModal;
+
+// --- Page Specific Button Handlers ---
+function addToCartPage(id) {
+    addToCart(id, true, 'page');
+}
+
+function buyNowPage(id) {
+    buyNow(id, 'page');
+}
+
+// Update Price on Page (Variant Change)
+function updatePagePrice(id) {
+    const product = products.find(p => p.id === id);
+    const select = document.getElementById('page-variant-select');
+    if (!select || !product) return;
+
+    const index = select.value;
+    const variant = product.variants[index];
+
+    if (variant) {
+        document.getElementById('page-display-price').innerText = `৳${variant.price}`;
+        document.getElementById('page-display-org-price').innerText = `৳${variant.originalPrice}`;
+    }
+}
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Payment Section on Checkout Page
+    if (document.querySelector('input[name="paymentType"]')) {
+        console.log("Initializing Checkout Payment Section...");
+        togglePaymentSection();
+    }
+
+    // Initialize Home Page Products
+    if (document.getElementById('home-product-grid')) {
+        renderHomeProducts();
+    }
+
+    // Initialize Cart Badge
+    updateCartCount();
+
+    // Check Login State for UI
+    checkLogin();
+});
+
+// --- Authentication & UI Logic ---
+function checkLogin() {
+    const user = localStorage.getItem('user');
+    const dtLink = document.querySelector('a[href="login"]');
+    const mbLink = document.getElementById('mobile-auth-link');
+
+    if (user) {
+        // Logged In
+        if (dtLink) {
+            dtLink.innerHTML = `
+                <i class="fa-solid fa-user text-xl mr-2"></i>
+                <span class="text-sm font-medium">Profile</span>
+            `;
+            dtLink.href = 'profile.html';
+        }
+
+        if (mbLink) {
+            mbLink.innerHTML = `
+                <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Profile</span>
+            `;
+            mbLink.href = 'profile.html';
+            mbLink.classList.remove('text-slate-400');
+            mbLink.classList.add('text-brand-500');
+            mbLink.closest('a').classList.add('text-brand-500');
+        }
+    } else {
+        // Guest
+        if (dtLink) {
+            dtLink.innerHTML = `
+                 <i class="fa-solid fa-user text-xl mr-2"></i>
+                 <span class="text-sm font-medium">Login</span>
+            `;
+            dtLink.href = 'login';
+        }
+
+        if (mbLink) {
+            mbLink.innerHTML = `
+                <i class="fa-solid fa-sign-in-alt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Login</span>
+            `;
+            mbLink.href = 'login';
+            mbLink.classList.add('text-slate-400');
+            mbLink.classList.remove('text-brand-500');
+            mbLink.closest('a').classList.remove('text-brand-500');
+        }
+    }
+}
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('id')) productId = urlParams.get('id');
+else {
+    const last = segments[segments.length - 1];
+    if (!isNaN(last)) productId = last;
+}
+    }
+
+if (!productId) {
+    // Strategy 3: Try finding from products list by slug
+    const segments = window.location.pathname.split('/');
+    const slug = segments[segments.length - 1];
+    // We need 'products'
+    if (typeof products !== 'undefined') {
+        const p = products.find(prod => prod.id == slug || prod.slug == slug);
+        if (p) productId = p.id;
+    }
+}
+
+if (!productId) return showErrorModal("Global Error", "Product ID not found. Please refresh.");
+
+if (!rating) return showErrorModal("Invalid Rating", "Please select a rating.");
+if (!comment) return showErrorModal("Missing Comment", "Please write a comment.");
+
+const userStr = localStorage.getItem('user');
+if (!userStr) {
+    // Just use ErrorModal to prompt login if generic modal fails
+    if (window.showLoginRequiredModal) window.showLoginRequiredModal();
+    else showErrorModal("Login Required", "You must be logged in to leave a review.");
+    return;
+}
+const user = JSON.parse(userStr);
+
+try {
+    const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('userToken')
+        },
+        body: JSON.stringify({
+            productId,
+            rating,
+            comment,
+            userName: name || user.name || 'Anonymous'
+        })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+        showSuccessModal();
+        document.getElementById('page-review-form').classList.add('hidden');
+        document.getElementById('review-comment').value = '';
+        loadReviews(productId);
+    } else {
+        // Error Handling
+        if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
+            showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
+        } else {
+            showErrorModal("Review Failed", data.message || "Could not submit review.");
+        }
+    }
+} catch (e) {
+    console.error(e);
+    showErrorModal("Network Error", "Please check your connection.");
+}
+}
+
+// Expose to window
+window.submitReview = submitReview;
+window.loadReviews = loadReviews;
+window.showErrorModal = showErrorModal;
+
+// --- Page Specific Button Handlers ---
+function addToCartPage(id) {
+    addToCart(id, true, 'page');
+}
+
+function buyNowPage(id) {
+    buyNow(id, 'page');
+}
+
+// Update Price on Page (Variant Change)
+function updatePagePrice(id) {
+    const product = products.find(p => p.id === id);
+    const select = document.getElementById('page-variant-select');
+    if (!select || !product) return;
+
+    const index = select.value;
+    const variant = product.variants[index];
+
+    if (variant) {
+        document.getElementById('page-display-price').innerText = `৳${variant.price}`;
+        document.getElementById('page-display-org-price').innerText = `৳${variant.originalPrice}`;
+    }
+}
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Payment Section on Checkout Page
+    if (document.querySelector('input[name="paymentType"]')) {
+        console.log("Initializing Checkout Payment Section...");
+        togglePaymentSection();
+    }
+
+    // Initialize Home Page Products
+    if (document.getElementById('home-product-grid')) {
+        renderHomeProducts();
+    }
+
+    // Initialize Cart Badge
+    updateCartCount();
+
+    // Check Login State for UI
+    checkLogin();
+});
+
+// --- Authentication & UI Logic ---
+function checkLogin() {
+    const user = localStorage.getItem('user');
+    const dtLink = document.querySelector('a[href="login"]');
+    const mbLink = document.getElementById('mobile-auth-link');
+
+    if (user) {
+        // Logged In
+        if (dtLink) {
+            dtLink.innerHTML = `
+                <i class="fa-solid fa-user text-xl mr-2"></i>
+                <span class="text-sm font-medium">Profile</span>
+            `;
+            dtLink.href = 'profile.html';
+        }
+
+        if (mbLink) {
+            mbLink.innerHTML = `
+                <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Profile</span>
+            `;
+            mbLink.href = 'profile.html';
+            mbLink.classList.remove('text-slate-400');
+            mbLink.classList.add('text-brand-500');
+            mbLink.closest('a').classList.add('text-brand-500');
+        }
+    } else {
+        // Guest
+        if (dtLink) {
+            dtLink.innerHTML = `
+                 <i class="fa-solid fa-user text-xl mr-2"></i>
+                 <span class="text-sm font-medium">Login</span>
+            `;
+            dtLink.href = 'login';
+        }
+
+        if (mbLink) {
+            mbLink.innerHTML = `
+                <i class="fa-solid fa-sign-in-alt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-medium">Login</span>
+            `;
+            mbLink.href = 'login';
+            mbLink.classList.add('text-slate-400');
+            mbLink.classList.remove('text-brand-500');
+            mbLink.closest('a').classList.remove('text-brand-500');
+        }
+    }
+}
+
+// 8.1 Error Modal (Dynamic Injection)
+function showErrorModal(title, message) {
+    let modal = document.getElementById('global-error-modal');
+
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'global-error-modal';
+        // Increased Z-index to ensure it shows up over everything
+        modal.className = 'fixed inset-0 z-[9999] overflow-y-auto hidden';
+        modal.ariaLabelledby = 'modal-title';
+        modal.role = 'dialog';
+        modal.ariaModal = 'true';
+        modal.innerHTML = `
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-slate-900/90 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeErrorModal()"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -3337,49 +3657,49 @@ async function submitReview() {
                 </div>
             </div>
         `;
-                document.body.appendChild(modal);
-            }
+        document.body.appendChild(modal);
+    }
 
-            document.getElementById('error-modal-title').innerText = title;
-            document.getElementById('error-modal-message').innerText = message;
+    document.getElementById('error-modal-title').innerText = title;
+    document.getElementById('error-modal-message').innerText = message;
 
-            // Force show
-            modal.classList.remove('hidden');
-            console.log("Error Modal Displayed:", title, message);
+    // Force show
+    modal.classList.remove('hidden');
+    console.log("Error Modal Displayed:", title, message);
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('global-error-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// 8.2 Load Reviews
+async function loadReviews(productId) {
+    const list = document.getElementById('page-reviews-list');
+    const summary = document.getElementById('page-rating-summary');
+    if (!list) return;
+
+    list.innerHTML = '<div class="text-slate-500 text-center text-sm py-4">Loading reviews...</div>';
+
+    try {
+        const res = await fetch(`/api/reviews?productId=${productId}`);
+        const data = await res.json();
+        const reviews = data.reviews || [];
+
+        // Calculate Average
+        if (reviews.length > 0) {
+            const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+            if (summary) summary.innerText = `(${avg.toFixed(1)}/5)`;
+        } else {
+            if (summary) summary.innerText = "(No reviews yet)";
         }
 
-        function closeErrorModal() {
-            const modal = document.getElementById('global-error-modal');
-            if (modal) modal.classList.add('hidden');
+        if (reviews.length === 0) {
+            list.innerHTML = '<div class="text-slate-500 text-center py-4 text-sm italic">Be the first to review this product!</div>';
+            return;
         }
 
-        // 8.2 Load Reviews
-        async function loadReviews(productId) {
-            const list = document.getElementById('page-reviews-list');
-            const summary = document.getElementById('page-rating-summary');
-            if (!list) return;
-
-            list.innerHTML = '<div class="text-slate-500 text-center text-sm py-4">Loading reviews...</div>';
-
-            try {
-                const res = await fetch(`/api/reviews?productId=${productId}`);
-                const data = await res.json();
-                const reviews = data.reviews || [];
-
-                // Calculate Average
-                if (reviews.length > 0) {
-                    const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-                    if (summary) summary.innerText = `(${avg.toFixed(1)}/5)`;
-                } else {
-                    if (summary) summary.innerText = "(No reviews yet)";
-                }
-
-                if (reviews.length === 0) {
-                    list.innerHTML = '<div class="text-slate-500 text-center py-4 text-sm italic">Be the first to review this product!</div>';
-                    return;
-                }
-
-                list.innerHTML = reviews.map(r => `
+        list.innerHTML = reviews.map(r => `
             <div class="bg-slate-900 rounded-xl p-4 border border-slate-800/50">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -3394,193 +3714,193 @@ async function submitReview() {
             </div>
         `).join('');
 
-            } catch (e) {
-                console.error(e);
-                list.innerHTML = '<div class="text-red-400 text-center text-sm py-2">Failed to load reviews.</div>';
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<div class="text-red-400 text-center text-sm py-2">Failed to load reviews.</div>';
+    }
+}
+
+// 8.3 Submit Review
+async function submitReview() {
+    const name = document.getElementById('review-name').value.trim();
+    const rating = parseInt(document.getElementById('review-rating').value);
+    const comment = document.getElementById('review-comment').value.trim();
+
+    // Strategy 1: Global Variable from loadProductDetailsPage
+    let productId = window.currentProductId;
+
+    // Strategy 2: URL Fallback
+    if (!productId) {
+        const path = window.location.pathname;
+        const segments = path.split('/');
+        if (segments.includes('product')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('id')) productId = urlParams.get('id');
+            else {
+                const last = segments[segments.length - 1];
+                if (!isNaN(last)) productId = last;
             }
         }
+    }
 
-        // 8.3 Submit Review
-        async function submitReview() {
-            const name = document.getElementById('review-name').value.trim();
-            const rating = parseInt(document.getElementById('review-rating').value);
-            const comment = document.getElementById('review-comment').value.trim();
-
-            // Strategy 1: Global Variable from loadProductDetailsPage
-            let productId = window.currentProductId;
-
-            // Strategy 2: URL Fallback
-            if (!productId) {
-                const path = window.location.pathname;
-                const segments = path.split('/');
-                if (segments.includes('product')) {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.get('id')) productId = urlParams.get('id');
-                    else {
-                        const last = segments[segments.length - 1];
-                        if (!isNaN(last)) productId = last;
-                    }
-                }
-            }
-
-            if (!productId) {
-                // Strategy 3: Try finding from products list by slug
-                const segments = window.location.pathname.split('/');
-                const slug = segments[segments.length - 1];
-                if (typeof products !== 'undefined') {
-                    const p = products.find(prod => prod.id == slug || prod.slug == slug);
-                    if (p) productId = p.id;
-                }
-            }
-
-            if (!productId) return showErrorModal("Global Error", "Product ID not found. Please refresh.");
-
-            if (!rating) return showErrorModal("Invalid Rating", "Please select a rating.");
-            if (!comment) return showErrorModal("Missing Comment", "Please write a comment.");
-
-            const userStr = localStorage.getItem('user');
-            if (!userStr) {
-                // Just use ErrorModal to prompt login if generic modal fails
-                if (window.showLoginRequiredModal) window.showLoginRequiredModal();
-                else showErrorModal("Login Required", "You must be logged in to leave a review.");
-                return;
-            }
-            const user = JSON.parse(userStr);
-
-            try {
-                const res = await fetch('/api/reviews', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('userToken')
-                    },
-                    body: JSON.stringify({
-                        productId,
-                        rating,
-                        comment,
-                        userName: name || user.name || 'Anonymous'
-                    })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    showSuccessModal();
-                    document.getElementById('page-review-form').classList.add('hidden');
-                    document.getElementById('review-comment').value = '';
-                    loadReviews(productId);
-                } else {
-                    // Error Handling
-                    if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
-                        showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
-                    } else {
-                        showErrorModal("Review Failed", data.message || "Could not submit review.");
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-                showErrorModal("Network Error", "Please check your connection.");
-            }
+    if (!productId) {
+        // Strategy 3: Try finding from products list by slug
+        const segments = window.location.pathname.split('/');
+        const slug = segments[segments.length - 1];
+        if (typeof products !== 'undefined') {
+            const p = products.find(prod => prod.id == slug || prod.slug == slug);
+            if (p) productId = p.id;
         }
+    }
 
-        // Expose to window
-        window.submitReview = submitReview;
-        window.loadReviews = loadReviews;
-        window.showErrorModal = showErrorModal;
+    if (!productId) return showErrorModal("Global Error", "Product ID not found. Please refresh.");
 
-        // --- Page Specific Button Handlers ---
-        function addToCartPage(id) {
-            addToCart(id, true, 'page');
-        }
+    if (!rating) return showErrorModal("Invalid Rating", "Please select a rating.");
+    if (!comment) return showErrorModal("Missing Comment", "Please write a comment.");
 
-        function buyNowPage(id) {
-            buyNow(id, 'page');
-        }
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+        // Just use ErrorModal to prompt login if generic modal fails
+        if (window.showLoginRequiredModal) window.showLoginRequiredModal();
+        else showErrorModal("Login Required", "You must be logged in to leave a review.");
+        return;
+    }
+    const user = JSON.parse(userStr);
 
-        // Update Price on Page (Variant Change)
-        function updatePagePrice(id) {
-            const product = products.find(p => p.id === id);
-            const select = document.getElementById('page-variant-select');
-            if (!select || !product) return;
-
-            const index = select.value;
-            const variant = product.variants[index];
-
-            if (variant) {
-                document.getElementById('page-display-price').innerText = `৳${variant.price}`;
-                document.getElementById('page-display-org-price').innerText = `৳${variant.originalPrice}`;
-            }
-        }
-
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Payment Section on Checkout Page
-            if (document.querySelector('input[name="paymentType"]')) {
-                console.log("Initializing Checkout Payment Section...");
-                togglePaymentSection();
-            }
-
-            // Initialize Home Page Products
-            if (document.getElementById('home-product-grid')) {
-                renderHomeProducts();
-            }
-
-            // Initialize Cart Badge
-            // Initialize Cart Badge
-            updateCartCount();
-
-            // Check Login State for UI
-            checkLogin();
+    try {
+        const res = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('userToken')
+            },
+            body: JSON.stringify({
+                productId,
+                rating,
+                comment,
+                userName: name || user.name || 'Anonymous'
+            })
         });
 
-        // --- Authentication & UI Logic ---
-        function checkLogin() {
-            const user = localStorage.getItem('user');
-            const dtLink = document.querySelector('a[href="login"]');
-            const mbLink = document.getElementById('mobile-auth-link');
+        const data = await res.json();
 
-            if (user) {
-                // Logged In
-                if (dtLink) {
-                    dtLink.innerHTML = `
+        if (res.ok && data.success) {
+            showSuccessModal();
+            document.getElementById('page-review-form').classList.add('hidden');
+            document.getElementById('review-comment').value = '';
+            loadReviews(productId);
+        } else {
+            // Error Handling
+            if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
+                showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
+            } else {
+                showErrorModal("Review Failed", data.message || "Could not submit review.");
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        showErrorModal("Network Error", "Please check your connection.");
+    }
+}
+
+// Expose to window
+window.submitReview = submitReview;
+window.loadReviews = loadReviews;
+window.showErrorModal = showErrorModal;
+
+// --- Page Specific Button Handlers ---
+function addToCartPage(id) {
+    addToCart(id, true, 'page');
+}
+
+function buyNowPage(id) {
+    buyNow(id, 'page');
+}
+
+// Update Price on Page (Variant Change)
+function updatePagePrice(id) {
+    const product = products.find(p => p.id === id);
+    const select = document.getElementById('page-variant-select');
+    if (!select || !product) return;
+
+    const index = select.value;
+    const variant = product.variants[index];
+
+    if (variant) {
+        document.getElementById('page-display-price').innerText = `৳${variant.price}`;
+        document.getElementById('page-display-org-price').innerText = `৳${variant.originalPrice}`;
+    }
+}
+
+// --- Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Payment Section on Checkout Page
+    if (document.querySelector('input[name="paymentType"]')) {
+        console.log("Initializing Checkout Payment Section...");
+        togglePaymentSection();
+    }
+
+    // Initialize Home Page Products
+    if (document.getElementById('home-product-grid')) {
+        renderHomeProducts();
+    }
+
+    // Initialize Cart Badge
+    // Initialize Cart Badge
+    updateCartCount();
+
+    // Check Login State for UI
+    checkLogin();
+});
+
+// --- Authentication & UI Logic ---
+function checkLogin() {
+    const user = localStorage.getItem('user');
+    const dtLink = document.querySelector('a[href="login"]');
+    const mbLink = document.getElementById('mobile-auth-link');
+
+    if (user) {
+        // Logged In
+        if (dtLink) {
+            dtLink.innerHTML = `
                 <i class="fa-solid fa-user text-xl mr-2"></i>
                 <span class="text-sm font-medium">Profile</span>
             `;
-                    dtLink.href = 'profile.html';
-                }
+            dtLink.href = 'profile.html';
+        }
 
-                if (mbLink) {
-                    mbLink.innerHTML = `
+        if (mbLink) {
+            mbLink.innerHTML = `
                 <i class="fa-solid fa-user mb-1 text-xl group-hover:scale-110 transition-transform"></i>
                 <span class="text-[10px] font-medium">Profile</span>
             `;
-                    mbLink.href = 'profile.html';
-                    mbLink.classList.remove('text-slate-400');
-                    mbLink.classList.add('text-brand-500');
-                    mbLink.closest('a').classList.add('text-brand-500');
-                }
-            } else {
-                // Guest
-                if (dtLink) {
-                    dtLink.innerHTML = `
+            mbLink.href = 'profile.html';
+            mbLink.classList.remove('text-slate-400');
+            mbLink.classList.add('text-brand-500');
+            mbLink.closest('a').classList.add('text-brand-500');
+        }
+    } else {
+        // Guest
+        if (dtLink) {
+            dtLink.innerHTML = `
                  <i class="fa-solid fa-user text-xl mr-2"></i>
                  <span class="text-sm font-medium">Login</span>
             `;
-                    dtLink.href = 'login';
-                }
+            dtLink.href = 'login';
+        }
 
-                if (mbLink) {
-                    mbLink.innerHTML = `
+        if (mbLink) {
+            mbLink.innerHTML = `
                 <i class="fa-solid fa-sign-in-alt mb-1 text-xl group-hover:scale-110 transition-transform"></i>
                 <span class="text-[10px] font-medium">Login</span>
             `;
-                    mbLink.href = 'login';
-                    mbLink.classList.add('text-slate-400');
-                    mbLink.classList.remove('text-brand-500');
-                    mbLink.closest('a').classList.remove('text-brand-500');
-                }
-            }
+            mbLink.href = 'login';
+            mbLink.classList.add('text-slate-400');
+            mbLink.classList.remove('text-brand-500');
+            mbLink.closest('a').classList.remove('text-brand-500');
         }
+    }
+}
 
 
 
