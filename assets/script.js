@@ -1117,7 +1117,8 @@ function initCheckoutPage() {
         summaryContainer.innerHTML = '';
         let total = 0;
         itemsToCheckout.forEach(item => {
-            total += item.price * item.quantity;
+            const quantity = item.quantity || 1;
+            total += Number(item.price) * quantity;
             const div = document.createElement('div');
             div.className = 'flex justify-between items-center text-sm text-slate-300 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0';
             div.innerHTML = `
@@ -1125,10 +1126,10 @@ function initCheckoutPage() {
                     <img src="${item.image}" class="w-10 h-10 object-contain mr-3 rounded-lg bg-slate-800 p-1">
                     <div>
                         <p class="font-medium text-white">${item.name}</p>
-                        <p class="text-xs text-slate-500">x${item.quantity}</p>
+                        <p class="text-xs text-slate-500">x${quantity}</p>
                     </div>
                 </div>
-                <span class="font-bold text-white">৳${item.price * item.quantity}</span>
+                <span class="font-bold text-white">৳${(Number(item.price) * quantity).toFixed(2)}</span>
             `;
             summaryContainer.appendChild(div);
         });
@@ -1141,7 +1142,7 @@ function initCheckoutPage() {
     // --- FREE ORDER CHECK ---
     // Calculate total explicitly
     let currentTotal = 0;
-    itemsToCheckout.forEach(item => currentTotal += Number(item.price) * Number(item.quantity));
+    itemsToCheckout.forEach(item => currentTotal += Number(item.price) * Number(item.quantity || 1));
 
     if (currentTotal <= 0) {
         // 1. Set Hidden Flag
@@ -2297,19 +2298,29 @@ async function submitOrder(e) {
         return;
     }
 
-    // Determine Items
-    let isBuyNowMode = false;
-    let buyNowItem = null;
-    const buyNowData = localStorage.getItem('tentionfree_buyNow');
-    if (buyNowData) {
-        isBuyNowMode = true;
-        buyNowItem = JSON.parse(buyNowData);
-    }
-    const cart = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
-    const itemsToOrder = isBuyNowMode ? [buyNowItem] : cart;
+    // Determine Items using Global State if available, else localStorage
+    let itemsToOrder = [];
 
-    if (itemsToOrder.length === 0) {
-        showErrorModal("Empty Cart", "Your cart is empty.");
+    // Check Global Variables first (set by initCheckoutPage)
+    if (typeof isBuyNowMode !== 'undefined' && isBuyNowMode && buyNowItem) {
+        itemsToOrder = [buyNowItem];
+        console.log("Using Global BuyNow Item");
+    } else if (typeof cart !== 'undefined' && cart.length > 0) {
+        itemsToOrder = cart;
+        console.log("Using Global Cart");
+    } else {
+        // Fallback to localStorage
+        console.log("Using LocalStorage Fallback");
+        const buyNowData = localStorage.getItem('tentionfree_buyNow');
+        if (buyNowData) {
+            itemsToOrder = [JSON.parse(buyNowData)];
+        } else {
+            itemsToOrder = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
+        }
+    }
+
+    if (!itemsToOrder || itemsToOrder.length === 0) {
+        showErrorModal("Empty Cart", "Your cart is empty. Please try refreshing the page.");
         return;
     }
 
@@ -2404,9 +2415,11 @@ async function submitOrder(e) {
 
     // --- 4. CALCULATION & CURRENCY & COUPON (Re-use logic) ---
     // Recalculate everything same way as UI
-    let totalBDT = itemsToOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    let totalBDT = itemsToOrder.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
     let discountAmount = 0;
-    if (appliedCoupon) {
+    // We need to access the appliedCoupon variable which should be global or stored
+    // Assuming appliedCoupon is global from script.js scope (lines 2200ish)
+    if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
         if (appliedCoupon.type === 'percent') discountAmount = (totalBDT * appliedCoupon.value) / 100;
         else discountAmount = appliedCoupon.value;
         if (discountAmount > totalBDT) discountAmount = totalBDT;
@@ -2423,6 +2436,10 @@ async function submitOrder(e) {
         finalPrice = 0;
     }
 
+    // Check Pay Later Method (WhatsApp vs Email)
+    const orderMethodRadio = document.querySelector('input[name="orderMethod"]:checked');
+    const orderMethod = orderMethodRadio ? orderMethodRadio.value : 'whatsapp'; // Default to WhatsApp
+
     // --- 5. SEND ---
     const orderData = {
         id: Date.now(),
@@ -2432,11 +2449,11 @@ async function submitOrder(e) {
         phone: customerPhone,
         email: customerEmail,
         gameUid: extraDetails.trim() || 'N/A', // Notes/Details
-        product: itemsToOrder.map(i => `${i.name} (x${i.quantity})`).join(', '),
+        product: itemsToOrder.map(i => `${i.name} (x${i.quantity || 1})`).join(', '),
         price: finalPrice.toFixed(2),
         currency: currency,
         originalPriceBDT: totalBDT.toFixed(2),
-        couponCode: appliedCoupon ? appliedCoupon.code : null,
+        couponCode: (typeof appliedCoupon !== 'undefined' && appliedCoupon) ? appliedCoupon.code : null,
         discount: discountAmount.toFixed(2),
         status: "Pending",
         paymentMethod: paymentMethodShort,
@@ -2457,13 +2474,29 @@ async function submitOrder(e) {
                 localStorage.removeItem('cart');
                 localStorage.removeItem('tentionfree_cart'); // Clear both
                 localStorage.removeItem('tentionfree_buyNow');
-                showSuccessModal();
+
+                // WHATSAPP REDIRECTION LOGIC
+                if (paymentMethod === 'Pay Later' && orderMethod === 'whatsapp') {
+                    const message = `Hello Tention Free,\nI placed a new order #${orderData.id}.\n\nName: ${customerName}\nItem: ${orderData.product}\nTotal: ${currency} ${finalPrice.toFixed(2)}\nmethod: ${paymentMethodShort}\n\nPlease confirm my order.`;
+                    const waUrl = `https://wa.me/8801869895549?text=${encodeURIComponent(message)}`;
+
+                    // Show a specialized success modal or just redirect?
+                    // Let's redirect after a brief Toast
+                    showToast("Order Placed! Redirecting to WhatsApp...");
+                    setTimeout(() => {
+                        window.location.href = waUrl;
+                    }, 1500);
+                } else {
+                    showSuccessModal();
+                }
+
             } else {
                 showErrorModal("Submission Failed", data.message || "Unknown error.");
             }
         })
         .catch(err => {
-            showErrorModal("Network Error", "Failed to submit order.");
+            console.error(err);
+            showErrorModal("Network Error", "Failed to submit order. Please try again.");
         });
 }
 
