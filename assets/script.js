@@ -3558,3 +3558,80 @@ function checkLogin() {
         }
     }
 }
+// --- 8. GLOBAL MODALS (ADDED VIA DEBUGGING) ---
+
+window.createGlobalModal = function () {
+    if (document.getElementById('global-modal')) return;
+    const div = document.createElement('div');
+    div.id = 'global-modal';
+    div.className = 'fixed inset-0 z-[10000] flex items-center justify-center hidden opacity-0 transition-opacity duration-300';
+    div.innerHTML = `
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300" onclick="closeGlobalModal()"></div>
+        <div class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full text-center mx-4">
+             <div id="gm-icon-bg" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20">
+                <i id="gm-icon" class="fa-solid fa-check text-emerald-400 text-3xl"></i>
+            </div>
+            <h3 id="gm-title" class="text-xl font-bold text-white mb-2">Success</h3>
+            <p id="gm-msg" class="text-slate-400 text-sm mb-6">Action Completed.</p>
+            <button onclick="closeGlobalModal()" id="gm-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-brand-500/20">
+                Okay
+            </button>
+        </div>
+    `;
+    document.body.appendChild(div);
+}
+
+window.showSuccessModal = function (title = "Order Placed!", msg = "Your order has been placed successfully.") {
+    createGlobalModal();
+    const modal = document.getElementById('global-modal');
+
+    document.getElementById('gm-icon').className = "fa-solid fa-check text-emerald-400 text-3xl";
+    document.getElementById('gm-icon-bg').className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20";
+    document.getElementById('gm-title').innerText = title;
+    document.getElementById('gm-msg').innerText = msg;
+
+    const btn = document.getElementById('gm-btn');
+    btn.innerText = "View Order";
+    btn.onclick = function () {
+        window.location.href = 'profile.html';
+    };
+
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.children[1].classList.remove('scale-90');
+        modal.children[1].classList.add('scale-100');
+    });
+}
+
+window.showErrorModal = function (title = "Error", msg = "Something went wrong.") {
+    createGlobalModal();
+    const modal = document.getElementById('global-modal');
+
+    document.getElementById('gm-icon').className = "fa-solid fa-triangle-exclamation text-red-500 text-3xl";
+    document.getElementById('gm-icon-bg').className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/20";
+    document.getElementById('gm-title').innerText = title;
+    document.getElementById('gm-msg').innerText = msg;
+
+    const btn = document.getElementById('gm-btn');
+    btn.innerText = "Close";
+    btn.onclick = closeGlobalModal;
+
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.children[1].classList.remove('scale-90');
+        modal.children[1].classList.add('scale-100');
+    });
+}
+
+window.closeGlobalModal = function () {
+    const modal = document.getElementById('global-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    modal.children[1].classList.remove('scale-100');
+    modal.children[1].classList.add('scale-90');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
