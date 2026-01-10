@@ -2955,6 +2955,8 @@ async function loadProductDetailsPage() {
         await fetchProducts();
     }
 
+    const localProducts = window.products || products;
+
     const product = localProducts.find(p => {
         if (p.id == searchId) return true;
         if (p.name && p.name.toLowerCase().replace(/ /g, '-') === searchId) return true;
