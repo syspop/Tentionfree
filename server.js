@@ -536,6 +536,37 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- BACKUP ENDPOINT ---
+app.get('/api/backup', authenticateAdmin, async (req, res) => {
+    try {
+        console.log("Generating Backup...");
+        const backupData = {
+            timestamp: new Date().toISOString(),
+            customers: await readLocalJSON('customers.json') || [],
+            orders: await readLocalJSON('orders.json') || [],
+            products: await readLocalJSON('products.json') || [],
+            coupons: await readLocalJSON('coupons.json') || [],
+            categories: await readLocalJSON('categories.json') || [],
+            reviews: await readLocalJSON('reviews.json') || [],
+            // Include Archive/History
+            archive: {
+                orders: await readLocalJSON('archive/orders.json') || [],
+                customers: await readLocalJSON('archive/customers.json') || [],
+                products: await readLocalJSON('archive/products.json') || [],
+                tickets: await readLocalJSON('archive/tickets.json') || []
+            }
+        };
+
+        // Send as downloadable file
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=tentionfree_full_backup_${Date.now()}.json`);
+        res.json(backupData);
+    } catch (err) {
+        console.error("Backup Error:", err);
+        res.status(500).json({ success: false, error: "Failed to generate backup." });
+    }
+});
+
 // --- ORDERS ---
 // GET Orders - PROTECTED
 // GET Orders - PROTECTED (Paginated) (Hybrid: Read from JSON)
