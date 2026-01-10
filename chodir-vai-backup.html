@@ -178,7 +178,15 @@
                 });
 
                 if (!res.ok) {
-                    throw new Error("Server Rejected PIN");
+                    let errorMsg = "Server Rejected PIN";
+                    try {
+                        const errData = await res.json();
+                        if (errData.error) errorMsg = errData.error;
+                    } catch (e) {
+                        // fallback to status text
+                        errorMsg = `Server Error (${res.status}): ${res.statusText}`;
+                    }
+                    throw new Error(errorMsg);
                 }
 
                 const blob = await res.blob();
