@@ -3267,17 +3267,8 @@ function readFileAsBase64(file) {
 
 // 8.1 Error Modal (Dynamic Injection)
 // 8.1 Error Modal (Static Logic)
-function showErrorModal(title, message) {
-    const modal = document.getElementById('global-error-modal');
-    if (modal) {
-        document.getElementById('error-modal-title').innerText = title;
-        document.getElementById('error-modal-message').innerText = message;
-        modal.classList.remove('hidden');
-    } else {
-        // Fallback for debugging
-        alert(`${title}\n\n${message}`);
-    }
-}
+// 8.1 Error Modal (Moved to Global Modals Section)
+// function showErrorModal(title, message) { ... } removed to avoid conflict
 
 function closeErrorModal() {
     const modal = document.getElementById('global-error-modal');
@@ -3425,18 +3416,13 @@ async function submitReview() {
         } else {
             console.error("Review submission failed:", res.status, data);
 
-            // IMMEDIATE DEBUG ALERT
-            if (res.status === 403) {
-                alert("⚠️ VERIFIED PURCHASE CHECK FAILED\n\nYou must purchase this product to review it.\n\n(Server message: " + (data.message || "Forbidden") + ")");
-            }
-
             // Explicit 403 Check (Verified Purchase)
             if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
-                showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
+                showErrorModal("Verified Purchase Required", "You must purchase and complete an order for this product before reviewing.");
             } else if (res.status === 401) {
                 showErrorModal("Login Required", "Please login to submit a review.");
             } else {
-                showErrorModal("Review Failed", data.message || data.error || "Could not submit review.");
+                showErrorModal("Review Failed", data.message || "Could not submit review.");
             }
         }
     } catch (e) {
@@ -3448,7 +3434,7 @@ async function submitReview() {
 // Expose to window
 window.submitReview = submitReview;
 window.loadReviews = loadReviews;
-window.showErrorModal = showErrorModal;
+// window.showErrorModal is defined at the bottom of the file dynamically
 
 // --- Page Specific Button Handlers ---
 function addToCartPage(id) {

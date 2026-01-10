@@ -1736,7 +1736,7 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
 
         if (!hasPurchased) {
             // Check if admin is exempt? Maybe not.
-            return res.status(403).json({ error: "You must purchase and complete an order for this product before reviewing." });
+            return res.status(403).json({ success: false, message: "You must purchase and complete an order for this product before reviewing." });
         }
         // -------------------------------
 
@@ -1768,7 +1768,7 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
         res.json({ success: true, newReview, newAverage: product.rating, newCount: product.ratingCount });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Failed to save review" });
+        res.status(500).json({ success: false, message: "Failed to save review" });
     }
 });
 
