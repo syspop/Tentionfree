@@ -3388,6 +3388,11 @@ document.addEventListener('DOMContentLoaded', () => {
         renderHomeProducts();
     }
 
+    // Initialize Product Details Page
+    if (document.getElementById('page-product-title')) {
+        loadProductDetailsPage();
+    }
+
     // Initialize Cart Badge
     updateCartCount();
 
