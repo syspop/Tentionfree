@@ -28,12 +28,10 @@ app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 3000;
 
-// Initialize Database on Start
 // Initialize Database on Start (Moved to listen callback)
 // initializeDatabase();
 
 
-// Middleware
 // Middleware
 const allowedOrigins = [
     'https://tentionfree.store',
@@ -218,7 +216,6 @@ app.get(['/services', '/services/'], (req, res) => {
     res.sendFile(__dirname + '/services.html');
 });
 
-// Serve static files (try .html automatically)
 // Serve static files (try .html automatically)
 app.use(express.static(__dirname, {
     extensions: ['html', 'htm']
@@ -542,9 +539,11 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 // --- ORDERS ---
 // GET Orders - PROTECTED
 // GET Orders - PROTECTED (Paginated) (Hybrid: Read from JSON)
+// GET Orders - PROTECTED (Paginated) (Hybrid: Read from JSON)
 app.get('/api/orders', authenticateAdmin, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20; // Default 20
+    const type = req.query.type || 'all'; // 'active' or 'all'
     const skip = (page - 1) * limit;
 
     try {
@@ -556,6 +555,11 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
         // let's assume we want to sort by ID desc or Date desc.
         // Orders usually have 'id' or 'date'.
         allOrders.sort((a, b) => (b.id || 0) - (a.id || 0)); // Sort Newest First
+
+        // Filter based on type
+        if (type === 'active') {
+            allOrders = allOrders.filter(o => !o.isArchived && !o.isDeleted && o.status !== 'Deleted');
+        }
 
         const total = allOrders.length;
         const orders = allOrders.slice(skip, skip + limit);
@@ -739,58 +743,9 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 });
 
 // GET All Orders (Admin) - PROTECTED (Lightweight)
-app.get('/api/orders', authenticateAdmin, async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
+// GET All Orders (Admin) - Duplicate Route Removed
+// The main logic is now handled in the route above with 'type' parameter support.
 
-    try {
-        let allOrders = await readLocalJSON('orders.json') || [];
-
-        // Server-side Filtering (Optional)
-        if (req.query.email) {
-            const qEmail = req.query.email.toLowerCase().trim();
-            allOrders = allOrders.filter(o =>
-                (o.email && o.email.toLowerCase() === qEmail) ||
-                (o.customerEmail && o.customerEmail.toLowerCase() === qEmail)
-            );
-        }
-
-        // Sort: Newest First
-        const sortedOrders = [...allOrders].sort((a, b) => (b.id || 0) - (a.id || 0));
-
-        const total = sortedOrders.length;
-        const sliced = sortedOrders.slice(skip, skip + limit);
-
-        // Strip heavy fields for list view
-        const orders = sliced.map(o => ({
-            id: o.id,
-            date: o.date,
-            customer: o.customer,
-            customerEmail: o.customerEmail,
-            email: o.email,
-            status: o.status,
-            price: o.price,
-            paymentMethod: o.paymentMethod,
-            trx: o.trx,
-            price: o.price,
-            currency: o.currency,
-            isArchived: o.isArchived,
-            isDeleted: o.isDeleted
-            // Exclude: images, items, deliveryInfo, history
-        }));
-
-        res.json({
-            orders,
-            total,
-            page,
-            pages: Math.ceil(total / limit)
-        });
-    } catch (err) {
-        console.error("Error reading orders:", err);
-        res.status(500).json({ error: 'Failed to read orders' });
-    }
-});
 
 // GET Single Order (Full Details) - PROTECTED
 app.get('/api/orders/:id', async (req, res) => {

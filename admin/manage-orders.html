@@ -280,7 +280,8 @@
             }
 
             try {
-                const res = await fetch(`/api/orders?page=${page}&limit=20&t=` + Date.now(), {
+                // Request Type=active to ensure pagination works correctly across active items only
+                const res = await fetch(`/api/orders?type=active&page=${page}&limit=20&t=` + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
                 const data = await res.json();
@@ -352,9 +353,8 @@
             const list = document.getElementById('manage-order-list');
             list.innerHTML = "";
 
-            // Filter out archived, deleted, or cancelled (if you want to hide cancelled from active management, but often we want to see them to delete them)
-            // Let's hide isArchived.
-            const activeOrders = orders.filter(o => !o.isArchived && !o.isDeleted && o.status !== 'Deleted');
+            // Server already filters active/archived for us now.
+            const activeOrders = orders;
 
             // Apply search
             const search = document.getElementById('order-search').value.toLowerCase();
@@ -956,49 +956,35 @@
             const cancelContainer = document.getElementById('view-cancel-container');
             if (order.status === 'Cancelled' && order.cancelReason) {
                 cancelContainer.style.display = 'block';
+                // Reset styles
+                cancelContainer.style.background = 'rgba(239,68,68,0.1)';
+                cancelContainer.style.borderColor = 'rgba(239,68,68,0.2)';
+                document.querySelector('#view-cancel-container small').innerText = 'CANCELLATION REASON';
+                document.querySelector('#view-cancel-container small').style.color = '#ef4444';
+
                 document.getElementById('view-cancel').innerHTML = order.cancelReason + (order.cancelImage ? `<br><img src="${order.cancelImage}" style="max-height:100px; margin-top:5px; border-radius:5px; cursor:pointer;" onclick="window.open(this.src, '_blank')">` : '');
-            } else {
+            }
+            else if (order.status === 'Refunded') {
+                // Refund Info
+                cancelContainer.style.display = 'block';
+                cancelContainer.style.background = 'rgba(168, 85, 247, 0.1)';
+                cancelContainer.style.borderColor = 'rgba(168, 85, 247, 0.2)';
+                document.querySelector('#view-cancel-container small').innerText = 'REFUND DETAILS';
+                document.querySelector('#view-cancel-container small').style.color = '#a855f7';
+
+                let refundHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">Method</small><span style="color:white; font-weight:bold;">${order.refundMethod || 'N/A'}</span></div>
+                        <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">TrxID</small><span style="color:white; font-family:monospace;">${order.refundTrx || 'N/A'}</span></div>
+                     </div>`;
+                if (order.refundNote) refundHtml += `<div style="margin-top:5px; border-top:1px solid rgba(168, 85, 247, 0.2); padding-top:5px;"><small style="color:#a855f7; font-size:10px;">Note</small><div style="color:#cbd5e1;">${order.refundNote}</div></div>`;
+
+                document.getElementById('view-cancel').innerHTML = refundHtml;
+            }
+            else {
                 cancelContainer.style.display = 'none';
             }
 
             document.getElementById('order-view-modal').style.display = 'flex';
-        }
-
-        // Cancel Info
-        if (order.cancelReason) {
-            document.getElementById('view-cancel-container').style.display = 'block';
-            document.getElementById('view-cancel').innerText = order.cancelReason;
-        } else {
-            document.getElementById('view-cancel-container').style.display = 'none';
-        }
-
-        // Refund Info (Reuse cancel container structure or create new, let's reuse/adapt simply by overwriting dynamic UI if needed, but better to add a separate block or clear separation)
-        // For now, let's add logic to show Refund info if status is Refunded
-        // Refund Info
-        if (order.status === 'Refunded') {
-            // Create a temporary view for refund similar to cancel
-            document.getElementById('view-cancel-container').style.display = 'block';
-            document.getElementById('view-cancel-container').style.background = 'rgba(168, 85, 247, 0.1)';
-            document.getElementById('view-cancel-container').style.borderColor = 'rgba(168, 85, 247, 0.2)';
-            document.querySelector('#view-cancel-container small').innerText = 'REFUND DETAILS';
-            document.querySelector('#view-cancel-container small').style.color = '#a855f7';
-
-            let refundHtml = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">Method</small><span style="color:white; font-weight:bold;">${order.refundMethod || 'N/A'}</span></div>
-                    <div><small style="color:#a855f7; display:block; font-size:10px; font-weight:bold; text-transform:uppercase;">TrxID</small><span style="color:white; font-family:monospace;">${order.refundTrx || 'N/A'}</span></div>
-                 </div>`;
-            if (order.refundNote) refundHtml += `<div style="margin-top:5px; border-top:1px solid rgba(168, 85, 247, 0.2); padding-top:5px;"><small style="color:#a855f7; font-size:10px;">Note</small><div style="color:#cbd5e1;">${order.refundNote}</div></div>`;
-
-            document.getElementById('view-cancel').innerHTML = refundHtml;
-        } else if (order.status !== 'Refunded') {
-            // Reset styles if not refunded (back to cancel red)
-            document.getElementById('view-cancel-container').style.background = 'rgba(239,68,68,0.1)';
-            document.getElementById('view-cancel-container').style.borderColor = 'rgba(239,68,68,0.2)';
-            document.querySelector('#view-cancel-container small').innerText = 'CANCELLATION REASON';
-            document.querySelector('#view-cancel-container small').style.color = '#ef4444';
-        }
-
-        document.getElementById('order-view-modal').style.display = 'flex';
         }
     </script>
 </body>

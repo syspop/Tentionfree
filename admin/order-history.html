@@ -140,7 +140,7 @@
 
             try {
                 // Fetch paginated
-                const res = await fetch(`/api/orders?page=${page}&limit=20&t=` + Date.now(), {
+                const res = await fetch(`/api/orders?type=all&page=${page}&limit=20&t=` + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
 
