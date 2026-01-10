@@ -3156,9 +3156,7 @@ function buyNowPage(id) {
     buyNow(id, 'page');
 }
 
-function submitReviewPage() {
-    window.submitReview();
-}
+// function submitReviewPage() removed (duplicate)
 
 // --- 7. UTILITIES & MODALS ---
 
@@ -3181,7 +3179,7 @@ function showErrorModal(title, message) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'global-error-modal';
-        modal.className = 'fixed inset-0 z-[120] overflow-y-auto hidden';
+        modal.className = 'fixed inset-0 z-[999999] overflow-y-auto hidden';
         modal.ariaLabelledby = 'modal-title';
         modal.role = 'dialog';
         modal.ariaModal = 'true';
