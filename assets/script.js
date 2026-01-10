@@ -2197,15 +2197,6 @@ function calculateAndDisplayTotal() {
     const discountRow = document.getElementById('discount-row');
     const discountEl = document.getElementById('discount-amount');
 
-    if (discountRow && discountEl) {
-        if (discount > 0) {
-            discountRow.classList.remove('hidden');
-            discountEl.innerText = '-৳' + discount.toFixed(2);
-        } else {
-            discountRow.classList.add('hidden');
-        }
-    }
-
     if (totalEl) {
         if (method === 'binance') {
             // Conversion: 100 BDT = 1 USD logic
@@ -2213,10 +2204,32 @@ function calculateAndDisplayTotal() {
             totalEl.innerText = '$' + totalUSD.toFixed(2);
             totalEl.classList.add('text-green-400');
             totalEl.classList.remove('text-brand-500');
+
+            // Discount update in USD
+            if (discountRow && discountEl) {
+                if (discount > 0) {
+                    discountRow.classList.remove('hidden');
+                    const discountUSD = discount / 100;
+                    discountEl.innerText = '-$' + discountUSD.toFixed(2);
+                } else {
+                    discountRow.classList.add('hidden');
+                }
+            }
+
         } else {
             totalEl.innerText = '৳' + finalBDT.toFixed(2);
             totalEl.classList.remove('text-green-400');
             totalEl.classList.add('text-brand-500');
+
+            // Discount update in BDT
+            if (discountRow && discountEl) {
+                if (discount > 0) {
+                    discountRow.classList.remove('hidden');
+                    discountEl.innerText = '-৳' + discount.toFixed(2);
+                } else {
+                    discountRow.classList.add('hidden');
+                }
+            }
         }
     }
 }
@@ -2460,9 +2473,13 @@ async function submitOrder(e) {
     let currency = 'BDT';
     let finalPrice = finalBDT;
 
+    // Discount to store (default BDT)
+    let finalDiscount = discountAmount;
+
     if (paymentMethod === 'binance') {
         currency = 'USD';
         finalPrice = finalBDT / 100;
+        finalDiscount = discountAmount / 100;
     } else if (isFreeOrder) {
         finalPrice = 0;
     }
@@ -2485,7 +2502,7 @@ async function submitOrder(e) {
         currency: currency,
         originalPriceBDT: totalBDT.toFixed(2),
         couponCode: (typeof appliedCoupon !== 'undefined' && appliedCoupon) ? appliedCoupon.code : null,
-        discount: discountAmount.toFixed(2),
+        discount: finalDiscount.toFixed(2),
         status: "Pending",
         paymentMethod: paymentMethodShort,
         trx: trxid,

@@ -872,12 +872,19 @@
             // Items
             const items = order.items || order.cart || [];
             let itemsHtml = "";
+            const isUSD = (order.currency === 'USD' || order.paymentMethod === 'Binance Pay');
+
             if (Array.isArray(items)) {
-                itemsHtml = items.map(i => `
+                itemsHtml = items.map(i => {
+                    const totalItemPrice = (i.price * (i.quantity || i.qty || 1));
+                    const displayItemPrice = isUSD ? '$' + (totalItemPrice / 100).toFixed(2) : '৳' + totalItemPrice;
+
+                    return `
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);">
                         <span>${i.name} <span style="font-size:10px; color:var(--gray);">&times;${i.quantity || i.qty || 1}</span></span>
-                        <span>৳${(i.price * (i.quantity || i.qty || 1))}</span>
-                    </div>`).join('');
+                        <span>${displayItemPrice}</span>
+                    </div>`;
+                }).join('');
             } else {
                 itemsHtml = order.product || 'Unknown Item';
             }
@@ -887,12 +894,12 @@
                 itemsHtml += `
                     <div style="display:flex; justify-content:space-between; margin-top:5px; padding-top:5px; color:#ef4444; font-size:12px;">
                         <span>Discount ${order.couponCode ? '(' + order.couponCode + ')' : ''}</span>
-                        <span>- ৳${order.discount}</span>
+                        <span>- ${isUSD ? '$' : '৳'}${order.discount}</span>
                     </div>`;
             }
 
             // Add Total
-            itemsHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:#10b981;">Total: ৳${order.price || order.totalAmount}</div>`;
+            itemsHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:#10b981;">Total: ${isUSD ? '$' : '৳'}${order.price || order.totalAmount}</div>`;
 
             // Display Game UIDs if present
             if (order.gameUid && order.gameUid !== 'N/A') {

@@ -58,14 +58,10 @@ async function sendOrderStatusEmail(order, updates) {
         const totalOrderPrice = parseFloat(order.price || order.totalAmount || 0);
 
         if (isUSD) {
-            // Calculate implied exchange rate: Sum of BDT items / Total USD Price
-            const totalItemsBDT = order.items.reduce((sum, i) => sum + (parseFloat(i.price) * (i.quantity || 1)), 0);
-            if (totalOrderPrice > 0 && totalItemsBDT > 0) {
-                // If total BDT is roughly 100x the USD price, we assume conversion happened
-                if (totalItemsBDT > totalOrderPrice * 50) {
-                    exchangeRate = totalItemsBDT / totalOrderPrice;
-                }
-            }
+            // STRICT RULE: 100 BDT = 1 USD (as per User Request)
+            // This ensures that discounts are calculated correctly. 
+            // Previous dynamic logic (ItemTotal / PaidTotal) failed when discounts were applied (shifting the rate).
+            exchangeRate = 100;
         }
 
         const displayPrice = (amountBDT) => {

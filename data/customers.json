@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "usr_mk833hq8",
+    "name": "KAZI EMDADUL HAQUE",
+    "email": "kaziemdadul5@gmail.com",
+    "phone": "+8801869895549",
+    "dob": "2000-01-07",
+    "password": "$2a$10$RvnlY5k87aaBvsQ9IFN5cO9MvpEWPiBWmO1VQeENdC6dIxYwy3EMa",
+    "joined": "2026-01-10T09:09:48.106Z",
+    "isBanned": false
+  }
+]
