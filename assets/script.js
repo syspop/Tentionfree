@@ -3344,6 +3344,11 @@ async function submitReview() {
         } else {
             console.error("Review submission failed:", res.status, data);
 
+            // IMMEDIATE DEBUG ALERT
+            if (res.status === 403) {
+                alert("⚠️ VERIFIED PURCHASE CHECK FAILED\n\nYou must purchase this product to review it.\n\n(Server message: " + (data.message || "Forbidden") + ")");
+            }
+
             // Explicit 403 Check (Verified Purchase)
             if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
                 showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
@@ -3355,7 +3360,7 @@ async function submitReview() {
         }
     } catch (e) {
         console.error("Network or Logic Error:", e);
-        showErrorModal("Network Error", "Please check your connection and try again.");
+        alert("⚠️ NETWORK ERROR\n\n" + e.message);
     }
 }
 
