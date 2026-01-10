@@ -98,6 +98,48 @@ app.use((req, res, next) => {
 });
 
 // ======================================
+// --- BACKUP ENDPOINT (Moved to Top) ---
+app.all('/api/backup', async (req, res) => {
+    try {
+        // Checking multiple sources for robustness
+        let pin = (req.body && req.body.pin) || req.query.pin || req.headers['x-backup-pin'];
+
+        if (pin) pin = pin.toString().trim(); // Ensure string and trim whitespace
+
+        // Hardcoded PIN as requested for standalone secure backup
+        if (pin !== '200013') {
+            console.warn(`⚠️ Unauthorized Backup Attempt. Received PIN: '${pin}'`);
+            return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
+        }
+
+        console.log("Generating Backup (Secure PIN Access)...");
+        const backupData = {
+            timestamp: new Date().toISOString(),
+            customers: await readLocalJSON('customers.json') || [],
+            orders: await readLocalJSON('orders.json') || [],
+            products: await readLocalJSON('products.json') || [],
+            coupons: await readLocalJSON('coupons.json') || [],
+            categories: await readLocalJSON('categories.json') || [],
+            reviews: await readLocalJSON('reviews.json') || [],
+            // Include Archive/History
+            archive: {
+                orders: await readLocalJSON('archive/orders.json') || [],
+                customers: await readLocalJSON('archive/customers.json') || [],
+                products: await readLocalJSON('archive/products.json') || [],
+                tickets: await readLocalJSON('archive/tickets.json') || []
+            }
+        };
+
+        // Send as downloadable file
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=tentionfree_full_backup_${Date.now()}.json`);
+        res.json(backupData);
+    } catch (err) {
+        console.error("Backup Error:", err);
+        res.status(500).json({ success: false, error: "Failed to generate backup." });
+    }
+});
+// ======================================
 // SERVER-SIDE RENDERING (SSR) FOR PRODUCTS
 // ======================================
 app.get(['/product/:id', '/products.html'], async (req, res, next) => {
@@ -533,48 +575,6 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Failed to delete product" });
-    }
-});
-
-// --- BACKUP ENDPOINT ---
-app.all('/api/backup', async (req, res) => {
-    try {
-        // Checking multiple sources for robustness
-        let pin = (req.body && req.body.pin) || req.query.pin || req.headers['x-backup-pin'];
-
-        if (pin) pin = pin.toString().trim(); // Ensure string and trim whitespace
-
-        // Hardcoded PIN as requested for standalone secure backup
-        if (pin !== '200013') {
-            console.warn(`⚠️ Unauthorized Backup Attempt. Received PIN: '${pin}'`);
-            return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
-        }
-
-        console.log("Generating Backup (Secure PIN Access)...");
-        const backupData = {
-            timestamp: new Date().toISOString(),
-            customers: await readLocalJSON('customers.json') || [],
-            orders: await readLocalJSON('orders.json') || [],
-            products: await readLocalJSON('products.json') || [],
-            coupons: await readLocalJSON('coupons.json') || [],
-            categories: await readLocalJSON('categories.json') || [],
-            reviews: await readLocalJSON('reviews.json') || [],
-            // Include Archive/History
-            archive: {
-                orders: await readLocalJSON('archive/orders.json') || [],
-                customers: await readLocalJSON('archive/customers.json') || [],
-                products: await readLocalJSON('archive/products.json') || [],
-                tickets: await readLocalJSON('archive/tickets.json') || []
-            }
-        };
-
-        // Send as downloadable file
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', `attachment; filename=tentionfree_full_backup_${Date.now()}.json`);
-        res.json(backupData);
-    } catch (err) {
-        console.error("Backup Error:", err);
-        res.status(500).json({ success: false, error: "Failed to generate backup." });
     }
 });
 
