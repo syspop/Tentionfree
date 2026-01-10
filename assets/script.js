@@ -3369,6 +3369,17 @@ function buyNowPage(id) {
     buyNow(id, 'page');
 }
 
+// Wrapper for Review Page
+function submitReviewPage() {
+    console.log("Submit Review Page Clicked");
+    if (typeof submitReview === 'function') {
+        submitReview();
+    } else {
+        console.error("submitReview function not found");
+        showErrorModal("System Error", "Review function missing. Please refresh.");
+    }
+}
+
 // Update Price on Page (Variant Change)
 function updatePagePrice(id) {
     const product = products.find(p => p.id === id);
