@@ -134,3 +134,18 @@ The application uses a flat-file JSON database system.
 1.  **Login**: `POST /api/auth/login` checks `data/users.json`.
 2.  **Token**: Returns JWT (stored in LocalStorage).
 3.  **Admin**: Admin login is separate (`chodir-vai.html`) and sets `adminAuth=true` in SessionStorage + `adminToken` in LocalStorage. **Both are required.**
+
+### Auto-Delivery Logic (Security)
+- **Constraint**: The server ONLY auto-delivers orders (marks as `Completed`) if:
+  1. `price` is 0.00 **AND**
+  2. `paymentMethod` is explicitly `'Free / Auto-Delivery'`.
+- **Reason**: This prevents coupon-discounted 0.00 orders (using 'Pay Later') from being automatically delivered without admin review.
+
+## 7. Checkout & Payment Features
+### Pay Later
+- **Flow**: User selects "Pay Later" -> Redirected to WhatsApp with pre-filled order details.
+- **Coupons**: Coupons are **disabled** when "Pay Later" is selected to prevent misuse. The UI automatically hides the input and resets any applied discount.
+
+### Coupons (`data/coupons.json`)
+- **Fields**: `code`, `discount` (Amount or %), `type`, `expiryDate`, `maxUsage`, `applicableProducts`.
+- **Validation**: Checked securely on backend (`/api/coupons/verify`) against cart contents and user limits.
