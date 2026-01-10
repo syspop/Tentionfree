@@ -399,7 +399,19 @@
         </div>
     </div>
 
-    <script src="assets/script.js?v=4.0"></script>
+    <script src="assets/script.js?v=5.0"></script>
+    <script>
+        // Inline Debugging / Fallback
+        function submitReviewPage() {
+            console.log("Inline submitReviewPage clicked");
+            if (typeof window.submitReview === 'function') {
+                window.submitReview();
+            } else {
+                alert("Critical Error: script.js not loaded or submitReview function missing. check console.");
+                console.error("window.submitReview is undefined");
+            }
+        }
+    </script>
 </body>
 
 </html>
