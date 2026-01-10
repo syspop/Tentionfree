@@ -3193,7 +3193,8 @@ function showErrorModal(title, message) {
         document.getElementById('error-modal-message').innerText = message;
         modal.classList.remove('hidden');
     } else {
-        alert(`${title}: ${message}`); // Fallback if HTML is missing
+        // Fallback for debugging
+        alert(`${title}\n\n${message}`);
     }
 }
 
@@ -3322,7 +3323,17 @@ async function submitReview() {
             })
         });
 
-        const data = await res.json();
+        // Robust Response Handling (Text First to prevent JSON parsing errors)
+        const textData = await res.text();
+        let data = {};
+        try {
+            data = JSON.parse(textData);
+        } catch (e) {
+            console.warn("Server response was not JSON:", textData);
+            data = { message: textData || "Server Error" }; // Fallback to raw text
+        }
+
+        console.log("Review Response:", res.status, data);
 
         if (res.ok && data.success) {
             console.log("Review submitted successfully");
@@ -3332,18 +3343,19 @@ async function submitReview() {
             loadReviews(productId);
         } else {
             console.error("Review submission failed:", res.status, data);
-            // Error Handling
+
+            // Explicit 403 Check (Verified Purchase)
             if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
-                console.log("Triggering 403 Purchase Required Modal");
                 showErrorModal("Verified Purchase Required", "You can only review products you have purchased.");
+            } else if (res.status === 401) {
+                showErrorModal("Login Required", "Please login to submit a review.");
             } else {
-                console.log("Triggering Generic Error Modal");
-                showErrorModal("Review Failed", data.message || "Could not submit review.");
+                showErrorModal("Review Failed", data.message || data.error || "Could not submit review.");
             }
         }
     } catch (e) {
-        console.error(e);
-        showErrorModal("Network Error", "Please check your connection.");
+        console.error("Network or Logic Error:", e);
+        showErrorModal("Network Error", "Please check your connection and try again.");
     }
 }
 
