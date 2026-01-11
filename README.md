@@ -186,4 +186,4 @@ These functions are available globally in the browser when `script.js` is loaded
     - **Dual-Layer Auth**: Requires dedicated credentials (verified via `/api/backup-login`) + a physical PIN code.
     - **Server-Side Validation**: Credentials are NOT exposed in client-side code; they are securely validated by the backend.
     - **Strict Protection**: The download endpoint `/api/backup` strictly enforces the PIN.
-- **PIN Code**: `258000` (Defined in `server.js`).
+- **PIN Code**: Defined in `.env` as `BACKUP_PIN`.

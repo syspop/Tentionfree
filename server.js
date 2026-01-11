@@ -401,7 +401,11 @@ app.use((req, res, next) => {
 app.use(express.static(__dirname, { extensions: ['html'] }));
 
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error("FATAL: JWT_SECRET is not defined in .env");
+    process.exit(1);
+}
 
 // --- SECURITY MIDDLEWARE ---
 const authenticateAdmin = (req, res, next) => {
@@ -1435,7 +1439,7 @@ app.delete('/api/customers/:id', async (req, res) => {
         }
 
         // Security Check
-        const ADMIN_PASS = process.env.ADMIN_PASS || "asy-sala";
+        const ADMIN_PASS = process.env.ADMIN_PASS;
 
         if (isAdmin) {
             if (password !== ADMIN_PASS) {
@@ -1681,7 +1685,7 @@ app.post('/api/login', async (req, res) => {
 // POST Backup Download (Secure PIN)
 app.post('/api/backup', async (req, res) => {
     const { pin } = req.body;
-    const SECURE_PIN = "258000"; // Fixed PIN as requested
+    const SECURE_PIN = process.env.BACKUP_PIN;
 
     if (pin !== SECURE_PIN) {
         return res.status(403).json({ error: "Invalid Security PIN" });
