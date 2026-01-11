@@ -156,6 +156,11 @@ app.post('/api/backup-login', (req, res) => {
         return res.status(401).json({ success: false });
     }
 
+    // DEBUG LOG
+    if (u !== CORRECT_USER || p !== CORRECT_PASS) {
+        console.warn(`Backup Login Failed. Input: ${u}/${p} | Expected (Env): ${CORRECT_USER}/${CORRECT_PASS}`);
+    }
+
     if (u === CORRECT_USER && p === CORRECT_PASS) {
         return res.json({ success: true });
     }
@@ -420,6 +425,15 @@ const JWT_SECRET = process.env.JWT_SECRET || "unsafe_fallback_secret_change_me_i
 if (!process.env.JWT_SECRET) {
     console.warn("⚠️  WARNING: JWT_SECRET is not defined. Using unsafe fallback. Login security is compromised.");
 }
+
+// --- CREDENTIAL DEBUG CHECKS ---
+console.log("------------------------------------------------");
+console.log("Config Verification:");
+console.log("ADMIN_USER Defined:", process.env.ADMIN_USER ? "YES" : "NO");
+console.log("ADMIN_PASS Defined:", process.env.ADMIN_PASS ? "YES" : "NO");
+console.log("BACKUP_USER Defined:", process.env.BACKUP_USER ? "YES" : "NO");
+console.log("BACKUP_PIN Defined:", process.env.BACKUP_PIN ? "YES" : "NO");
+console.log("------------------------------------------------");
 
 // --- SECURITY MIDDLEWARE ---
 const authenticateAdmin = (req, res, next) => {
@@ -1742,9 +1756,11 @@ app.post('/api/admin-login', (req, res) => {
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         // Generate Token
+        console.log("Admin Login Success");
         const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ success: true, token });
     } else {
+        console.warn(`Admin Login Failed. Input User: '${user}' vs Expected: '${ADMIN_USER}'`);
         res.json({ success: false, message: "Invalid Admin Credentials" });
     }
 });
