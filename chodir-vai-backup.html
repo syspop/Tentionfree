@@ -295,11 +295,22 @@
                     loginScreen.classList.add('hidden');
                     dashboardScreen.classList.remove('hidden');
                 } else {
+                    if (data.debug) {
+                        throw new Error(JSON.stringify(data.debug));
+                    }
                     throw new Error("Invalid");
                 }
             } catch (e) {
+                // DEBUG HANDLER
+                if (e.message && e.message.startsWith('{')) {
+                    try {
+                        const debugData = JSON.parse(e.message);
+                        alert("DEBUG INFO:\nSent User: " + debugData.sentUser + "\nExpected User: " + debugData.expectedUser + "\n\nPass Match: " + debugData.matchPass);
+                    } catch (parseErr) { }
+                }
+
                 loginError.classList.remove('hidden');
-                setTimeout(() => loginError.classList.add('hidden'), 3000);
+                setTimeout(() => loginError.classList.add('hidden'), 5000); // Increased time
             } finally {
                 btn.innerText = origText;
             }

@@ -161,10 +161,34 @@ app.post('/api/backup-login', (req, res) => {
         console.warn(`Backup Login Failed. Input: ${u}/${p} | Expected (Env): ${CORRECT_USER}/${CORRECT_PASS}`);
     }
 
-    if (u === CORRECT_USER && p === CORRECT_PASS) {
+    // --- TEMPORARY DEBUGGING BLOCK ---
+    // Clean inputs and env vars (strip quotes and whitespace)
+    const cleanAuth = (str) => str ? str.trim().replace(/^['"]|['"]$/g, '') : '';
+
+    // Normalize Logic
+    const final_u = cleanAuth(u);
+    const final_p = cleanAuth(p);
+    const expected_u = cleanAuth(CORRECT_USER);
+    const expected_p = cleanAuth(CORRECT_PASS);
+
+    if (final_u === expected_u && final_p === expected_p) {
         return res.json({ success: true });
     }
-    return res.status(401).json({ success: false });
+
+    // EXPOSE DEBUG INFO TO CLIENT (REMOVE AFTER FIXING)
+    return res.status(401).json({
+        success: false,
+        message: "Login Failed",
+        debug: {
+            sentUser: final_u,
+            expectedUser: expected_u,
+            // Don't expose full password, just length and first/last chars
+            sentPassLen: final_p.length,
+            expectedPassLen: expected_p.length,
+            matchUser: final_u === expected_u,
+            matchPass: final_p === expected_p
+        }
+    });
 });
 
 // --- FORCE ADMIN ASSETS ---
@@ -429,10 +453,13 @@ if (!process.env.JWT_SECRET) {
 // --- CREDENTIAL DEBUG CHECKS ---
 console.log("------------------------------------------------");
 console.log("Config Verification:");
-console.log("ADMIN_USER Defined:", process.env.ADMIN_USER ? "YES" : "NO");
-console.log("ADMIN_PASS Defined:", process.env.ADMIN_PASS ? "YES" : "NO");
-console.log("BACKUP_USER Defined:", process.env.BACKUP_USER ? "YES" : "NO");
-console.log("BACKUP_PIN Defined:", process.env.BACKUP_PIN ? "YES" : "NO");
+// Helper to inspect value
+const checkVar = (key, val) => {
+    if (!val) return "MISSING";
+    return `Present (Length: ${val.length}, Starts: ${val.substring(0, 2)}..., Ends: ...${val.substring(val.length - 2)})`;
+}
+console.log("ADMIN_USER:", checkVar("ADMIN_USER", process.env.ADMIN_USER));
+console.log("BACKUP_USER:", checkVar("BACKUP_USER", process.env.BACKUP_USER));
 console.log("------------------------------------------------");
 
 // --- SECURITY MIDDLEWARE ---
