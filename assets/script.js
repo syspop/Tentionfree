@@ -37,6 +37,21 @@
             window.location.href = 'profile.html';
         }
     }
+
+    // 🛡️ UI PROTECTION (Disable Right-Click & Drag on Images)
+    document.addEventListener('contextmenu', event => {
+        if (event.target.tagName === 'IMG') {
+            event.preventDefault();
+            return false;
+        }
+    });
+    document.addEventListener('dragstart', event => {
+        if (event.target.tagName === 'IMG') {
+            event.preventDefault();
+            return false;
+        }
+    });
+
 })();
 
 // --- Data ---
