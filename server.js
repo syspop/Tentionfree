@@ -74,6 +74,17 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(compression()); // Compress all responses for speed
 
+// 🛡️ ANTI-SCRAPING / BOT PROTECTION
+app.use((req, res, next) => {
+    const userAgent = req.get('User-Agent') || '';
+    const blockedAgents = ['wget', 'curl', 'python', 'httrack', 'libwww-perl', 'http-client', 'scrappy', 'java'];
+    if (blockedAgents.some(bot => userAgent.toLowerCase().includes(bot))) {
+        console.log(`[BLOCKED] Scraper detected: ${userAgent}`);
+        return res.status(403).send('Access Denied');
+    }
+    next();
+});
+
 
 // Automatic Redirect: .html -> clean URL
 
@@ -167,6 +178,7 @@ app.use((req, res, next) => {
     // ❌ block everything else
     return res.status(403).send('Access Forbidden');
 });
+
 
 // ======================================
 // SERVER-SIDE RENDERING (SSR) FOR PRODUCTS
@@ -285,6 +297,40 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
 // Explicitly serve services.html for /services route to fix "Cannot GET" error
 app.get(['/services', '/services/'], (req, res) => {
     res.sendFile(__dirname + '/services.html');
+});
+
+// 🔐 PUBLIC ACCESS RULE — ONLY HTML (FINAL SAFE)
+app.use((req, res, next) => {
+    // allow homepage
+    if (req.path === '/') return next();
+
+    // allow SEO/System files (robots.txt, sitemap.xml, manifest.json)
+    if (['/robots.txt', '/sitemap.xml', '/manifest.json'].includes(req.path)) return next();
+
+    // ✅ allow assets (css, js, images, uploads) with Protection
+    if (req.path.startsWith('/assets/')) {
+        // Protect Images from Direct Access (requires Referer from our site)
+        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(req.path);
+        if (isImage) {
+            const referer = req.headers.referer || '';
+            const allowed = ['tentionfree.store', 'localhost', '127.0.0.1'];
+            const isSafe = allowed.some(domain => referer.includes(domain));
+
+            if (!isSafe) {
+                return res.status(403).send('Image Access Denied');
+            }
+        }
+        return next();
+    }
+
+    // allow clean URLs (SSR, /login, /product/123, /api/*)
+    if (!req.path.includes('.')) return next();
+
+    // allow html files
+    if (req.path.endsWith('.html')) return next();
+
+    // ❌ block everything else
+    return res.status(403).send('Access Forbidden');
 });
 
 // Serve static files (try .html automatically)

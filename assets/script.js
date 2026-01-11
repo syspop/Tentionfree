@@ -1,5 +1,26 @@
-// --- Auth Protection ---
-(function checkAuthProtection() {
+// --- Security & Auth Protection ---
+(function secureClient() {
+    // 🔒 DOMAIN LOCK PROTECTION
+    const hostname = window.location.hostname;
+    // Allow: localhost, 127.0.0.1, and our specific domain
+    const allowedDomains = ['tentionfree.store', 'www.tentionfree.store', 'localhost', '127.0.0.1'];
+
+    // Check if running in a browser that supports location
+    if (hostname) {
+        const isAllowed = allowedDomains.includes(hostname);
+
+        if (!isAllowed) {
+            // 🛑 STOP EVERYTHING if domain doesn't match
+            document.documentElement.innerHTML = ''; // Wipe entire HTML
+            // Optional: Redirect to real site
+            // window.location.href = 'https://tentionfree.store'; 
+            // Or just show message
+            document.write('<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:red;font-size:24px;font-family:sans-serif;text-align:center;">This website is protected. <br> Access from unauthorized domain is prohibited.</div>');
+            throw new Error("Domain Access Violation"); // Stop further script execution
+        }
+    }
+
+    // Auth Protection Logic
     const path = window.location.pathname;
     const token = localStorage.getItem('userToken');
 
