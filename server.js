@@ -416,10 +416,9 @@ app.use((req, res, next) => {
 app.use(express.static(__dirname, { extensions: ['html'] }));
 
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_debugging_only";
+const JWT_SECRET = process.env.JWT_SECRET || "unsafe_fallback_secret_change_me_in_prod"; // Fallback to prevent crash, but warn
 if (!process.env.JWT_SECRET) {
-    console.warn("⚠️  WARNING: JWT_SECRET is not defined in environment variables. Using unsafe fallback. AUTHENTICATION IS INSECURE.");
-    // process.exit(1); // REMOVED TO PREVENT CRASH ON DEPLOYMENT
+    console.warn("⚠️  WARNING: JWT_SECRET is not defined. Using unsafe fallback. Login security is compromised.");
 }
 
 // --- SECURITY MIDDLEWARE ---
