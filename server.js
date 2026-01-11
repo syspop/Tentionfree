@@ -101,6 +101,11 @@ app.all('/api/backup', async (req, res) => {
         // Secure PIN from .env
         const SECURE_PIN = process.env.BACKUP_PIN;
 
+        if (!SECURE_PIN) {
+            console.error("FATAL ERROR: BACKUP_PIN is not set in environment variables!");
+            return res.status(500).json({ success: false, error: "Server Configuration Error: PIN not set." });
+        }
+
         if (pin !== SECURE_PIN) {
             console.warn(`⚠️ Unauthorized Pin: '${pin}'`);
             return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
@@ -140,6 +145,16 @@ app.post('/api/backup-login', (req, res) => {
     // Secure Server-Side Validation using Environment Variables
     const CORRECT_USER = process.env.BACKUP_USER;
     const CORRECT_PASS = process.env.BACKUP_PASS;
+
+    // CRITICAL SECURITY FIX: Ensure env vars are set before checking
+    if (!CORRECT_USER || !CORRECT_PASS) {
+        console.error("FATAL ERROR: BACKUP_USER or BACKUP_PASS is not set in environment variables!");
+        return res.status(500).json({ success: false, message: "Server Configuration Error" });
+    }
+
+    if (!u || !p) {
+        return res.status(401).json({ success: false });
+    }
 
     if (u === CORRECT_USER && p === CORRECT_PASS) {
         return res.json({ success: true });
