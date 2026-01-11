@@ -330,7 +330,36 @@ app.use((req, res, next) => {
     if (req.path.endsWith('.html')) return next();
 
     // ❌ block everything else
-    return res.status(403).send('Access Forbidden');
+    return res.status(403).send(`
+        <!DOCTYPE html>
+        <html lang="bn">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Access Denied</title>
+            <style>
+                body {
+                    background-color: #000;
+                    color: #ff0055;
+                    height: 100vh;
+                    margin: 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Arial', sans-serif;
+                    text-align: center;
+                }
+                h1 { font-size: 3rem; margin-bottom: 20px; }
+                .emoji { font-size: 6rem; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="emoji">🤣</div>
+            <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+        </body>
+        </html>
+    `);
 });
 
 // Serve static files (try .html automatically)
