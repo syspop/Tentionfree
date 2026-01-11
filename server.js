@@ -288,21 +288,83 @@ app.use((req, res, next) => {
     // allow homepage
     if (req.path === '/') return next();
 
+    // ⛔ BLOCKED PATHS (Database, Backend, System Files)
+    const blockedPaths = ['/data', '/backend_services', '/node_modules', '/.git', '/.env', '/package.json', '/package-lock.json', '/server.js'];
+    if (blockedPaths.some(p => req.path.startsWith(p) || req.path === p)) {
+        return res.status(403).send(`
+            <!DOCTYPE html>
+            <html lang="bn">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Access Denied</title>
+                <style>
+                    body {
+                        background-color: #000;
+                        color: #ff0055;
+                        height: 100vh;
+                        margin: 0;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        font-family: 'Arial', sans-serif;
+                        text-align: center;
+                    }
+                    h1 { font-size: 3rem; margin-bottom: 20px; }
+                    .emoji { font-size: 6rem; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="emoji">🤣</div>
+                <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+            </body>
+            </html>
+        `);
+    }
+
     // allow SEO/System files (robots.txt, sitemap.xml, manifest.json)
     if (['/robots.txt', '/sitemap.xml', '/manifest.json'].includes(req.path)) return next();
 
     // ✅ allow assets (css, js, images, uploads) with Protection
     if (req.path.startsWith('/assets/')) {
-        // Protect Images from Direct Access (requires Referer from our site)
-        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(req.path);
-        if (isImage) {
-            const referer = req.headers.referer || '';
-            const allowed = ['tentionfree.store', 'localhost', '127.0.0.1'];
-            const isSafe = allowed.some(domain => referer.includes(domain));
+        // 🔒 Protect ALL Assets from Direct Access (requires Referer from our site)
+        const referer = req.headers.referer || '';
+        const allowed = ['tentionfree.store', 'localhost', '127.0.0.1'];
+        const isSafe = allowed.some(domain => referer.includes(domain));
 
-            if (!isSafe) {
-                return res.status(403).send('Image Access Denied');
-            }
+        // If no referer (direct access) or wrong referer -> BLOCK
+        if (!isSafe) {
+            return res.status(403).send(`
+                <!DOCTYPE html>
+                <html lang="bn">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Access Denied</title>
+                    <style>
+                        body {
+                            background-color: #000;
+                            color: #ff0055;
+                            height: 100vh;
+                            margin: 0;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            font-family: 'Arial', sans-serif;
+                            text-align: center;
+                        }
+                        h1 { font-size: 3rem; margin-bottom: 20px; }
+                        .emoji { font-size: 6rem; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="emoji">🤣</div>
+                    <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+                </body>
+                </html>
+            `);
         }
         return next();
     }
@@ -1845,6 +1907,41 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
         console.error(err);
         res.status(500).json({ success: false, message: "Failed to save review" });
     }
+});
+
+
+// 404 Catch-All Handler (Must be last)
+app.use((req, res) => {
+    res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="bn">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Page Not Found</title>
+            <style>
+                body {
+                    background-color: #000;
+                    color: #ff0055;
+                    height: 100vh;
+                    margin: 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Arial', sans-serif;
+                    text-align: center;
+                }
+                h1 { font-size: 3rem; margin-bottom: 20px; }
+                .emoji { font-size: 6rem; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="emoji">🤣</div>
+            <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+        </body>
+        </html>
+    `);
 });
 
 // Start Server
