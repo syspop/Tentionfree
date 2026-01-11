@@ -150,7 +150,23 @@ app.use((req, res, next) => {
     }
     next();
 });
+// 🔐 PUBLIC ACCESS RULE — ONLY HTML (FINAL SAFE)
+app.use((req, res, next) => {
+    // allow homepage
+    if (req.path === '/') return next();
 
+    // ✅ allow assets (css, js, images, uploads)
+    if (req.path.startsWith('/assets/')) return next();
+
+    // allow clean URLs (SSR, /login, /product/123, /api/*)
+    if (!req.path.includes('.')) return next();
+
+    // allow html files
+    if (req.path.endsWith('.html')) return next();
+
+    // ❌ block everything else
+    return res.status(403).send('Access Forbidden');
+});
 
 // ======================================
 // SERVER-SIDE RENDERING (SSR) FOR PRODUCTS
