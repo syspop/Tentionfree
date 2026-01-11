@@ -1,6 +1,12 @@
 // Auth Check
 if (sessionStorage.getItem('adminAuth') !== 'true' || !localStorage.getItem('adminToken')) {
-    window.location.href = '../chodir-vai';
+    window.location.href = '/chodir-vai'; // Redirect to login
+} else {
+    // Auth OK - Reveal Content
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.style.visibility = 'visible';
+        document.body.style.opacity = '1';
+    });
 }
 
 function logout() {

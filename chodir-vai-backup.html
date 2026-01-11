@@ -7,130 +7,236 @@
     <title>Encrypted Archive Access</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-gradient-start: #0f172a;
+            --bg-gradient-end: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
         body {
-            background-color: #000;
-            color: #0f0;
-            font-family: 'Space Mono', monospace;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            /* Prevent scroll */
         }
 
-        .terminal {
-            border: 1px solid #0f0;
-            box-shadow: 0 0 10px #0f0;
-            background: rgba(0, 20, 0, 0.9);
+        /* Glassmorphism Card */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
         }
 
-        .input-term {
-            background: transparent;
-            border: none;
-            border-bottom: 1px solid #0f0;
-            color: #0f0;
-            font-family: inherit;
+        .input-modern {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .input-modern:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
             outline: none;
-            width: 100%;
         }
 
-        .btn-term {
-            border: 1px solid #0f0;
-            color: #0f0;
-            background: transparent;
-            transition: all 0.2s;
+        /* Buttons */
+        .btn-modern {
+            background: linear-gradient(to right, var(--primary), var(--primary-hover));
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .btn-term:hover {
-            background: #0f0;
-            color: #000;
+        .btn-modern:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-modern:active {
+            transform: translateY(0);
+        }
+
+        /* Animation */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-enter {
+            animation: fadeInScale 0.4s ease-out forwards;
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
     </style>
 </head>
 
-<body class="flex items-center justify-center min-h-screen p-4 overflow-hidden">
+<body class="selection:bg-indigo-500 selection:text-white">
 
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="terminal w-full max-w-lg p-8 rounded relative z-10">
-        <div class="mb-6 text-center border-b border-green-900 pb-4">
-            <h1 class="text-xl font-bold tracking-widest">RESTRICTED ACCESS // LEVEL 9</h1>
-            <p class="text-xs text-green-700 mt-2">Identify yourself.</p>
+    <div id="login-screen"
+        class="glass-card w-full max-w-md p-8 md:p-10 mx-4 animate-enter flex flex-col justify-center relative z-10">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-500/10 mb-4">
+                <i class="fa-solid fa-shield-halved text-3xl text-indigo-400"></i>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">System Backup Login</h1>
+            <p class="text-sm text-slate-400 mt-2">Restricted Access Area</p>
         </div>
 
-        <div class="space-y-6">
+        <div class="space-y-5">
             <div>
-                <label class="text-xs uppercase tracking-wide opacity-70 block mb-2">> Username_</label>
-                <input type="text" id="user-input" class="input-term py-2" autocomplete="off" autofocus>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Username</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-regular fa-user text-slate-500"></i>
+                    </span>
+                    <input type="text" id="user-input"
+                        class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white bg-slate-900/50 focus:bg-slate-900/80"
+                        placeholder="Enter admin username" autocomplete="off" autofocus>
+                </div>
             </div>
+
             <div>
-                <label class="text-xs uppercase tracking-wide opacity-70 block mb-2">> Password_</label>
-                <input type="password" id="pass-input" class="input-term py-2">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-lock text-slate-500"></i>
+                    </span>
+                    <input type="password" id="pass-input"
+                        class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white bg-slate-900/50 focus:bg-slate-900/80"
+                        placeholder="••••••••">
+                </div>
             </div>
-            <div id="login-error" class="text-red-500 text-xs hidden">
-                > ACCESS_DENIED: Invalid Credentials.
+
+            <div id="login-error"
+                class="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 hidden">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Invalid credentials provided.</span>
             </div>
-            <button onclick="attemptLogin()" class="btn-term w-full py-3 font-bold uppercase tracking-widest mt-4">
+
+            <button onclick="attemptLogin()"
+                class="btn-modern w-full py-3.5 rounded-xl font-semibold text-white shadow-lg tracking-wide mt-2">
                 Authenticate
             </button>
         </div>
     </div>
 
-    <!-- DASHBOARD SCREEN (Hidden initially) -->
-    <div id="dashboard-screen" class="terminal w-full max-w-lg p-8 rounded relative z-10 hidden">
+    <!-- DASHBOARD SCREEN (Hidden) -->
+    <div id="dashboard-screen"
+        class="glass-card w-full max-w-md p-8 mx-4 animate-enter hidden flex flex-col relative z-10">
         <div class="text-center mb-8">
-            <i class="fa-solid fa-server text-4xl mb-4 animate-pulse"></i>
-            <h2 class="text-lg font-bold">SYSTEM BACKUP UTILITY</h2>
-            <p class="text-xs text-green-700">Connection Established.</p>
+            <div class="relative inline-block">
+                <div class="absolute inset-0 bg-emerald-500 blur-xl opacity-20 rounded-full"></div>
+                <i class="fa-solid fa-database text-5xl text-emerald-400 mb-4 relative z-10"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white">Secure Backup Utility</h2>
+            <div class="flex items-center justify-center gap-2 mt-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <p class="text-xs text-emerald-400 font-medium tracking-wide">SYSTEM ONLINE</p>
+            </div>
         </div>
 
-        <div class="border border-green-900 bg-green-900/10 p-4 mb-6 rounded text-xs leading-relaxed">
-            > STATUS: ONLINE<br>
-            > DATABASE: CONNECTED<br>
-            > HOST: LOCALHOST<br>
-            > ENCRYPTION: NONE (JSON RAW)<br>
+        <div class="bg-slate-900/50 rounded-xl p-5 mb-8 border border-slate-700/50">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-xs text-slate-400 font-medium">Database Status</span>
+                <span class="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded">Connected</span>
+            </div>
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-xs text-slate-400 font-medium">Host Server</span>
+                <span class="text-xs text-slate-300 font-mono">Localhost:3000</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-slate-400 font-medium">Encryption</span>
+                <span class="text-xs text-slate-300 font-mono">Standard (JSON)</span>
+            </div>
         </div>
 
-        <button onclick="showPinModal()" class="btn-term w-full py-4 flex items-center justify-center gap-3">
-            <i class="fa-solid fa-download"></i>
-            INITIATE FULL DUMP
+        <button onclick="showPinModal()"
+            class="w-full py-4 rounded-xl bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white font-semibold transition-all flex items-center justify-center gap-3 group">
+            <div
+                class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-slate-500 transition-colors">
+                <i class="fa-solid fa-download text-sm"></i>
+            </div>
+            <span>Initiate Full Dump</span>
         </button>
     </div>
 
-    <!-- PIN MODAL (Hidden) -->
-    <div id="pin-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center hidden">
-        <div class="terminal p-8 max-w-sm w-full mx-4 text-center">
-            <i class="fa-solid fa-lock text-3xl mb-4"></i>
-            <h3 class="text-sm uppercase mb-6 tracking-widest">Security Clearance Required</h3>
+    <!-- PIN MODAL -->
+    <div id="pin-modal"
+        class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="glass-card p-8 max-w-sm w-full mx-4 text-center transform scale-95 transition-transform duration-300">
+            <div class="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-key text-orange-400 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-1 text-white">Security Verification</h3>
+            <p class="text-xs text-slate-400 mb-6">Please enter the 6-digit master PIN</p>
 
-            <input type="password" id="pin-input" placeholder="ENTER 6-DIGIT PIN"
-                class="input-term text-center text-xl tracking-[0.5em] mb-6 py-2" maxlength="6">
+            <input type="password" id="pin-input" placeholder="000000"
+                class="input-modern w-full text-center text-3xl font-mono tracking-[0.5em] mb-6 py-4 rounded-xl focus:ring-orange-500/50 text-white bg-slate-900/50"
+                maxlength="6">
 
-            <div id="pin-error" class="text-red-500 text-xs mb-4 hidden">
-                > ERROR: INVALID PIN
+            <div id="pin-error" class="text-red-400 text-xs mb-4 hidden bg-red-500/10 p-2 rounded">
+                Incorrect PIN provided.
             </div>
 
-            <div class="flex gap-4">
-                <button onclick="closePinModal()" class="btn-term flex-1 py-2 text-xs">CANCEL</button>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closePinModal()"
+                    class="py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors">Cancel</button>
                 <button onclick="verifyPinAndDownload()"
-                    class="btn-term flex-1 py-2 text-xs font-bold bg-green-900/30">CONFIRM</button>
+                    class="py-2.5 rounded-lg text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white transition-colors shadow-lg shadow-orange-500/20">Confirm</button>
             </div>
         </div>
     </div>
 
-    <!-- SUCCESS MODAL (Hidden) -->
-    <div id="success-modal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center hidden">
-        <div class="terminal p-8 max-w-sm w-full mx-4 text-center border-green-500 shadow-[0_0_20px_rgba(0,255,0,0.3)]">
-            <div class="text-green-500 text-6xl mb-6">
-                <i class="fa-solid fa-check-circle animate-pulse"></i>
+    <!-- SUCCESS MODAL -->
+    <div id="success-modal"
+        class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div
+            class="bg-slate-900 border border-white/10 p-10 rounded-3xl max-w-sm w-full mx-4 text-center shadow-2xl relative overflow-hidden">
+            <!-- Glow -->
+            <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-emerald-500/20 blur-[60px] rounded-full pointer-events-none">
             </div>
-            <h3 class="text-lg font-bold mb-2 tracking-widest text-green-400">ARCHIVE SECURED</h3>
-            <p class="text-xs text-green-600 mb-8 font-mono">> DOWNLOAD_COMPLETE.JSON<br>> KEEP_FILE_SAFE</p>
 
-            <button onclick="closeSuccessModal()"
-                class="btn-term w-full py-3 text-sm font-bold bg-green-900/20 hover:bg-green-500 hover:text-black transition-all">
-                ACKNOWLEDGE
-            </button>
+            <div class="relative z-10 animate-enter">
+                <div
+                    class="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6 ring-1 ring-emerald-500/20">
+                    <i class="fa-solid fa-check text-4xl text-emerald-400"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Detailed Secured</h3>
+                <p class="text-sm text-slate-400 mb-8 leading-relaxed">The encrypted backup file has been successfully
+                    generated.</p>
+
+                <button onclick="closeSuccessModal()"
+                    class="w-full py-3.5 rounded-xl font-semibold bg-white text-slate-900 hover:bg-slate-200 transition-all">
+                    Done
+                </button>
+            </div>
         </div>
     </div>
 
@@ -143,11 +249,40 @@
         const pinError = document.getElementById('pin-error');
         const pinInput = document.getElementById('pin-input');
 
+        // Animation Helpers
+        function showModalWithAnim(modal) {
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            const inner = modal.querySelector('div');
+            if (inner) {
+                inner.classList.remove('scale-90');
+                inner.classList.add('scale-100');
+            }
+        }
+
+        function hideModalWithAnim(modal) {
+            modal.classList.add('opacity-0');
+            const inner = modal.querySelector('div');
+            if (inner) {
+                inner.classList.remove('scale-100');
+                inner.classList.add('scale-90');
+            }
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
         async function attemptLogin() {
             const u = document.getElementById('user-input').value;
             const p = document.getElementById('pass-input').value;
 
-            // Server-side check (Secure)
+            // Simple client feedback (the real check is server)
+            const btn = document.querySelector('#login-screen button');
+            const origText = btn.innerText;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+
             try {
                 const res = await fetch('/api/backup-login', {
                     method: 'POST',
@@ -164,33 +299,31 @@
                 }
             } catch (e) {
                 loginError.classList.remove('hidden');
-                setTimeout(() => loginError.classList.add('hidden'), 2000);
+                setTimeout(() => loginError.classList.add('hidden'), 3000);
+            } finally {
+                btn.innerText = origText;
             }
         }
 
         function showPinModal() {
-            pinModal.classList.remove('hidden');
+            showModalWithAnim(pinModal);
             pinInput.value = '';
             pinInput.focus();
             pinError.classList.add('hidden');
         }
 
         function closePinModal() {
-            pinModal.classList.add('hidden');
+            hideModalWithAnim(pinModal);
         }
 
         async function verifyPinAndDownload() {
             const pin = pinInput.value;
-            // No client-side check. Send directly to server.
+            const btn = document.querySelector('#pin-modal button:last-child');
+            const origText = btn.innerText;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
 
-            // Real Download
             try {
-                const btn = document.querySelector('#pin-modal button:last-child');
-                const origText = btn.innerText;
-                btn.innerText = "DOWNLOADING...";
                 const apiUrl = window.location.origin + '/api/backup?t=' + Date.now();
-                console.log("Fetching from:", apiUrl);
-
                 const res = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -199,13 +332,7 @@
 
                 if (!res.ok) {
                     let errorMsg = "Server Rejected PIN";
-                    try {
-                        const errData = await res.json();
-                        if (errData.error) errorMsg = errData.error;
-                    } catch (e) {
-                        // fallback to status text
-                        errorMsg = `Server Error (${res.status}): ${res.statusText}`;
-                    }
+                    try { const d = await res.json(); if (d.error) errorMsg = d.error; } catch (e) { }
                     throw new Error(errorMsg);
                 }
 
@@ -214,8 +341,9 @@
                 const a = document.createElement('a');
                 a.href = url;
 
+                // Filename
                 const contentDisp = res.headers.get('Content-Disposition');
-                let filename = `tentionfree_secure_backup_${Date.now()}.json`;
+                let filename = `backup_${Date.now()}.json`;
                 if (contentDisp && contentDisp.includes('filename=')) {
                     filename = contentDisp.split('filename=')[1].replace(/"/g, '');
                 }
@@ -227,14 +355,14 @@
                 document.body.removeChild(a);
 
                 closePinModal();
-                showSuccessModal();
-
-                btn.innerText = origText;
+                const successModal = document.getElementById('success-modal');
+                successModal.classList.remove('hidden'); // Simple toggle for success
 
             } catch (err) {
-                console.error(err);
-                pinError.innerHTML = "> SERVER ERROR: " + err.message;
+                pinError.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + err.message;
                 pinError.classList.remove('hidden');
+            } finally {
+                btn.innerText = origText;
             }
         }
 
@@ -246,14 +374,13 @@
             document.getElementById('success-modal').classList.add('hidden');
         }
 
-        // Enter key support
+        // Enter key
         document.getElementById('pass-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') attemptLogin();
         });
         document.getElementById('pin-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') verifyPinAndDownload();
         });
-
     </script>
 </body>
 

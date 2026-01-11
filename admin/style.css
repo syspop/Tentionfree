@@ -16,8 +16,11 @@ body {
     margin: 0;
     padding: 0;
     color: var(--dark);
-    /* display: flex;  <-- REMOVED to prevent layout squeezing */
     min-height: 100vh;
+    /* Security: Hide content until JS verifies Auth */
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 /* --- SIDEBAR LAYOUT --- */

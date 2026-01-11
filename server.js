@@ -98,8 +98,10 @@ app.all('/api/backup', async (req, res) => {
 
         if (pin) pin = pin.toString().trim();
 
-        // Hardcoded PIN as requested for standalone secure backup
-        if (pin !== '258000') {
+        // Secure PIN from .env
+        const SECURE_PIN = process.env.BACKUP_PIN;
+
+        if (pin !== SECURE_PIN) {
             console.warn(`⚠️ Unauthorized Pin: '${pin}'`);
             return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
         }
@@ -134,11 +136,25 @@ app.all('/api/backup', async (req, res) => {
 // --- BACKUP LOGIN (Secure) ---
 app.post('/api/backup-login', (req, res) => {
     const { u, p } = req.body;
-    // Hardcoded credentials server-side (Safe from Inspect Element)
-    if (u === "ppop@12" && p === "ppop@12MW") {
+
+    // Secure Server-Side Validation using Environment Variables
+    const CORRECT_USER = process.env.BACKUP_USER;
+    const CORRECT_PASS = process.env.BACKUP_PASS;
+
+    if (u === CORRECT_USER && p === CORRECT_PASS) {
         return res.json({ success: true });
     }
     return res.status(401).json({ success: false });
+});
+
+// --- FORCE ADMIN ASSETS ---
+app.get('/admin/style.css', (req, res) => {
+    res.setHeader('Content-Type', 'text/css');
+    res.sendFile(path.join(__dirname, 'admin/style.css'));
+});
+app.get('/admin/script.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'admin/script.js'));
 });
 
 // Explicit Root Route
@@ -284,134 +300,106 @@ app.get(['/services', '/services/'], (req, res) => {
 });
 
 // 🔐 PUBLIC ACCESS RULE — ONLY HTML (FINAL SAFE)
+// 🛡️ SECURITY: Block Sensitive Files & Paths
 app.use((req, res, next) => {
-    // allow homepage
-    if (req.path === '/') return next();
-
-    // ⛔ BLOCKED PATHS (Database, Backend, System Files)
     const blockedPaths = ['/data', '/backend_services', '/node_modules', '/.git', '/.env', '/package.json', '/package-lock.json', '/server.js'];
     if (blockedPaths.some(p => req.path.startsWith(p) || req.path === p)) {
         return res.status(403).send(`
             <!DOCTYPE html>
-            <html lang="bn">
+            <html lang="en">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>Access Denied</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+                <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                 <style>
-                    body {
-                        background-color: #000;
-                        color: #ff0055;
-                        height: 100vh;
-                        margin: 0;
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        justify-content: center;
-                        font-family: 'Arial', sans-serif;
-                        text-align: center;
-                    }
-                    h1 { font-size: 3rem; margin-bottom: 20px; }
-                    .emoji { font-size: 6rem; margin-bottom: 20px; }
+                    body { font-family: 'Poppins', sans-serif; background: #0f172a; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+                    .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
                 </style>
             </head>
-            <body>
-                <div class="emoji">🤣</div>
-                <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+            <body class="text-slate-200">
+                <div class="glass-card p-10 rounded-3xl max-w-md w-full mx-4 text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-red-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+                    <div class="relative z-10">
+                        <div class="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
+                            <i class="fa-solid fa-user-shield text-4xl text-red-400"></i>
+                        </div>
+                        <h1 class="text-6xl font-bold text-white mb-2 tracking-tighter">403</h1>
+                        <h2 class="text-xl font-semibold text-white mb-3">System Access Restricted</h2>
+                        <p class="text-sm text-slate-400 mb-8 leading-relaxed">
+                            This area is protected. You do not have permission to view this resource directly.
+                        </p>
+                        <a href="/" class="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold bg-red-600 hover:bg-red-500 text-white transition-all shadow-lg shadow-red-500/25 group">
+                            <i class="fa-solid fa-house text-sm group-hover:-translate-y-0.5 transition-transform"></i>
+                            <span>Return Home</span>
+                        </a>
+                    </div>
+                </div>
             </body>
             </html>
         `);
     }
+    next();
+});
 
-    // allow SEO/System files (robots.txt, sitemap.xml, manifest.json)
-    if (['/robots.txt', '/sitemap.xml', '/manifest.json'].includes(req.path)) return next();
-
-    // ✅ allow assets (css, js, images, uploads) with Protection
+// 🔒 HOTLINK PROTECTION (Block Direct Image Access)
+app.use((req, res, next) => {
     if (req.path.startsWith('/assets/')) {
-        // 🔒 Protect ALL Assets from Direct Access (requires Referer from our site)
         const referer = req.headers.referer || '';
-        const allowed = ['tentionfree.store', 'localhost', '127.0.0.1'];
-        const isSafe = allowed.some(domain => referer.includes(domain));
+        const allowedDomains = ['tentionfree.store', 'localhost', '127.0.0.1'];
 
-        // If no referer (direct access) or wrong referer -> BLOCK
-        if (!isSafe) {
+        // Allow if referer matches our domains
+        const isAllowed = allowedDomains.some(domain => referer.includes(domain));
+
+        // BLOCK if: No referer (direct type in URL) OR wrong referer
+        if (!referer || !isAllowed) {
             return res.status(403).send(`
                 <!DOCTYPE html>
-                <html lang="bn">
+                <html lang="en">
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Access Denied</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
                     <style>
-                        body {
-                            background-color: #000;
-                            color: #ff0055;
-                            height: 100vh;
-                            margin: 0;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            justify-content: center;
-                            font-family: 'Arial', sans-serif;
-                            text-align: center;
-                        }
-                        h1 { font-size: 3rem; margin-bottom: 20px; }
-                        .emoji { font-size: 6rem; margin-bottom: 20px; }
+                        body { font-family: 'Poppins', sans-serif; background: #0f172a; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+                        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
                     </style>
                 </head>
-                <body>
-                    <div class="emoji">🤣</div>
-                    <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+                <body class="text-slate-200">
+                    <div class="glass-card p-10 rounded-3xl max-w-md w-full mx-4 text-center relative overflow-hidden">
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-red-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+                        <div class="relative z-10">
+                            <div class="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
+                                <i class="fa-solid fa-lock text-4xl text-red-400"></i>
+                            </div>
+                            <h1 class="text-6xl font-bold text-white mb-2 tracking-tighter">403</h1>
+                            <h2 class="text-xl font-semibold text-white mb-3">Direct Access Restricted</h2>
+                            <p class="text-sm text-slate-400 mb-8 leading-relaxed">
+                                Direct access to this resource is not allowed. Please view it on the website.
+                            </p>
+                            <a href="/" class="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold bg-red-600 hover:bg-red-500 text-white transition-all shadow-lg shadow-red-500/25 group">
+                                <i class="fa-solid fa-house text-sm group-hover:-translate-y-0.5 transition-transform"></i>
+                                <span>Return Home</span>
+                            </a>
+                        </div>
+                    </div>
                 </body>
                 </html>
             `);
         }
-        return next();
     }
-
-    // allow clean URLs (SSR, /login, /product/123, /api/*)
-    if (!req.path.includes('.')) return next();
-
-    // allow html files
-    if (req.path.endsWith('.html')) return next();
-
-    // ❌ block everything else
-    return res.status(403).send(`
-        <!DOCTYPE html>
-        <html lang="bn">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Access Denied</title>
-            <style>
-                body {
-                    background-color: #000;
-                    color: #ff0055;
-                    height: 100vh;
-                    margin: 0;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    font-family: 'Arial', sans-serif;
-                    text-align: center;
-                }
-                h1 { font-size: 3rem; margin-bottom: 20px; }
-                .emoji { font-size: 6rem; margin-bottom: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class="emoji">🤣</div>
-            <h1>আর কত সেসরামি করবি বাগ সালা</h1>
-        </body>
-        </html>
-    `);
+    next();
 });
 
-// Serve static files (try .html automatically)
-app.use(express.static(__dirname, {
-    extensions: ['html', 'htm']
-}));
+// 📂 SERVE STATIC FILES (CSS, JS, IMAGES, HTML)
+// This handles all assets and html files automatically.
+app.use(express.static(__dirname, { extensions: ['html'] }));
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
 
@@ -934,9 +922,22 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
-// GET All Orders (Admin) - PROTECTED (Lightweight)
-// GET All Orders (Admin) - Duplicate Route Removed
-// The main logic is now handled in the route above with 'type' parameter support.
+// GET All Orders (Admin) - PROTECTED
+app.get('/api/orders', authenticateAdmin, async (req, res) => {
+    try {
+        const allOrders = await readLocalJSON('orders.json') || [];
+
+        // Optional: Filter by type/status if needed via query, e.g. ?status=Completed
+        // For now, return all for admin table.
+        // Sort by ID (newest first usually)
+        allOrders.sort((a, b) => (b.id || 0) - (a.id || 0));
+
+        res.json(allOrders);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch orders' });
+    }
+});
 
 
 // GET Single Order (Full Details) - PROTECTED
@@ -1672,14 +1673,54 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// --- BACKUP SYSTEM ROUTES ---
+
+// POST Backup Login
+// (Duplicate Backup Login Route Removed)
+
+// POST Backup Download (Secure PIN)
+app.post('/api/backup', async (req, res) => {
+    const { pin } = req.body;
+    const SECURE_PIN = "258000"; // Fixed PIN as requested
+
+    if (pin !== SECURE_PIN) {
+        return res.status(403).json({ error: "Invalid Security PIN" });
+    }
+
+    try {
+        // Collect Data
+        const backupData = {
+            customers: await readLocalJSON('customers.json'),
+            orders: await readLocalJSON('orders.json'),
+            products: await readLocalJSON('products.json'),
+            reviews: await readLocalJSON('reviews.json'),
+            tickets: await readLocalJSON('tickets.json'),
+            coupons: await readLocalJSON('coupons.json'),
+            backupDate: new Date().toISOString()
+        };
+
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const buffer = Buffer.from(jsonStr, 'utf-8');
+
+        res.setHeader('Content-Disposition', `attachment; filename="full_backup_${Date.now()}.json"`);
+        res.setHeader('Content-Type', 'application/json');
+        res.send(buffer);
+
+    } catch (err) {
+        console.error("Backup Error:", err);
+        res.status(500).json({ error: "Backup Generation Failed" });
+    }
+});
+
 // POST Admin Login
 app.post('/api/admin-login', (req, res) => {
     const { user, pass } = req.body;
 
     // Environment Variables
     // Environment Variables
-    const ADMIN_USER = process.env.ADMIN_USER || "lol@12";
-    const ADMIN_PASS = process.env.ADMIN_PASS || "lol@12MW";
+    // Environment Variables (Strict)
+    const ADMIN_USER = process.env.ADMIN_USER;
+    const ADMIN_PASS = process.env.ADMIN_PASS;
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         // Generate Token
@@ -1914,31 +1955,56 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
 app.use((req, res) => {
     res.status(404).send(`
         <!DOCTYPE html>
-        <html lang="bn">
+        <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Page Not Found</title>
+            <title>Page Not Found - TentionFree</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
             <style>
                 body {
-                    background-color: #000;
-                    color: #ff0055;
+                    font-family: 'Poppins', sans-serif;
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
                     height: 100vh;
                     margin: 0;
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    font-family: 'Arial', sans-serif;
-                    text-align: center;
+                    overflow: hidden;
                 }
-                h1 { font-size: 3rem; margin-bottom: 20px; }
-                .emoji { font-size: 6rem; margin-bottom: 20px; }
+                .glass-card {
+                    background: rgba(30, 41, 59, 0.7);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                }
             </style>
         </head>
-        <body>
-            <div class="emoji">🤣</div>
-            <h1>আর কত সেসরামি করবি বাগ সালা</h1>
+        <body class="text-slate-200">
+            <div class="glass-card p-10 rounded-3xl max-w-md w-full mx-4 text-center relative overflow-hidden">
+                <!-- Background Glow -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-indigo-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+
+                <div class="relative z-10">
+                    <div class="w-20 h-20 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
+                        <i class="fa-solid fa-ghost text-4xl text-indigo-400"></i>
+                    </div>
+                    
+                    <h1 class="text-6xl font-bold text-white mb-2 tracking-tighter">404</h1>
+                    <h2 class="text-xl font-semibold text-white mb-3">Page Not Found</h2>
+                    <p class="text-sm text-slate-400 mb-8 leading-relaxed">
+                        Oops! The page you are looking for seems to have vanished into the void.
+                    </p>
+
+                    <a href="/" class="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-lg shadow-indigo-500/25 group">
+                        <i class="fa-solid fa-house text-sm group-hover:-translate-y-0.5 transition-transform"></i>
+                        <span>Return Home</span>
+                    </a>
+                </div>
+            </div>
         </body>
         </html>
     `);
