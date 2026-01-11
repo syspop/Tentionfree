@@ -153,6 +153,10 @@
                     localStorage.setItem('adminToken', data.token); // Save Token!
                     window.location.href = 'admin/dashboard';
                 } else {
+                    // DEBUG EXPOSURE
+                    if (data.debug) {
+                        alert("DEBUG INFO:\nSent User: " + data.debug.sentUser + "\nExpected User: " + data.debug.expectedUser);
+                    }
                     error.style.display = 'block';
                     btn.innerText = originalText;
                     btn.disabled = false;
