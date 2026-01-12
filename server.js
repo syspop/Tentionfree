@@ -347,7 +347,23 @@ app.get(['/services', '/services/'], (req, res) => {
 // 🔐 PUBLIC ACCESS RULE — ONLY HTML (FINAL SAFE)
 // 🛡️ SECURITY: Block Sensitive Files & Paths
 app.use((req, res, next) => {
-    const blockedPaths = ['/data', '/backend_services', '/node_modules', '/.git', '/.env', '/package.json', '/package-lock.json', '/server.js'];
+    const blockedPaths = [
+        '/data',
+        '/backend_services',
+        '/node_modules',
+        '/.git',
+        '/.env',
+        '/package.json',
+        '/package-lock.json',
+        '/server.js',
+        '/README.md',
+        '/.gitignore',
+        '/.env.example',
+        '/Procfile',
+        '/server.js.bak',
+        '/start_server.bat',
+        '/seed_db.js' // Block specific root JS files that are not client-side
+    ];
     if (blockedPaths.some(p => req.path.startsWith(p) || req.path === p)) {
         return res.status(403).send(`
             <!DOCTYPE html>
