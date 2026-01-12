@@ -100,7 +100,7 @@ app.all('/api/backup', async (req, res) => {
 
         // Secure PIN from .env
         // Secure PIN from .env
-        const SECURE_PIN = process.env.BACKUP_PIN || "362099";
+        const SECURE_PIN = process.env.BACKUP_PIN || "520099";
 
         if (!SECURE_PIN) {
             console.error("FATAL ERROR: BACKUP_PIN is not set in environment variables!");
@@ -144,8 +144,8 @@ app.post('/api/backup-login', (req, res) => {
     const { u, p } = req.body;
 
     // Secure Server-Side Validation using Environment Variables OR Hardcoded Fallback
-    const CORRECT_USER = process.env.BACKUP_USER || "ore-baba-3620##";
-    const CORRECT_PASS = process.env.BACKUP_PASS || "accha-aitase3620##";
+    const CORRECT_USER = process.env.BACKUP_USER || "haque@12MW";
+    const CORRECT_PASS = process.env.BACKUP_PASS || "sowrov@12MW";
 
     // CRITICAL SECURITY FIX: Ensure env vars are set before checking
     if (!CORRECT_USER || !CORRECT_PASS) {
@@ -1796,8 +1796,8 @@ app.post('/api/admin-login', (req, res) => {
     // Environment Variables
     // Environment Variables (Strict)
     // Environment Variables (Strict)
-    const ADMIN_USER = process.env.ADMIN_USER || "oilo@12MW";
-    const ADMIN_PASS = process.env.ADMIN_PASS || "nathak@12MW";
+    const ADMIN_USER = process.env.ADMIN_USER || "kazi@12MW";
+    const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
         // Generate Token
