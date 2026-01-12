@@ -10,7 +10,7 @@ require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
-const { sendOrderStatusEmail } = require('./backend_services/emailService');
+const { sendOrderStatusEmail, sendBackupEmail } = require('./backend_services/emailService');
 const multer = require('multer'); // File Uploads
 const path = require('path');
 const fs = require('fs');
@@ -2093,4 +2093,69 @@ app.use((req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
     initializeDatabase();
+
+    // --- AUTO BACKUP SCHEDULER (Weekly) ---
+    const startBackupScheduler = () => {
+        const checkBackup = async () => {
+            console.log("⏳ Checking Auto-Backup Schedule...");
+            try {
+                // 1. Read System Data
+                let systemData = await readLocalJSON('system_data.json');
+
+                // Handle empty/array return from readLocalJSON if file is new
+                if (Array.isArray(systemData)) systemData = {};
+
+                const lastBackup = systemData.lastBackupDate ? new Date(systemData.lastBackupDate) : null;
+                const now = new Date();
+
+                // 2. Check if 7 days passed
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+                if (!lastBackup || (now - lastBackup) > sevenDays) {
+                    console.log("🚀 Triggering Weekly Auto-Backup...");
+
+                    // 3. Generate Backup Data
+                    const backupData = {
+                        timestamp: new Date().toISOString(),
+                        customers: await readLocalJSON('customers.json') || [],
+                        orders: await readLocalJSON('orders.json') || [],
+                        products: await readLocalJSON('products.json') || [],
+                        coupons: await readLocalJSON('coupons.json') || [],
+                        categories: await readLocalJSON('categories.json') || [],
+                        reviews: await readLocalJSON('reviews.json') || [],
+                        tickets: await readLocalJSON('tickets.json') || [],
+                        banners: await readLocalJSON('banners.json') || [],
+                        archive: {
+                            orders: await readLocalJSON('archive/orders.json') || [],
+                            customers: await readLocalJSON('archive/customers.json') || [],
+                            products: await readLocalJSON('archive/products.json') || [],
+                            tickets: await readLocalJSON('archive/tickets.json') || []
+                        }
+                    };
+
+                    // 4. Send Email
+                    const result = await sendBackupEmail(backupData);
+
+                    if (result.success) {
+                        // 5. Update System Data
+                        systemData.lastBackupDate = now.toISOString();
+                        await writeLocalJSON('system_data.json', systemData);
+                        console.log("✅ Auto-Backup Complete & Recorded.");
+                    }
+                } else {
+                    console.log("⏭️ Backup not due yet. Last: " + lastBackup.toLocaleString());
+                }
+            } catch (err) {
+                console.error("❌ Auto-Backup Schedule Error:", err);
+            }
+        };
+
+        // Run immediately on start
+        checkBackup();
+
+        // Then run every 24 hours
+        setInterval(checkBackup, 24 * 60 * 60 * 1000);
+    };
+
+    startBackupScheduler();
 });

@@ -363,4 +363,44 @@ async function sendOrderStatusEmail(order, updates) {
     }
 }
 
-module.exports = { sendOrderStatusEmail };
+async function sendBackupEmail(backupData) {
+    try {
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `tentionfree_full_backup_${date}.json`;
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const buffer = Buffer.from(jsonStr, 'utf-8');
+
+        console.log(`Sending Backup Email to ${ADMIN_EMAIL}...`);
+
+        const { data, error } = await resend.emails.send({
+            from: 'TentionFree Backup <backup@tentionfree.store>',
+            to: [ADMIN_EMAIL],
+            subject: `[AUTO-BACKUP] Database Backup - ${date}`,
+            html: `
+                <h3>Weekly Database Backup</h3>
+                <p>Attached is the full JSON database backup for your store.</p>
+                <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                <p>Keep this file safe.</p>
+            `,
+            attachments: [
+                {
+                    filename: filename,
+                    content: buffer
+                }
+            ]
+        });
+
+        if (error) {
+            console.error('Backup Email Failed:', error);
+            return { success: false, error };
+        }
+
+        console.log('Backup Email Sent Successfully:', data);
+        return { success: true, data };
+    } catch (err) {
+        console.error('Critical Backup Email Error:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+module.exports = { sendOrderStatusEmail, sendBackupEmail };
