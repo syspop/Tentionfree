@@ -88,6 +88,8 @@ app.use((req, res, next) => {
 
 // Automatic Redirect: .html -> clean URL
 
+const speakeasy = require('speakeasy'); // 2FA
+
 // --- BACKUP ENDPOINT (Moved to VERY TOP - BEFORE REDIRECTS) ---
 console.log("✅ Backup Route Registered: /api/backup");
 app.all('/api/backup', async (req, res) => {
@@ -98,7 +100,6 @@ app.all('/api/backup', async (req, res) => {
 
         if (pin) pin = pin.toString().trim();
 
-        // Secure PIN from .env
         // Secure PIN from .env
         const SECURE_PIN = process.env.BACKUP_PIN || "520099";
 
@@ -139,17 +140,14 @@ app.all('/api/backup', async (req, res) => {
     }
 });
 
-// --- BACKUP LOGIN (Secure) ---
-app.post('/api/backup-login', (req, res) => {
-    const { u, p } = req.body;
+// --- BACKUP LOGIN (Secure 2FA) ---
+app.post('/api/backup-login', async (req, res) => {
+    const { u, p, token } = req.body;
 
-    // Secure Server-Side Validation using Environment Variables OR Hardcoded Fallback
     const CORRECT_USER = process.env.BACKUP_USER || "haque@12MW";
     const CORRECT_PASS = process.env.BACKUP_PASS || "sowrov@12MW";
 
-    // CRITICAL SECURITY FIX: Ensure env vars are set before checking
     if (!CORRECT_USER || !CORRECT_PASS) {
-        console.error("FATAL ERROR: BACKUP_USER or BACKUP_PASS is not set in environment variables!");
         return res.status(500).json({ success: false, message: "Server Configuration Error" });
     }
 
@@ -157,39 +155,37 @@ app.post('/api/backup-login', (req, res) => {
         return res.status(401).json({ success: false });
     }
 
-    // DEBUG LOG
-    if (u !== CORRECT_USER || p !== CORRECT_PASS) {
-        console.warn(`Backup Login Failed. Input: ${u}/${p} | Expected (Env): ${CORRECT_USER}/${CORRECT_PASS}`);
-    }
+    const final_u = u.trim();
+    const final_p = p.trim();
 
-    // --- TEMPORARY DEBUGGING BLOCK ---
-    // Clean inputs and env vars (strip quotes and whitespace)
-    const cleanAuth = (str) => str ? str.trim().replace(/^['"]|['"]$/g, '') : '';
-
-    // Normalize Logic
-    const final_u = cleanAuth(u);
-    const final_p = cleanAuth(p);
-    const expected_u = cleanAuth(CORRECT_USER);
-    const expected_p = cleanAuth(CORRECT_PASS);
-
-    if (final_u === expected_u && final_p === expected_p) {
-        return res.json({ success: true });
-    }
-
-    // EXPOSE DEBUG INFO TO CLIENT (REMOVE AFTER FIXING)
-    return res.status(401).json({
-        success: false,
-        message: "Login Failed",
-        debug: {
-            sentUser: final_u,
-            expectedUser: expected_u,
-            // Don't expose full password, just length and first/last chars
-            sentPassLen: final_p.length,
-            expectedPassLen: expected_p.length,
-            matchUser: final_u === expected_u,
-            matchPass: final_p === expected_p
+    if (final_u === CORRECT_USER && final_p === CORRECT_PASS) {
+        // Credential Match -> Check 2FA
+        if (!token) {
+            return res.json({ success: false, require2fa: true });
         }
-    });
+
+        // Verify Token
+        const systemData = await readLocalJSON('system_data.json');
+        if (!systemData || !systemData.backup2faSecret) {
+            console.error("Backup 2FA Secret Missing!");
+            return res.status(500).json({ success: false, message: "2FA Not Configured" });
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret: systemData.backup2faSecret,
+            encoding: 'base32',
+            token: token.trim(),
+            window: 2 // Allow some time drift
+        });
+
+        if (verified) {
+            return res.json({ success: true });
+        } else {
+            return res.json({ success: false, message: "Invalid 2FA Code" });
+        }
+    }
+
+    return res.status(401).json({ success: false, message: "Invalid Credentials" });
 });
 
 // --- FORCE ADMIN ASSETS ---
@@ -1789,23 +1785,42 @@ app.post('/api/backup', async (req, res) => {
 });
 
 // POST Admin Login
-app.post('/api/admin-login', (req, res) => {
-    const { user, pass } = req.body;
+// POST Admin Login (Secure 2FA)
+app.post('/api/admin-login', async (req, res) => {
+    const { user, pass, token } = req.body;
 
-    // Environment Variables
-    // Environment Variables
-    // Environment Variables (Strict)
-    // Environment Variables (Strict)
     const ADMIN_USER = process.env.ADMIN_USER || "kazi@12MW";
     const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
 
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
-        // Generate Token
-        console.log("Admin Login Success");
-        const token = jwt.sign({ user: ADMIN_USER, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ success: true, token });
+        // Credential Match -> Check 2FA
+        if (!token) {
+            return res.json({ success: false, require2fa: true });
+        }
+
+        // Verify Token
+        const systemData = await readLocalJSON('system_data.json');
+        if (!systemData || !systemData.admin2faSecret) {
+            console.error("Admin 2FA Secret Missing!");
+            return res.status(500).json({ success: false, message: "2FA Not Configured" });
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret: systemData.admin2faSecret,
+            encoding: 'base32',
+            token: token.trim(),
+            window: 2
+        });
+
+        if (verified) {
+            console.log("Admin 2FA Verified");
+            const jwtToken = jwt.sign({ user: ADMIN_USER, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+            return res.json({ success: true, token: jwtToken });
+        } else {
+            return res.json({ success: false, message: "Invalid 2FA Code" });
+        }
     } else {
-        console.warn(`Admin Login Failed. Input User: '${user}' vs Expected: '${ADMIN_USER}'`);
+        console.warn(`Admin Login Failed. Input User: '${user}'`);
         res.json({ success: false, message: "Invalid Admin Credentials" });
     }
 });

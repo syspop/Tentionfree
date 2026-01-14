@@ -211,13 +211,15 @@
             filtered.forEach(o => {
                 let statusBadge = getStatusBadge(o.status);
                 let rowStyle = (o.isDeleted || o.status === 'Deleted') ? 'opacity: 0.6;' : '';
+                const isUSD = (o.currency === 'USD' || o.paymentMethod === 'Binance Pay');
+                const displayAmount = isUSD ? '$' + (o.totalAmount || o.price || 0) : '৳' + (o.totalAmount || o.price || 0);
 
                 list.innerHTML += `
                     <tr style="${rowStyle}">
                         <td><small>${o.date}</small></td>
                         <td><b>${o.customer || o.customerName}</b></td>
                         <td><b>#${o.id}</b></td>
-                        <td>৳${o.totalAmount || o.price}</td>
+                        <td>${displayAmount}</td>
                         <td>${statusBadge}</td>
                         <td>
                              <button onclick="viewOrder(${o.id})" style="background:#0984e3; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; margin-right:5px;">View</button>
@@ -275,18 +277,31 @@
 
             // Items
             const items = order.items || order.cart || [];
+            const isUSD = (order.currency === 'USD' || order.paymentMethod === 'Binance Pay');
             let itemsHtml = "";
-            if (Array.isArray(items)) {
-                itemsHtml = items.map(i => `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <span>${i.name} <span style="font-size:10px; color:var(--gray);">&times;${i.qty || 1}</span></span>
-                        <span>৳${(i.price * (i.qty || 1))}</span>
-                    </div>`).join('');
-            } else {
-                itemsHtml = order.product || 'Unknown Item';
+
+            if (items.length > 0) {
+                itemsHtml = items.map(i => {
+                    const totalItemPrice = (i.price * (i.qty || 1));
+                    const displayItemPrice = isUSD ? '$' + (totalItemPrice / 100).toFixed(2) : '৳' + totalItemPrice;
+                    return `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                        <span>${i.name} <span style="font-size:12px; color:gray;">x${i.qty || 1}</span></span>
+                        <span>${displayItemPrice}</span>
+                    </div>`;
+                }).join('');
+            } else if (order.product) {
+                itemsHtml = `<div style="padding:10px; color:white;">${order.product}</div>`;
             }
-            // Add Total
-            itemsHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:#10b981;">Total: ৳${order.totalAmount || order.price}</div>`;
+
+            // Discount
+            if (order.discount > 0) {
+                itemsHtml += `<div style="display:flex; justify-content:space-between; color:red; margin-top:5px;">
+                   <span>Discount ${order.couponCode ? '(' + order.couponCode + ')' : ''}</span>
+                   <span>- ${isUSD ? '$' : '৳'}${order.discount}</span>
+               </div>`;
+            }
+
+            itemsHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px; color:#10b981;">Total: ${isUSD ? '$' : '৳'}${order.price || order.totalAmount || 0}</div>`;
 
             document.getElementById('view-items').innerHTML = itemsHtml;
 
@@ -315,17 +330,23 @@
             if (!order) return;
 
             const items = order.items || order.cart || [];
-            const itemsHtml = items.length > 0 ? items.map(item => `
+            const isUSD = (order.currency === 'USD' || order.paymentMethod === 'Binance Pay');
+            const itemsHtml = items.length > 0 ? items.map(item => {
+                const itemTotal = (item.price || 0) * (item.quantity || item.qty || 1);
+                const displayPrice = isUSD ? '$' + ((item.price || 0) / 100).toFixed(2) : '৳' + (item.price || 0);
+                const displayTotal = isUSD ? '$' + (itemTotal / 100).toFixed(2) : '৳' + itemTotal;
+
+                return `
                 <tr style="border-bottom: 1px solid #e2e8f0; background-color: #ffffff !important; color: #334155 !important;">
                     <td style="padding: 12px 15px; color: #334155 !important; background-color: #ffffff !important;">
                         <div style="font-weight: 500; color: #334155 !important;">${item.name || 'Item'}</div>
                         <div style="font-size: 12px; color: #94a3b8 !important;">${item.variant || ''}</div>
                     </td>
                     <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${item.quantity || item.qty || 1}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">৳${item.price || 0}</td>
-                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">৳${(item.price || 0) * (item.quantity || item.qty || 1)}</td>
-                </tr>
-            `).join('') : '';
+                    <td style="text-align:right; padding: 12px 15px; color: #64748b !important; background-color: #ffffff !important;">${displayPrice}</td>
+                    <td style="text-align:right; padding: 12px 15px; color: #334155 !important; font-weight: 600; background-color: #ffffff !important;">${displayTotal}</td>
+                </tr>`;
+            }).join('') : '';
 
             // Create a VISIBLE full-screen overlay for the invoice
             const container = document.createElement('div');
@@ -388,7 +409,7 @@
                     <!-- Total -->
                     <div style="border-top: 2px solid #f1f5f9; padding-top: 20px; text-align: right;">
                         <span style="font-size: 14px; color: #64748b; margin-right: 15px;">Total Amount</span>
-                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">৳${order.price || order.totalAmount || 0}</span>
+                        <span style="font-size: 24px; font-weight: bold; color: #2563eb;">${isUSD ? '$' : '৳'}${order.price || order.totalAmount || 0}</span>
                     </div>
 
                     <!-- Footer -->

@@ -108,37 +108,58 @@
         </div>
 
         <div class="space-y-5">
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Username</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-regular fa-user text-slate-500"></i>
-                    </span>
-                    <input type="text" id="user-input"
-                        class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white bg-slate-900/50 focus:bg-slate-900/80"
-                        placeholder="Enter admin username" autocomplete="off" autofocus>
+            <div id="credentials-section">
+                <div class="mb-5">
+                    <label
+                        class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-regular fa-user text-slate-500"></i>
+                        </span>
+                        <input type="text" id="user-input"
+                            class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white bg-slate-900/50 focus:bg-slate-900/80"
+                            placeholder="Enter admin username" autocomplete="off" autofocus>
+                    </div>
+                </div>
+
+                <div>
+                    <label
+                        class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-slate-500"></i>
+                        </span>
+                        <input type="password" id="pass-input"
+                            class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white bg-slate-900/50 focus:bg-slate-900/80"
+                            placeholder="••••••••">
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+            <!-- OTP Section (Hidden Initially) -->
+            <div id="otp-section" class="hidden animate-enter">
+                <label
+                    class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">Authenticator
+                    Code</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-lock text-slate-500"></i>
+                        <i class="fa-solid fa-key text-indigo-400"></i>
                     </span>
-                    <input type="password" id="pass-input"
-                        class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white bg-slate-900/50 focus:bg-slate-900/80"
-                        placeholder="••••••••">
+                    <input type="text" id="backup-otp" maxlength="6"
+                        class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-lg tracking-[0.5em] font-mono text-center placeholder-slate-600 text-white bg-slate-900/50 focus:bg-slate-900/80"
+                        placeholder="000000" autocomplete="off">
                 </div>
+                <p class="text-xs text-center text-slate-500 mt-3">Enter the 6-digit code from your app.</p>
             </div>
+
 
             <div id="login-error"
                 class="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 hidden">
                 <i class="fa-solid fa-circle-exclamation"></i>
-                <span>Invalid credentials provided.</span>
+                <span id="error-msg">Invalid credentials provided.</span>
             </div>
 
-            <button onclick="attemptLogin()"
+            <button onclick="attemptLogin()" id="login-btn"
                 class="btn-modern w-full py-3.5 rounded-xl font-semibold text-white shadow-lg tracking-wide mt-2">
                 Authenticate
             </button>
@@ -246,8 +267,11 @@
         const dashboardScreen = document.getElementById('dashboard-screen');
         const pinModal = document.getElementById('pin-modal');
         const loginError = document.getElementById('login-error');
+        const errorMsg = document.getElementById('error-msg');
         const pinError = document.getElementById('pin-error');
         const pinInput = document.getElementById('pin-input');
+
+        let is2FAMode = false;
 
         // Animation Helpers
         function showModalWithAnim(modal) {
@@ -275,44 +299,51 @@
         }
 
         async function attemptLogin() {
-            const u = document.getElementById('user-input').value;
+            const u = document.getElementById('user-input').value.trim();
             const p = document.getElementById('pass-input').value;
+            const inputOtp = document.getElementById('backup-otp').value.trim();
 
-            // Simple client feedback (the real check is server)
             const btn = document.querySelector('#login-screen button');
             const origText = btn.innerText;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+            loginError.classList.add('hidden');
 
             try {
+                const payload = { u, p };
+                if (is2FAMode) {
+                    if (inputOtp.length !== 6) throw new Error("Please enter a valid 6-digit code.");
+                    payload.token = inputOtp;
+                }
+
                 const res = await fetch('/api/backup-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ u, p })
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
 
                 if (data.success) {
                     loginScreen.classList.add('hidden');
                     dashboardScreen.classList.remove('hidden');
+                } else if (data.require2fa) {
+                    // Switch to 2FA
+                    is2FAMode = true;
+                    document.getElementById('credentials-section').classList.add('hidden');
+                    document.getElementById('otp-section').classList.remove('hidden');
+                    btn.innerText = "Verify Login";
+                    btn.disabled = false;
+                    document.getElementById('backup-otp').focus();
+
                 } else {
-                    if (data.debug) {
-                        throw new Error(JSON.stringify(data.debug));
-                    }
-                    throw new Error("Invalid");
+                    throw new Error(data.message || "Invalid credentials.");
                 }
             } catch (e) {
-                // DEBUG HANDLER
-                if (e.message && e.message.startsWith('{')) {
-                    try {
-                        const debugData = JSON.parse(e.message);
-                        alert("DEBUG INFO:\nSent User: " + debugData.sentUser + "\nExpected User: " + debugData.expectedUser + "\n\nPass Match: " + debugData.matchPass);
-                    } catch (parseErr) { }
-                }
-
+                errorMsg.innerText = e.message || "Login failed.";
                 loginError.classList.remove('hidden');
+                btn.innerText = is2FAMode ? "Verify Login" : origText;
+                btn.disabled = false;
                 setTimeout(() => loginError.classList.add('hidden'), 5000); // Increased time
-            } finally {
-                btn.innerText = origText;
             }
         }
 
