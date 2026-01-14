@@ -476,7 +476,15 @@
             document.getElementById('u-name').innerText = user.name;
             document.getElementById('u-name-display').innerText = user.name; // Header name
             document.getElementById('u-id').innerText = user.id || 'N/A';
-            document.getElementById('u-email-sec').innerText = user.email; // Security section
+
+            const verifiedBadge = user.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1" title="Verified"></i>' : '';
+
+            // Sidebar Email (Custom - append to name or add below?) 
+            // Better to perhaps show it in security section mainly, but user asked for profile too.
+            // Let's replace the ID line with Email + Badge for sidebar since ID is less useful there?
+            // actually user said "customer profile e o". 
+
+            document.getElementById('u-email-sec').innerHTML = user.email + verifiedBadge; // Security section
             document.getElementById('u-phone-sec').innerText = user.phone; // Security section
             document.getElementById('u-dob-sec').innerText = user.dob ? new Date(user.dob).toLocaleDateString('en-GB') : 'N/A'; // Security section
 
@@ -499,7 +507,9 @@
                             // Update UI
                             document.getElementById('u-name').innerText = freshUser.name;
                             document.getElementById('u-name-display').innerText = freshUser.name;
-                            document.getElementById('u-email-sec').innerText = freshUser.email;
+
+                            const vBadge = freshUser.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1" title="Verified"></i>' : '';
+                            document.getElementById('u-email-sec').innerHTML = freshUser.email + vBadge;
                             document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
                             document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString('en-GB') : 'N/A';
                             document.getElementById('u-avatar').innerText = freshUser.name.charAt(0).toUpperCase();

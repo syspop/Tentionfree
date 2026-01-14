@@ -403,4 +403,70 @@ async function sendBackupEmail(backupData) {
     }
 }
 
-module.exports = { sendOrderStatusEmail, sendBackupEmail };
+async function sendOtpEmail(email, otpCode) {
+    try {
+        console.log(`Sending OTP to ${email}...`);
+
+        const subject = `Verify Your TentionFree Account: ${otpCode}`;
+
+        // Simple, clean OTP email design
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0; padding:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
+            <center style="width: 100%; background-color: #f1f5f9; padding: 40px 0;">
+                <div style="max-width: 500px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; text-align: center;">
+                    
+                    <div style="background-color: #0f172a; padding: 30px 20px;">
+                        <span style="font-size: 24px; font-weight: bold; color: white;">Tention<span style="color: #6366f1;">Free</span></span>
+                    </div>
+
+                    <div style="padding: 40px 30px;">
+                        <h2 style="margin: 0; color: #1e293b; font-size: 20px;">Verify Your Email Address</h2>
+                        <p style="color: #64748b; font-size: 15px; margin-top: 10px; line-height: 1.5;">
+                            Thanks for starting the registration process. Please use the following code to complete your signup.
+                        </p>
+
+                        <div style="margin: 30px 0;">
+                            <span style="font-family: monospace; background-color: #f1f5f9; color: #0f172a; font-size: 32px; font-weight: bold; letter-spacing: 5px; padding: 10px 20px; border-radius: 8px; border: 1px dashed #cbd5e1; display: inline-block;">
+                                ${otpCode}
+                            </span>
+                        </div>
+
+                        <p style="color: #94a3b8; font-size: 13px; margin: 0;">
+                            This code will expire in 10 minutes. <br>
+                            If you didn't request this, please ignore this email.
+                        </p>
+                    </div>
+
+                    <div style="background-color: #f8fafc; padding: 20px; border-top: 1px solid #e2e8f0;">
+                         <p style="margin: 0; color: #94a3b8; font-size: 12px;">&copy; ${new Date().getFullYear()} Tention Free Store</p>
+                    </div>
+                </div>
+            </center>
+        </body>
+        </html>
+        `;
+
+        const { data, error } = await resend.emails.send({
+            from: 'TentionFree <support@tentionfree.store>',
+            to: [email],
+            subject: subject,
+            html: htmlContent
+        });
+
+        if (error) {
+            console.error('OTP Email Failed:', error);
+            return { success: false, error };
+        }
+
+        console.log('OTP Email Sent:', data);
+        return { success: true };
+
+    } catch (err) {
+        console.error('OTP Send Error:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+module.exports = { sendOrderStatusEmail, sendBackupEmail, sendOtpEmail };

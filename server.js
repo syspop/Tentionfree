@@ -1607,17 +1607,33 @@ app.post('/api/change-password', async (req, res) => {
 // POST Register
 // POST Register
 // POST Register (Inbuilt)
-app.post('/api/register', async (req, res) => {
-    const { name, email, phone, password } = req.body;
+// --- PENDING REGISTRATION STORE ---
+const pendingUsers = {}; // { email: { userData, otp, expires, attempts } }
 
-    if (!name || !email || !password) {
+// POST Register (Step 1: Send OTP)
+app.post('/api/register', async (req, res) => {
+    const { name, email: rawEmail, phone, password } = req.body;
+
+    if (!name || !rawEmail || !password) {
         return res.json({ success: false, message: "Missing required fields" });
     }
+
+    const email = rawEmail.toLowerCase().trim();
 
     // Input Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         return res.json({ success: false, message: "Invalid email format" });
+    }
+
+    // --- DOMAIN WHITELIST CHECK ---
+    const allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com', 'icloud.com', 'msn.com'];
+    const domain = email.split('@')[1];
+    if (!allowedDomains.includes(domain)) {
+        return res.status(400).json({
+            success: false,
+            message: "We only accept registration from trusted email providers (Gmail, Yahoo, Outlook, iCloud)."
+        });
     }
     if (password.length < 6) {
         return res.json({ success: false, message: "Password must be at least 6 characters" });
@@ -1630,13 +1646,13 @@ app.post('/api/register', async (req, res) => {
         const allCustomers = await readLocalJSON('customers.json');
 
         // Check duplicate
-        const emailExists = allCustomers.find(c => c.email === email.toLowerCase().trim());
+        const emailExists = allCustomers.find(c => c.email === email);
         if (emailExists) {
             return res.json({ success: false, message: "Email already registered" });
         }
 
-        // Check Banned Email/Phone (prevent re-registration)
-        const bannedUser = allCustomers.find(c => (c.email === email.toLowerCase().trim() || (phone && c.phone === phone)) && c.isBanned);
+        // Check Banned Email/Phone
+        const bannedUser = allCustomers.find(c => (c.email === email || (phone && c.phone === phone)) && c.isBanned);
         if (bannedUser) {
             return res.status(403).json({ success: false, message: "This account has been banned." });
         }
@@ -1648,10 +1664,12 @@ app.post('/api/register', async (req, res) => {
             }
         }
 
-        const newCustomer = {
+        // --- NEW: Generate OTP & Store Temporarily ---
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
+        const userData = {
             id: 'usr_' + Date.now().toString(36),
             name: name,
-            email: email.toLowerCase().trim(),
+            email: email,
             phone: phone || '',
             dob: req.body.dob || '',
             password: bcrypt.hashSync(password, 10),
@@ -1659,21 +1677,165 @@ app.post('/api/register', async (req, res) => {
             isBanned: false
         };
 
-        allCustomers.push(newCustomer);
-        console.log(`[REGISTER] Saving user: ${email}, Total: ${allCustomers.length}`);
-        await writeLocalJSON('customers.json', allCustomers);
+        // Store in memory (expires in 10 mins)
+        pendingUsers[email] = {
+            userData,
+            otp: otpCode,
+            expires: Date.now() + 10 * 60 * 1000,
+            attempts: 0
+        };
 
-        // Return without password
-        const { password: _, ...userWithoutPass } = newCustomer;
+        // Send Email
+        const { sendOtpEmail } = require('./backend_services/emailService');
+        await sendOtpEmail(email, otpCode);
 
-        // Generate Token
-        const token = jwt.sign({ id: newCustomer.id, email: newCustomer.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+        console.log(`[REGISTER-OTP] Sent to ${email} | Code: ${otpCode}`); // Debug Log
 
-        res.json({ success: true, user: userWithoutPass, token });
+        res.json({ success: true, requireVerification: true, email: email, message: "Verification code sent to email" });
 
     } catch (err) {
         console.error(err);
-        return res.json({ success: false, message: "Server error saving user" });
+        return res.json({ success: false, message: "Server error handling registration" });
+    }
+});
+
+// POST Verify Email (Step 2: Confirm OTP)
+app.post('/api/verify-email', async (req, res) => {
+    const { email: rawEmail, otp } = req.body;
+    const email = rawEmail ? rawEmail.toLowerCase().trim() : '';
+
+    const record = pendingUsers[email];
+
+    if (!record) {
+        return res.status(400).json({ success: false, message: "Invalid or expired verification request. Please register again." });
+    }
+
+    if (Date.now() > record.expires) {
+        delete pendingUsers[email];
+        return res.status(400).json({ success: false, message: "Verification code expired." });
+    }
+
+    if (record.otp !== otp) {
+        return res.status(400).json({ success: false, message: "Invalid verification code." });
+    }
+
+    try {
+        // --- Success: Save User to DB ---
+        const allCustomers = await readLocalJSON('customers.json');
+
+        // Double check duplicate race condition
+        if (allCustomers.find(c => c.email === email)) {
+            return res.json({ success: false, message: "Email already registered" });
+        }
+
+        allCustomers.push(record.userData);
+        await writeLocalJSON('customers.json', allCustomers);
+
+        console.log(`[REGISTER-CONFIRM] User Saved: ${email}`);
+
+        // Cleanup
+        delete pendingUsers[email];
+
+        // Login Logic
+        const newUser = record.userData;
+        newUser.isVerified = true; // Mark as Verified
+        const { password: _, ...userWithoutPass } = newUser;
+        const token = jwt.sign({ id: newUser.id, email: newUser.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+
+        res.json({ success: true, user: userWithoutPass, token, message: "Registration successful!" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server error verifying user" });
+    }
+});
+
+// POST Resend Verification Code
+app.post('/api/resend-verification', async (req, res) => {
+    const { email: rawEmail } = req.body;
+    const email = rawEmail ? rawEmail.toLowerCase().trim() : '';
+
+    const record = pendingUsers[email];
+
+    if (!record) {
+        return res.status(400).json({ success: false, message: "No pending registration found." });
+    }
+
+    if (record.attempts >= 2) {
+        return res.status(429).json({ success: false, message: "Maximum resend limit reached. Please restart registration." });
+    }
+
+    try {
+        const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        record.otp = newOtp;
+        record.expires = Date.now() + 10 * 60 * 1000;
+        record.attempts += 1;
+
+        const { sendOtpEmail } = require('./backend_services/emailService');
+        await sendOtpEmail(email, newOtp);
+
+        console.log(`[RESEND-OTP] Sent to ${email} | Attempt: ${record.attempts}`);
+
+        res.json({ success: true, message: "New code sent to email" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to resend code" });
+    }
+});
+
+// POST Social Auth (Google) - Auto Verify
+app.post('/api/auth/:provider', async (req, res) => {
+    const provider = req.params.provider;
+    const { email, name, photo } = req.body;
+
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+    try {
+        const allCustomers = await readLocalJSON('customers.json');
+        let user = allCustomers.find(c => c.email === email);
+
+        if (user) {
+            // LOGIN EXISTING
+            if (user.isBanned) {
+                return res.status(403).json({ success: false, message: "Account banned." });
+            }
+
+            // Auto-verify if trusting Google (Optional, but user requested google = verified)
+            if (!user.isVerified) {
+                user.isVerified = true;
+                await writeLocalJSON('customers.json', allCustomers);
+            }
+
+            const { password: _, ...userWithoutPass } = user;
+            const token = jwt.sign({ id: user.id, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+            return res.json({ success: true, user: userWithoutPass, token });
+        } else {
+            // REGISTER NEW (Auto-Verified)
+            const newUser = {
+                id: 'usr_' + Date.now().toString(36),
+                name: name || "User",
+                email: email,
+                phone: "",
+                dob: "",
+                password: "", // No password for social login users initially
+                joined: new Date().toISOString(),
+                isBanned: false,
+                isVerified: true, // Google Users are Verified
+                provider: provider,
+                photo: photo || ""
+            };
+
+            allCustomers.push(newUser);
+            await writeLocalJSON('customers.json', allCustomers);
+
+            const token = jwt.sign({ id: newUser.id, email: newUser.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+            return res.json({ success: true, user: newUser, token });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Auth Error" });
     }
 });
 

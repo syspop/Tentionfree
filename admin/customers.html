@@ -60,7 +60,9 @@
                     U
                 </div>
                 <h3 style="margin:10px 0 5px; color:white;" id="cp-name">User Name</h3>
-                <p style="margin:0; color:var(--gray); font-size:14px;" id="cp-email">user@example.com</p>
+                <p style="margin:0; color:var(--gray); font-size:14px;" id="cp-email">
+                    user@example.com
+                </p>
                 <code
                     style="display:inline-block; margin-top:5px; background:#0f172a; padding:2px 8px; border-radius:4px; font-size:11px; color:#cbd5e1;"
                     id="cp-id">ID: 123</code>
@@ -160,7 +162,10 @@
                         <td><code style="background:#0f172a; padding:2px 4px; border-radius:4px; font-size:11px;">${u.id}</code></td>
                         <td><b>${u.name}</b></td>
                         <td>
-                            <div style="font-size:12px;">${u.email}</div>
+                            <div style="font-size:12px;">
+                                ${u.email} 
+                                ${u.isVerified ? '<i class="fa-solid fa-circle-check" style="color:#10b981; margin-left:4px;" title="Verified Email"></i>' : ''}
+                            </div>
                             <div style="font-size:11px; color:var(--gray);">${u.phone || '-'}</div>
                         </td>
                         <td>${statusBadge}</td>
@@ -211,7 +216,7 @@
 
             // Populate User Info
             document.getElementById('cp-name').innerText = user.name;
-            document.getElementById('cp-email').innerText = user.email;
+            document.getElementById('cp-email').innerHTML = user.email + (user.isVerified ? ' <i class="fa-solid fa-circle-check" style="color:#10b981;" title="Verified"></i>' : '');
             document.getElementById('cp-id').innerText = "ID: " + user.id;
             document.getElementById('cp-avatar').innerText = user.name.charAt(0).toUpperCase();
             const joinedDate = new Date(user.joined);
