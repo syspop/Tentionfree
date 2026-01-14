@@ -1788,9 +1788,13 @@ app.post('/api/resend-verification', async (req, res) => {
 // POST Social Auth (Google) - Auto Verify
 app.post('/api/auth/:provider', async (req, res) => {
     const provider = req.params.provider;
-    const { email, name, photo } = req.body;
+    const { email: rawEmail, name, photo } = req.body;
 
-    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+    if (!rawEmail) return res.status(400).json({ success: false, message: "Email required" });
+
+    // Normalize email
+    const email = rawEmail.toLowerCase().trim();
+    console.log(`[AUTH] Provider: ${provider}, Email: ${email}`);
 
     try {
         const allCustomers = await readLocalJSON('customers.json');
@@ -1802,8 +1806,9 @@ app.post('/api/auth/:provider', async (req, res) => {
                 return res.status(403).json({ success: false, message: "Account banned." });
             }
 
-            // Auto-verify if trusting Google (Optional, but user requested google = verified)
+            // Auto-verify if trusting Google
             if (!user.isVerified) {
+                console.log(`[AUTH] Auto-Verifying existing user: ${email}`);
                 user.isVerified = true;
                 await writeLocalJSON('customers.json', allCustomers);
             }
@@ -1813,16 +1818,17 @@ app.post('/api/auth/:provider', async (req, res) => {
             return res.json({ success: true, user: userWithoutPass, token });
         } else {
             // REGISTER NEW (Auto-Verified)
+            console.log(`[AUTH] Creating new verified user: ${email}`);
             const newUser = {
                 id: 'usr_' + Date.now().toString(36),
                 name: name || "User",
                 email: email,
                 phone: "",
                 dob: "",
-                password: "", // No password for social login users initially
+                password: "", // No password
                 joined: new Date().toISOString(),
                 isBanned: false,
-                isVerified: true, // Google Users are Verified
+                isVerified: true, // Auto-verified
                 provider: provider,
                 photo: photo || ""
             };
@@ -1834,7 +1840,7 @@ app.post('/api/auth/:provider', async (req, res) => {
             return res.json({ success: true, user: newUser, token });
         }
     } catch (err) {
-        console.error(err);
+        console.error("[AUTH ERROR]", err);
         res.status(500).json({ success: false, message: "Auth Error" });
     }
 });

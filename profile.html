@@ -473,11 +473,11 @@
             const user = JSON.parse(userStr);
 
             // Populate UI
-            document.getElementById('u-name').innerText = user.name;
-            document.getElementById('u-name-display').innerText = user.name; // Header name
-            document.getElementById('u-id').innerText = user.id || 'N/A';
+            const verifiedBadge = user.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1 text-sm" title="Verified"></i>' : '';
 
-            const verifiedBadge = user.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1" title="Verified"></i>' : '';
+            document.getElementById('u-name').innerHTML = user.name + verifiedBadge;
+            document.getElementById('u-name-display').innerHTML = user.name + verifiedBadge; // Header name
+            document.getElementById('u-id').innerText = user.id || 'N/A';
 
             // Sidebar Email (Custom - append to name or add below?) 
             // Better to perhaps show it in security section mainly, but user asked for profile too.
@@ -505,10 +505,10 @@
                     .then(freshUser => {
                         if (freshUser) {
                             // Update UI
-                            document.getElementById('u-name').innerText = freshUser.name;
-                            document.getElementById('u-name-display').innerText = freshUser.name;
+                            const vBadge = freshUser.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1 text-sm" title="Verified"></i>' : '';
 
-                            const vBadge = freshUser.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1" title="Verified"></i>' : '';
+                            document.getElementById('u-name').innerHTML = freshUser.name + vBadge;
+                            document.getElementById('u-name-display').innerHTML = freshUser.name + vBadge;
                             document.getElementById('u-email-sec').innerHTML = freshUser.email + vBadge;
                             document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
                             document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString('en-GB') : 'N/A';
