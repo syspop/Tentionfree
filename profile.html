@@ -473,11 +473,16 @@
             const user = JSON.parse(userStr);
 
             // Populate UI
-            const verifiedBadge = user.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1 text-sm" title="Verified"></i>' : '';
-
-            document.getElementById('u-name').innerHTML = user.name + verifiedBadge;
-            document.getElementById('u-name-display').innerHTML = user.name + verifiedBadge; // Header name
             document.getElementById('u-id').innerText = user.id || 'N/A';
+
+            // Verified Badge Logic
+            const verifiedBadge = user.isVerified ?
+                '<i class="fa-solid fa-circle-check text-emerald-400 ml-2 text-sm drop-shadow-md" title="Verified Account"></i>'
+                : '';
+
+            // Apply to Name (Header & Sidebar)
+            document.getElementById('u-name').innerHTML = `${user.name} ${verifiedBadge}`;
+            document.getElementById('u-name-display').innerHTML = `${user.name} ${verifiedBadge}`;
 
             // Sidebar Email (Custom - append to name or add below?) 
             // Better to perhaps show it in security section mainly, but user asked for profile too.
@@ -505,10 +510,12 @@
                     .then(freshUser => {
                         if (freshUser) {
                             // Update UI
-                            const vBadge = freshUser.isVerified ? ' <i class="fa-solid fa-circle-check text-emerald-400 ml-1 text-sm" title="Verified"></i>' : '';
+                            const vBadge = freshUser.isVerified ?
+                                '<i class="fa-solid fa-circle-check text-emerald-400 ml-2 text-sm drop-shadow-md" title="Verified Account"></i>'
+                                : '';
 
-                            document.getElementById('u-name').innerHTML = freshUser.name + vBadge;
-                            document.getElementById('u-name-display').innerHTML = freshUser.name + vBadge;
+                            document.getElementById('u-name').innerHTML = `${freshUser.name} ${vBadge}`;
+                            document.getElementById('u-name-display').innerHTML = `${freshUser.name} ${vBadge}`;
                             document.getElementById('u-email-sec').innerHTML = freshUser.email + vBadge;
                             document.getElementById('u-phone-sec').innerText = freshUser.phone || '';
                             document.getElementById('u-dob-sec').innerText = freshUser.dob ? new Date(freshUser.dob).toLocaleDateString('en-GB') : 'N/A';
