@@ -1378,9 +1378,25 @@ app.put('/api/coupons/:id', authenticateAdmin, async (req, res) => {
 
 
 // GET Customers (Admin only) (Hybrid: Read from JSON)
+// GET Customers (Admin only) (Hybrid: Read from JSON)
 app.get('/api/customers', authenticateAdmin, async (req, res) => {
     try {
         const customers = await readLocalJSON('customers.json');
+
+        let needsSave = false;
+
+        // Auto-fix legacy Google users
+        customers.forEach(c => {
+            if (c.provider === 'google' && !c.isVerified) {
+                c.isVerified = true;
+                needsSave = true;
+                console.log(`[AUTO-FIX] Verified legacy Google user: ${c.email}`);
+            }
+        });
+
+        if (needsSave) {
+            await writeLocalJSON('customers.json', customers);
+        }
 
         // Exclude password manually since we can't use Mongoose selection
         const safeCustomers = customers.map(c => {
@@ -1390,12 +1406,14 @@ app.get('/api/customers', authenticateAdmin, async (req, res) => {
 
         res.json(safeCustomers);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Failed to read customers' });
     }
 });
 
 // PUT Update Customer (Admin) - PROTECTED
 // GET My Profile (User) - PROTECTED
+// GET My Profile (User) - PROTECTED (Hybrid: Read from JSON)
 // GET My Profile (User) - PROTECTED (Hybrid: Read from JSON)
 app.get('/api/my-profile', authenticateUser, async (req, res) => {
     const userId = req.user.id;
@@ -1404,6 +1422,13 @@ app.get('/api/my-profile', authenticateUser, async (req, res) => {
         const user = customers.find(c => c.id === userId);
 
         if (user) {
+            // Auto-fix legacy Google users (Self-Healing)
+            if (user.provider === 'google' && !user.isVerified) {
+                user.isVerified = true;
+                await writeLocalJSON('customers.json', customers);
+                console.log(`[AUTO-FIX] Verified legacy Google user (Profile): ${user.email}`);
+            }
+
             const { password, ...safeUser } = user;
             res.json(safeUser);
         } else {
