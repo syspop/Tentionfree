@@ -2255,7 +2255,7 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
 
         // Prepare NexoraPay Payload
         const nexoraPayload = {
-            api_key: process.env.NEXORA_API_KEY, // Now confirmed same as Brand Key
+            api_key: process.env.NEXORA_API_KEY,
             secret_key: process.env.NEXORA_SECRET_KEY,
             brand_key: process.env.NEXORA_BRAND_KEY,
             amount: parseFloat(order.total),
@@ -2267,9 +2267,14 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
         };
 
         // Call NexoraPay API
-        // Using axios
+        // sending keys in HEADERS as required
         const response = await axios.post('https://pay.nexorapay.top/api/payment/create', nexoraPayload, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json',
+                'API-KEY': process.env.NEXORA_API_KEY,
+                'SECRET-KEY': process.env.NEXORA_SECRET_KEY,
+                'BRAND-KEY': process.env.NEXORA_BRAND_KEY
+            }
         });
 
         if (response.data && response.data.payment_url) {
