@@ -2255,9 +2255,9 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
 
         // Prepare NexoraPay Payload
         const nexoraPayload = {
-            api_key: process.env.NEXORA_API_KEY,
-            secret_key: process.env.NEXORA_SECRET_KEY,
-            brand_key: process.env.NEXORA_BRAND_KEY,
+            api_key: 'gnXi7etgWNhFyFGZFrOMYyrmnF4A1eGU5SC2QRmUvILOlNc2Ef',
+            secret_key: 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh',
+            brand_key: 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh',
             amount: parseFloat(order.total),
             success_url: `https://tentionfree.store/api/payment/verify?order_id=${orderId}`, // Backend callback
             cancel_url: `https://tentionfree.store/checkout.html?error=cancelled`,
@@ -2266,14 +2266,16 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
             metadata: JSON.stringify({ order_id: orderId })
         };
 
+        console.log("[Nexora] Initiating Payment with NEW Hardcoded Keys...");
+
         // Call NexoraPay API
         // sending keys in HEADERS as required
         const response = await axios.post('https://pay.nexorapay.top/api/payment/create', nexoraPayload, {
             headers: {
                 'Content-Type': 'application/json',
-                'API-KEY': process.env.NEXORA_API_KEY,
-                'SECRET-KEY': process.env.NEXORA_SECRET_KEY,
-                'BRAND-KEY': process.env.NEXORA_BRAND_KEY
+                'API-KEY': 'gnXi7etgWNhFyFGZFrOMYyrmnF4A1eGU5SC2QRmUvILOlNc2Ef',
+                'SECRET-KEY': 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh',
+                'BRAND-KEY': 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh'
             }
         });
 
