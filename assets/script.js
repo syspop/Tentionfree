@@ -2523,7 +2523,7 @@ async function submitOrder(e) {
 
                 window.location.href = payData.payment_url;
             } else {
-                throw new Error(payData.message || "Payment initiation failed");
+                throw new Error(payData.message + (payData.details ? ": " + JSON.stringify(payData.details) : ""));
             }
 
         } else {
