@@ -1757,6 +1757,7 @@ function closeCheckout() {
 
 // Toggle Payment Fields
 // Toggle Payment Fields
+// Toggle Payment Fields
 function togglePaymentSection() {
     const paymentType = document.querySelector('input[name="paymentType"]:checked').value;
     const detailsSection = document.getElementById('payment-details-section');
@@ -1780,12 +1781,6 @@ function togglePaymentSection() {
         detailsSection.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
 
         // CUSTOM LOGIC: Hide Manual Inputs, Show Online Message
-        // We do this by swapping innerHTML or hiding specific children.
-        // Since we didn't add IDs to children in HTML, we'll try to identify them or use innerHTML injection if we can allow it.
-        // SAFE APPROACH: Check if we already injected the msg.
-
-        // Let's hide the original content and append our message?
-        // Or just replace the content dynamically.
         detailsSection.innerHTML = `
             <div class="text-center p-6 space-y-4 animate-fade-in">
                 <div class="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mx-auto animate-pulse">
@@ -1795,10 +1790,12 @@ function togglePaymentSection() {
                      <h4 class="text-white font-bold text-lg">Secure Online Payment</h4>
                      <p class="text-slate-400 text-sm mt-1">You will be redirected to NexoraPay to complete your purchase securely.</p>
                 </div>
-                <div class="flex justify-center gap-3 opacity-60 grayscale hover:grayscale-0 transition-all duration-300">
-                    <img src="https://securepay.sslcommerz.com/public/image/bkash.png" class="h-6">
-                    <img src="https://securepay.sslcommerz.com/public/image/nagad.png" class="h-6">
-                    <img src="https://securepay.sslcommerz.com/public/image/rocket.png" class="h-6">
+                <div class="flex justify-center flex-wrap gap-4 mt-2">
+                    <img src="https://download.logo.wine/logo/BKash/BKash-Logo.wine.png" alt="Bkash" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png" alt="Nagad" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="https://seeklogo.com/images/D/dutch-bangla-rocket-logo-B4D1CC458D-seeklogo.com.png" alt="Rocket" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="https://seeklogo.com/images/U/upay-logo-5095448373-seeklogo.com.png" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Binance-coin-bnb-logo.png" alt="Binance" class="h-10 object-contain bg-white rounded px-2 py-1">
                 </div>
             </div>
         `;
@@ -1811,14 +1808,6 @@ function togglePaymentSection() {
         detailsSection.classList.add('hidden', 'opacity-50', 'pointer-events-none');
         if (confirmationSection) confirmationSection.classList.remove('hidden');
         if (couponSection) couponSection.classList.add('hidden');
-
-        // If switching BACK to 'later', we don't need to restore 'detailsSection' content because it's hidden anyway!
-        // BUT if user refreshes page, original HTML loads.
-        // If they click 'now' -> Content replaced.
-        // If they click 'later' -> Content hidden.
-        // If they click 'now' again -> Content replaced (same).
-        // Issue: If they wanted legacy manual payment? User said "koro" (do the nexora integration).
-        // I assume manual payment is being replaced entirely by Nexora for 'Pay Now'.
 
         if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
             appliedCoupon = null;
@@ -1835,6 +1824,25 @@ function togglePaymentSection() {
             }
             initCheckoutPage();
         }
+    }
+}
+// I assume manual payment is being replaced entirely by Nexora for 'Pay Now'.
+
+if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
+    appliedCoupon = null;
+    document.getElementById('discount-row').classList.add('hidden');
+    const msg = document.getElementById('coupon-message');
+    if (msg) {
+        msg.innerText = '';
+        msg.className = 'text-xs mt-1 h-4';
+    }
+    const codeInput = document.getElementById('promo-code-input');
+    if (codeInput) {
+        codeInput.value = '';
+        codeInput.disabled = false;
+    }
+    initCheckoutPage();
+}
     }
 }
 
