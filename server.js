@@ -2258,7 +2258,7 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
             amount: String(order.total),
             success_url: `https://tentionfree.store/api/payment/verify?order_id=${orderId}`, // Backend callback
             cancel_url: `https://tentionfree.store/checkout.html?error=cancelled`,
-            metadata: { order_id: orderId, phone: order.phone || "N/A" } // added phone as per snippet
+            metadata: { order_id: orderId, phone: order.phone || order.customerPhone || "N/A" } // added phone as per snippet
         };
 
         console.log("[Nexora] Initiating Payment (Keys: eR1v... for ALL)...");
