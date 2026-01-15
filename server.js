@@ -2258,19 +2258,16 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
             amount: String(order.total),
             success_url: `https://tentionfree.store/api/payment/verify?order_id=${orderId}`, // Backend callback
             cancel_url: `https://tentionfree.store/checkout.html?error=cancelled`,
-            metadata: { order_id: orderId, phone: order.phone || order.customerPhone || "N/A" } // added phone as per snippet
+            metadata: { order_id: orderId, phone: order.phone || order.customerPhone || "N/A" }
         };
 
-        console.log("[Nexora] Initiating Payment (Keys: eR1v... for ALL)...");
-
         // Call NexoraPay API
-        // Try using the provided Brand/Secret key as the API Key too
         const response = await axios.post('https://pay.nexorapay.top/api/payment/create', nexoraPayload, {
             headers: {
                 'Content-Type': 'application/json',
-                'API-KEY': 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh',
-                'SECRET-KEY': 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh',
-                'BRAND-KEY': 'eR1vjhbOajrjkGjjQ1Q4S577SIeSlUSksWyYtDPvtq3yvl5iYh'
+                'API-KEY': process.env.NEXORA_API_KEY,
+                'SECRET-KEY': process.env.NEXORA_SECRET_KEY,
+                'BRAND-KEY': process.env.NEXORA_BRAND_KEY
             }
         });
 
@@ -2282,12 +2279,15 @@ app.post('/api/payment/create', authenticateUser, async (req, res) => {
             res.json({ success: true, payment_url: response.data.payment_url });
         } else {
             console.error("NexoraPay Error:", response.data);
+            // Return detailed error to frontend for debugging
             res.status(500).json({ success: false, message: "Payment Gateway Error", details: response.data });
         }
 
     } catch (err) {
-        console.error("Payment Init Error:", err.message);
-        res.status(500).json({ success: false, message: "Server Error initiating payment" });
+        // Capture axios specific error response if available
+        const errorDetails = err.response ? err.response.data : err.message;
+        console.error("Payment Init Error:", errorDetails);
+        res.status(500).json({ success: false, message: "Server Error initiating payment", details: errorDetails });
     }
 });
 
