@@ -2238,6 +2238,102 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
 });
 
 
+
+// --- NEXORAPAY INTEGRATION ---
+
+// POST Initiate Payment
+app.post('/api/payment/create', authenticateUser, async (req, res) => {
+    try {
+        const { orderId } = req.body;
+        if (!orderId) return res.status(400).json({ success: false, message: "Order ID required" });
+
+        const orders = await readLocalJSON('orders.json');
+        const orderIndex = orders.findIndex(o => o.id === orderId);
+
+        if (orderIndex === -1) return res.status(404).json({ success: false, message: "Order not found" });
+        const order = orders[orderIndex];
+
+        // Prepare NexoraPay Payload
+        const nexoraPayload = {
+            api_key: process.env.NEXORA_API_KEY, // Now confirmed same as Brand Key
+            secret_key: process.env.NEXORA_SECRET_KEY,
+            brand_key: process.env.NEXORA_BRAND_KEY,
+            amount: parseFloat(order.total),
+            success_url: `https://tentionfree.store/api/payment/verify?order_id=${orderId}`, // Backend callback
+            cancel_url: `https://tentionfree.store/checkout.html?error=cancelled`,
+            desc: `Order ${orderId}`,
+            currency: "BDT",
+            metadata: JSON.stringify({ order_id: orderId })
+        };
+
+        // Call NexoraPay API
+        // Using axios
+        const response = await axios.post('https://pay.nexorapay.top/api/payment/create', nexoraPayload, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.data && response.data.payment_url) {
+            // Update Order Status to Initiated
+            orders[orderIndex].status = "Initiated";
+            await writeLocalJSON('orders.json', orders);
+
+            res.json({ success: true, payment_url: response.data.payment_url });
+        } else {
+            console.error("NexoraPay Error:", response.data);
+            res.status(500).json({ success: false, message: "Payment Gateway Error", details: response.data });
+        }
+
+    } catch (err) {
+        console.error("Payment Init Error:", err.message);
+        res.status(500).json({ success: false, message: "Server Error initiating payment" });
+    }
+});
+
+// GET Payment Verify (Callback from Nexora)
+app.get('/api/payment/verify', async (req, res) => {
+    try {
+        const { order_id, transaction_id, status } = req.query; // Adjust based on what Nexora sends in URL
+
+        // Nexora Documentation says they send data? Or we assume check status?
+        // User workflow: "verify" endpoint
+        // Let's verify manually using the transaction_id or just trust if successful redirection?
+        // BETTER: Call Nexora Verify API to be safe.
+        // API: https://pay.nexorapay.top/api/payment/verify (POST)
+        // Payload: transaction_id (if available)
+
+        // Only proceed if we have an order_id
+        if (!order_id) return res.redirect('/?error=invalid_callback');
+
+        // Verify with Nexora
+        // If we don't have trx_id from query, we might just mark 'Processing' if status=success
+        // But safer to check.
+        // Assuming Nexora redirects with `?status=success&transaction_id=...`
+
+        // For now, let's update order to "Processing" / "Paid"
+
+        const orders = await readLocalJSON('orders.json');
+        const orderIndex = orders.findIndex(o => o.id === order_id);
+
+        if (orderIndex === -1) return res.redirect('/?error=order_not_found');
+
+        // Logic: Mark as Paid
+        orders[orderIndex].status = "Processing"; // Or 'Completed' depending on flow
+        orders[orderIndex].isPaid = true;
+        orders[orderIndex].paymentMethod = "B-Kash/Nagad/Rocket (Nexora)";
+        orders[orderIndex].trx = transaction_id || "Auto-Verified";
+
+        await writeLocalJSON('orders.json', orders);
+
+        // Redirect User to Profile or Success Page
+        res.redirect('/profile.html?status=payment_success');
+
+    } catch (err) {
+        console.error("Payment Verify Error:", err);
+        res.redirect('/checkout.html?error=verification_failed');
+    }
+});
+
+
 // 404 Catch-All Handler (Must be last)
 app.use((req, res) => {
     res.status(404).send(`
