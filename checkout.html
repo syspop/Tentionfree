@@ -237,66 +237,31 @@
                             <!-- Pay Now Details -->
                             <div id="payment-details-section"
                                 class="space-y-5 bg-slate-900 p-5 rounded-xl border border-slate-800 animate-fade-in">
-                                <div>
-                                    <label for="payment" class="block text-sm font-medium text-slate-400 mb-2">Select
-                                        Wallet</label>
-                                    <div class="relative">
-                                        <select id="payment" onchange="updatePaymentInfo()"
-                                            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 appearance-none">
-                                            <option value="bkash">Bkash</option>
-                                            <option value="nagad">Nagad</option>
-                                            <option value="rocket">Rocket</option>
-                                            <option value="binance">Binance Pay</option>
-                                        </select>
-                                        <div
-                                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                                            <i class="fa-solid fa-chevron-down text-sm"></i>
-                                        </div>
+
+                                <div class="text-center p-6 space-y-4 animate-fade-in">
+                                    <div
+                                        class="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                                        <i class="fa-solid fa-shield-halved text-3xl text-brand-500"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-white font-bold text-lg">Secure Online Payment</h4>
+                                        <p class="text-slate-400 text-sm mt-1">You will be redirected to NexoraPay to
+                                            complete your purchase securely.</p>
+                                    </div>
+                                    <div class="flex justify-center flex-wrap gap-4 mt-2">
+                                        <img src="https://download.logo.wine/logo/BKash/BKash-Logo.wine.png" alt="Bkash"
+                                            class="h-10 object-contain bg-white rounded px-2 py-1">
+                                        <img src="https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png" alt="Nagad"
+                                            class="h-10 object-contain bg-white rounded px-2 py-1">
+                                        <img src="https://seeklogo.com/images/D/dutch-bangla-rocket-logo-B4D1CC458D-seeklogo.com.png"
+                                            alt="Rocket" class="h-10 object-contain bg-white rounded px-2 py-1">
+                                        <img src="https://seeklogo.com/images/U/upay-logo-5095448373-seeklogo.com.png"
+                                            alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Binance-coin-bnb-logo.png"
+                                            alt="Binance" class="h-10 object-contain bg-white rounded px-2 py-1">
                                     </div>
                                 </div>
 
-                                <div id="payment-instruction"
-                                    class="text-sm bg-slate-800 p-4 rounded-xl border border-dashed border-slate-700 text-slate-300 leading-relaxed">
-                                    <!-- Instructions injected by JS -->
-                                </div>
-
-                                <div>
-                                    <label for="trxid" class="block text-sm font-medium text-slate-400 mb-2">Transaction
-                                        ID
-                                        (TrxID)</label>
-                                    <input type="text" id="trxid"
-                                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-500 placeholder-slate-500"
-                                        placeholder="e.g. 8JHS72...">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-400 mb-2">Payment Proof
-                                        (Screenshot)</label>
-                                    <div class="relative">
-                                        <input type="file" id="payment-proof" accept="image/*" class="hidden"
-                                            onchange="previewProof(this)">
-                                        <label for="payment-proof"
-                                            class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:bg-slate-800/50 hover:border-brand-500 transition-all group">
-                                            <div class="flex flex-col items-center justify-center pt-5 pb-6"
-                                                id="proof-upload-ui">
-                                                <i
-                                                    class="fa-solid fa-cloud-arrow-up text-3xl text-slate-500 group-hover:text-brand-500 mb-3 transition-colors"></i>
-                                                <p class="mb-2 text-sm text-slate-400"><span
-                                                        class="font-semibold text-brand-500">Click to upload</span>
-                                                    screenshot</p>
-                                                <p class="text-xs text-slate-500">PNG, JPG (MAX. 5MB)</p>
-                                            </div>
-                                            <img id="proof-preview"
-                                                class="hidden w-full h-full object-contain rounded-xl p-2" src=""
-                                                alt="Proof Preview">
-                                        </label>
-                                        <!-- Remove button for preview -->
-                                        <button type="button" onclick="clearProof()" id="remove-proof-btn"
-                                            class="hidden absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg hover:bg-red-600">
-                                            <i class="fa-solid fa-times text-xs"></i>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
