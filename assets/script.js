@@ -1794,7 +1794,7 @@ function togglePaymentSection() {
                     <img src="https://download.logo.wine/logo/BKash/BKash-Logo.wine.png" alt="Bkash" class="h-10 object-contain bg-white rounded px-2 py-1">
                     <img src="https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png" alt="Nagad" class="h-10 object-contain bg-white rounded px-2 py-1">
                     <img src="https://seeklogo.com/images/D/dutch-bangla-rocket-logo-B4D1CC458D-seeklogo.com.png" alt="Rocket" class="h-10 object-contain bg-white rounded px-2 py-1">
-                    <img src="https://seeklogo.com/images/U/upay-logo-5095448373-seeklogo.com.png" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="https://github.com/shaimhossain/Mobile-Banking-Logos/blob/master/Upay/upay_logo.png?raw=true" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Binance-coin-bnb-logo.png" alt="Binance" class="h-10 object-contain bg-white rounded px-2 py-1">
                 </div>
             </div>
@@ -1826,25 +1826,7 @@ function togglePaymentSection() {
         }
     }
 }
-// I assume manual payment is being replaced entirely by Nexora for 'Pay Now'.
 
-if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
-    appliedCoupon = null;
-    document.getElementById('discount-row').classList.add('hidden');
-    const msg = document.getElementById('coupon-message');
-    if (msg) {
-        msg.innerText = '';
-        msg.className = 'text-xs mt-1 h-4';
-    }
-    const codeInput = document.getElementById('promo-code-input');
-    if (codeInput) {
-        codeInput.value = '';
-        codeInput.disabled = false;
-    }
-    initCheckoutPage();
-}
-    }
-}
 
 // --- HOME PAGE SPECIFIC RENDER ---
 function renderHomeProducts() {
