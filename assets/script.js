@@ -1756,18 +1756,18 @@ function closeCheckout() {
 }
 
 // Toggle Payment Fields
+// Toggle Payment Fields
 function togglePaymentSection() {
     const paymentType = document.querySelector('input[name="paymentType"]:checked').value;
     const detailsSection = document.getElementById('payment-details-section');
-    // Robust Selection: Try ID first, then fallback to finding by text (in case index.html not updated)
     let confirmationSection = document.getElementById('confirmation-method-section');
 
     if (!confirmationSection) {
-        // Fallback: Find the label with "Confirm Order Via" and get its parent div
+        // Fallback
         const labels = document.getElementsByTagName('label');
         for (let i = 0; i < labels.length; i++) {
             if (labels[i].innerText.includes('Confirm Order Via')) {
-                confirmationSection = labels[i].parentElement; // The div containing the label and the options
+                confirmationSection = labels[i].parentElement;
                 break;
             }
         }
@@ -1776,42 +1776,64 @@ function togglePaymentSection() {
     const couponSection = document.getElementById('coupon-section');
 
     if (paymentType === 'now') {
-        // Pay Now: SHOW Payment Details (Method/TrxID), HIDE Confirmation Method (WhatsApp/Email)
+        // Pay Now: SHOW Payment Details Wrapper
         detailsSection.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
-        updatePaymentInfo(); // Force update instructions
-        if (confirmationSection) confirmationSection.classList.add('hidden');
 
-        // Show Coupon Section
+        // CUSTOM LOGIC: Hide Manual Inputs, Show Online Message
+        // We do this by swapping innerHTML or hiding specific children.
+        // Since we didn't add IDs to children in HTML, we'll try to identify them or use innerHTML injection if we can allow it.
+        // SAFE APPROACH: Check if we already injected the msg.
+
+        // Let's hide the original content and append our message?
+        // Or just replace the content dynamically.
+        detailsSection.innerHTML = `
+            <div class="text-center p-6 space-y-4 animate-fade-in">
+                <div class="w-16 h-16 bg-brand-500/10 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                     <i class="fa-solid fa-shield-halved text-3xl text-brand-500"></i>
+                </div>
+                <div>
+                     <h4 class="text-white font-bold text-lg">Secure Online Payment</h4>
+                     <p class="text-slate-400 text-sm mt-1">You will be redirected to NexoraPay to complete your purchase securely.</p>
+                </div>
+                <div class="flex justify-center gap-3 opacity-60 grayscale hover:grayscale-0 transition-all duration-300">
+                    <img src="https://securepay.sslcommerz.com/public/image/bkash.png" class="h-6">
+                    <img src="https://securepay.sslcommerz.com/public/image/nagad.png" class="h-6">
+                    <img src="https://securepay.sslcommerz.com/public/image/rocket.png" class="h-6">
+                </div>
+            </div>
+        `;
+
+        if (confirmationSection) confirmationSection.classList.add('hidden');
         if (couponSection) couponSection.classList.remove('hidden');
 
     } else {
-        // Pay Later: HIDE Payment Details, SHOW Confirmation Method
+        // Pay Later
         detailsSection.classList.add('hidden', 'opacity-50', 'pointer-events-none');
         if (confirmationSection) confirmationSection.classList.remove('hidden');
-
-        // Hide Coupon Section & Reset if applied
         if (couponSection) couponSection.classList.add('hidden');
 
-        // If coupon was applied, remove it
+        // If switching BACK to 'later', we don't need to restore 'detailsSection' content because it's hidden anyway!
+        // BUT if user refreshes page, original HTML loads.
+        // If they click 'now' -> Content replaced.
+        // If they click 'later' -> Content hidden.
+        // If they click 'now' again -> Content replaced (same).
+        // Issue: If they wanted legacy manual payment? User said "koro" (do the nexora integration).
+        // I assume manual payment is being replaced entirely by Nexora for 'Pay Now'.
+
         if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
             appliedCoupon = null;
             document.getElementById('discount-row').classList.add('hidden');
-            document.getElementById('coupon-message').innerText = '';
-            document.getElementById('coupon-message').className = 'text-xs mt-1 h-4';
-
-            // Allow re-entering code later if they switch back
+            const msg = document.getElementById('coupon-message');
+            if (msg) {
+                msg.innerText = '';
+                msg.className = 'text-xs mt-1 h-4';
+            }
             const codeInput = document.getElementById('promo-code-input');
             if (codeInput) {
                 codeInput.value = '';
                 codeInput.disabled = false;
             }
-
-            // Recalculate Total (Reset to original)
-            // We need to re-trigger calculation logic. 
-            // Ideally we'd call a calculateTotal function, but for now let's reuse initCheckoutPage logic or valid items sum
-            // Since initCheckoutPage sets up the summary, we can just grab the valid total from itemsToCheckout logic or force a reload? 
-            // Reload is jarring. Let's recalculate inline briefly or call initCheckoutPage() which is safe?
-            initCheckoutPage(); // Re-runs calculation without coupon
+            initCheckoutPage();
         }
     }
 }
@@ -2364,8 +2386,8 @@ async function applyCoupon() {
 
 // --- Submit Order ---
 // --- Submit Order ---
+// --- Submit Order ---
 async function submitOrder(e) {
-    console.log("Submit order function called");
     if (e) e.preventDefault();
 
     // --- 1. SETUP & BASIC DATA ---
@@ -2378,25 +2400,16 @@ async function submitOrder(e) {
         return;
     }
 
-    // Determine Items using Global State if available, else localStorage
+    // Determine Items
     let itemsToOrder = [];
-
-    // Check Global Variables first (set by initCheckoutPage)
     if (typeof isBuyNowMode !== 'undefined' && isBuyNowMode && buyNowItem) {
         itemsToOrder = [buyNowItem];
-        console.log("Using Global BuyNow Item");
     } else if (typeof cart !== 'undefined' && cart.length > 0) {
         itemsToOrder = cart;
-        console.log("Using Global Cart");
     } else {
-        // Fallback to localStorage
-        console.log("Using LocalStorage Fallback");
         const buyNowData = localStorage.getItem('tentionfree_buyNow');
-        if (buyNowData) {
-            itemsToOrder = [JSON.parse(buyNowData)];
-        } else {
-            itemsToOrder = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
-        }
+        if (buyNowData) itemsToOrder = [JSON.parse(buyNowData)];
+        else itemsToOrder = JSON.parse(localStorage.getItem('tentionfree_cart')) || JSON.parse(localStorage.getItem('cart')) || [];
     }
 
     if (!itemsToOrder || itemsToOrder.length === 0) {
@@ -2404,66 +2417,22 @@ async function submitOrder(e) {
         return;
     }
 
-    // --- 2. PAYMENT & VALIDATION ---
+    // --- 2. PAYMENT TYPE ---
     const paymentTypeInput = document.querySelector('input[name="paymentType"]:checked');
     if (!paymentTypeInput) {
         showErrorModal("Payment Required", "Please select a payment method.");
         return;
     }
 
-    let paymentMethod = 'Pay Later';
-    if (paymentTypeInput.value === 'now') {
-        const sel = document.getElementById('payment');
-        if (sel) paymentMethod = sel.value;
-    }
+    const isPayNow = paymentTypeInput.value === 'now';
+    let paymentMethod = isPayNow ? 'Online (NexoraPay)' : 'Pay Later';
 
-    const freeOrderEl = document.getElementById('is-free-order');
-    const isFreeOrder = freeOrderEl && freeOrderEl.value === 'true';
-
-    // Login Check for Manual Payments
+    // Login Check for Pay Later if needed? (Keeping logic simple)
     const userStr = localStorage.getItem('user');
-    if ((paymentMethod === 'bkash' || paymentMethod === 'nagad') && !userStr) {
-        showLoginRequiredModal();
-        return;
-    }
-
     const user = userStr ? JSON.parse(userStr) : null;
     const userId = user ? user.id : 'guest_' + Date.now();
 
-    // Logic for Transaction ID & Proof
-    let trxid = "Pending";
-    let paymentMethodShort = 'Pay Later';
-    let proofBase64 = null;
-    const proofInput = document.getElementById('payment-proof');
-
-    if (isFreeOrder) {
-        paymentMethodShort = "Free / Auto-Delivery";
-        trxid = "FREE";
-    } else if (['bkash', 'nagad', 'rocket', 'upay', 'binance'].includes(paymentMethod)) {
-        trxid = document.getElementById('trxid').value.trim();
-        const methodMap = {
-            'bkash': 'Bkash', 'nagad': 'Nagad', 'rocket': 'Rocket',
-            'upay': 'Upay', 'binance': 'Binance Pay'
-        };
-        paymentMethodShort = methodMap[paymentMethod] || paymentMethod;
-
-        if (!trxid) return showErrorModal("Action Required", "Please enter Transaction ID.");
-
-        if (!proofInput || !proofInput.files || !proofInput.files[0]) return showErrorModal("Proof Required", "Please upload payment proof.");
-
-        // Check Duplicate
-        try {
-            const res = await fetch('api/orders?t=' + Date.now());
-            const orders = await res.json();
-            if (Array.isArray(orders) && orders.find(o => o.trx && o.trx.toLowerCase() === trxid.toLowerCase())) {
-                return showErrorModal("Duplicate Transaction ID", "This TrxID is already used.");
-            }
-        } catch (err) { }
-
-        proofBase64 = await readFileAsBase64(proofInput.files[0]);
-    }
-
-    // --- 3. CUSTOM FIELDS COLLECTION ---
+    // --- 3. CUSTOM FIELDS ---
     let extraDetails = "";
     try {
         const customInputs = document.querySelectorAll('.custom-field-input');
@@ -2493,12 +2462,9 @@ async function submitOrder(e) {
         if (input.value.trim()) extraDetails += `\n[Legacy ID]: ${input.value.trim()}`;
     });
 
-    // --- 4. CALCULATION & CURRENCY & COUPON (Re-use logic) ---
-    // Recalculate everything same way as UI
+    // --- 4. CALCULATE TOTALS ---
     let totalBDT = itemsToOrder.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
     let discountAmount = 0;
-    // We need to access the appliedCoupon variable which should be global or stored
-    // Assuming appliedCoupon is global from script.js scope (lines 2200ish)
     if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
         if (appliedCoupon.type === 'percent') discountAmount = (totalBDT * appliedCoupon.value) / 100;
         else discountAmount = appliedCoupon.value;
@@ -2506,25 +2472,8 @@ async function submitOrder(e) {
     }
 
     let finalBDT = totalBDT - discountAmount;
-    let currency = 'BDT';
-    let finalPrice = finalBDT;
 
-    // Discount to store (default BDT)
-    let finalDiscount = discountAmount;
-
-    if (paymentMethod === 'binance') {
-        currency = 'USD';
-        finalPrice = finalBDT / 100;
-        finalDiscount = discountAmount / 100;
-    } else if (isFreeOrder) {
-        finalPrice = 0;
-    }
-
-    // Check Pay Later Method (WhatsApp vs Email)
-    const orderMethodRadio = document.querySelector('input[name="orderMethod"]:checked');
-    const orderMethod = orderMethodRadio ? orderMethodRadio.value : 'whatsapp'; // Default to WhatsApp
-
-    // --- 5. SEND ---
+    // --- 5. BUILD ORDER DATA ---
     const orderData = {
         id: Date.now(),
         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
@@ -2532,56 +2481,78 @@ async function submitOrder(e) {
         customer: customerName,
         phone: customerPhone,
         email: customerEmail,
-        gameUid: extraDetails.trim() || 'N/A', // Notes/Details
+        gameUid: extraDetails.trim() || 'N/A',
         product: itemsToOrder.map(i => `${i.name} (x${i.quantity || 1})`).join(', '),
-        price: finalPrice.toFixed(2),
-        currency: currency,
+        price: finalBDT.toFixed(2),
+        currency: 'BDT',
         originalPriceBDT: totalBDT.toFixed(2),
         couponCode: (typeof appliedCoupon !== 'undefined' && appliedCoupon) ? appliedCoupon.code : null,
-        discount: finalDiscount.toFixed(2),
-        status: "Pending",
-        paymentMethod: paymentMethodShort,
-        trx: trxid,
-        proof: proofBase64,
+        discount: discountAmount.toFixed(2),
+        status: "Pending", // Will update to Processing after payment
+        paymentMethod: paymentMethod,
+        trx: isPayNow ? "PENDING_NEXORA" : "Pay Later",
         items: itemsToOrder,
         plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard')
     };
 
-    fetch('api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-    })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
+    // --- 6. SUBMIT ---
+    showToast("Processing Order...");
+
+    try {
+        // First save order as Pending
+        const saveRes = await fetch('api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        const saveData = await saveRes.json();
+
+        if (!saveData.success) {
+            throw new Error(saveData.message || "Failed to save order");
+        }
+
+        // If Pay Now -> Initiate Payment
+        if (isPayNow) {
+            showToast("Redirecting to Payment Gateway...");
+
+            const payRes = await fetch('/api/payment/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': user ? `Bearer ${user.token}` : ''
+                },
+                body: JSON.stringify({ orderId: orderData.id })
+            });
+            const payData = await payRes.json();
+
+            if (payData.success && payData.payment_url) {
+                // Clear Cart before redirect
                 localStorage.removeItem('cart');
-                localStorage.removeItem('tentionfree_cart'); // Clear both
+                localStorage.removeItem('tentionfree_cart');
                 localStorage.removeItem('tentionfree_buyNow');
 
-                // WHATSAPP REDIRECTION LOGIC
-                if (paymentMethod === 'Pay Later' && orderMethod === 'whatsapp') {
-                    const message = `Hello Tention Free,\nI placed a new order #${orderData.id}.\n\nName: ${customerName}\nItem: ${orderData.product}\nTotal: ${currency} ${finalPrice.toFixed(2)}\nmethod: ${paymentMethodShort}\n\nPlease confirm my order.`;
-                    const waUrl = `https://wa.me/8801869895549?text=${encodeURIComponent(message)}`;
-
-                    // Show a specialized success modal or just redirect?
-                    // Let's redirect after a brief Toast
-                    showToast("Order Placed! Redirecting to WhatsApp...");
-                    setTimeout(() => {
-                        window.location.href = waUrl;
-                    }, 1500);
-                } else {
-                    showSuccessModal();
-                }
-
+                window.location.href = payData.payment_url;
             } else {
-                showErrorModal("Submission Failed", data.message || "Unknown error.");
+                throw new Error(payData.message || "Payment initiation failed");
             }
-        })
-        .catch(err => {
-            console.error(err);
-            showErrorModal("Network Error", "Failed to submit order. Please try again.");
-        });
+
+        } else {
+            // Pay Later (WhatsApp)
+            localStorage.removeItem('cart');
+            localStorage.removeItem('tentionfree_cart');
+            localStorage.removeItem('tentionfree_buyNow');
+
+            const message = `Hello Tention Free,\nI placed a new order #${orderData.id}.\n\nName: ${customerName}\nItem: ${orderData.product}\nTotal: ৳${finalBDT.toFixed(2)}\n\nPlease confirm my order.`;
+            const waUrl = `https://wa.me/8801869895549?text=${encodeURIComponent(message)}`;
+
+            showSuccessModal();
+            setTimeout(() => { window.location.href = waUrl; }, 2000);
+        }
+
+    } catch (err) {
+        console.error(err);
+        showErrorModal("Order Failed", err.message);
+    }
 }
 
 
