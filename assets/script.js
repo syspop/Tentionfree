@@ -1794,7 +1794,7 @@ function togglePaymentSection() {
                     <img src="https://download.logo.wine/logo/BKash/BKash-Logo.wine.png" alt="Bkash" class="h-10 object-contain bg-white rounded px-2 py-1">
                     <img src="https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png" alt="Nagad" class="h-10 object-contain bg-white rounded px-2 py-1">
                     <img src="https://seeklogo.com/images/D/dutch-bangla-rocket-logo-B4D1CC458D-seeklogo.com.png" alt="Rocket" class="h-10 object-contain bg-white rounded px-2 py-1">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Upay_Logo.svg/512px-Upay_Logo.svg.png" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="assets/images/upay.webp" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Binance-coin-bnb-logo.png" alt="Binance" class="h-10 object-contain bg-white rounded px-2 py-1">
                 </div>
             </div>
