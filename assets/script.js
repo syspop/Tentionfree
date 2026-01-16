@@ -2540,6 +2540,16 @@ async function submitOrder(e) {
                 throw new Error(payData.message + (payData.details ? ": " + JSON.stringify(payData.details) : ""));
             }
 
+        } else if (isFree) {
+            // Free / Auto-Delivery -> Direct Success (No WhatsApp)
+            localStorage.removeItem('cart');
+            localStorage.removeItem('tentionfree_cart');
+            localStorage.removeItem('tentionfree_buyNow');
+
+            showSuccessModal(); // "Order Placed Successfully"
+            // Redirect to Profile/Orders after short delay
+            setTimeout(() => { window.location.href = 'profile.html'; }, 2000);
+
         } else {
             // Pay Later (WhatsApp)
             localStorage.removeItem('cart');
