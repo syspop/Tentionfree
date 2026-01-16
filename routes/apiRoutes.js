@@ -3,9 +3,7 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { writeLocalJSON, readLocalJSON } = require('../utils/db'); // Adjust path if db.js is in utils (it is data/db.js actually, need to check where I import from)
-// Wait, I didn't move db.js to utils yet. It is in data/db.js.
-// Helper imports:
+// (DB Import handled below)
 const { authenticateAdmin } = require('../middleware/auth');
 
 // Note: I will update imports to point to correct relative paths.
