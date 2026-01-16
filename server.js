@@ -2002,6 +2002,16 @@ app.post('/api/payment/create', async (req, res) => {
         if (orderIndex === -1) return res.status(404).json({ success: false, message: "Order not found" });
         const order = orders[orderIndex];
 
+        // Check for Missing Keys
+        if (!process.env.NEXORA_API_KEY || !process.env.NEXORA_SECRET_KEY || !process.env.NEXORA_BRAND_KEY) {
+            console.error("Missing NexoraPay API Keys in .env");
+            return res.status(500).json({
+                success: false,
+                message: "Configuration Error: Missing Payment Keys",
+                details: "Server .env is missing one or more NEXORA keys."
+            });
+        }
+
         // Prepare NexoraPay Payload
         const nexoraPayload = {
             amount: String(order.price),

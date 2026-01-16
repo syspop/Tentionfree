@@ -208,7 +208,7 @@ function syncGlobalFields(field, fieldId) {
             const customInput = document.getElementById(fieldId);
             if (globalInput && customInput) {
                 const container = globalInput.closest('div');
-                if (container) container.classList.add('hidden');
+                // if (container) container.classList.add('hidden'); // Fix: Do not hide global fields
 
                 customInput.addEventListener('input', () => { globalInput.value = customInput.value; });
                 globalInput.value = customInput.value;
@@ -513,7 +513,10 @@ async function submitOrder(e) {
                 clearCarts();
                 window.location.href = payData.payment_url;
             } else {
-                throw new Error(payData.message || "Payment initiation failed");
+                console.error("Payment Init Failed:", payData);
+                // Extract detailed error if available
+                const detailMsg = payData.details ? (typeof payData.details === 'string' ? payData.details : JSON.stringify(payData.details)) : "";
+                throw new Error((payData.message || "Payment initiation failed") + (detailMsg ? `\nDetails: ${detailMsg}` : ""));
             }
         } else if (isFree) {
             clearCarts();
