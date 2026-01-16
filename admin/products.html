@@ -132,8 +132,8 @@
 
         // --- COPY LINK FUNCTION ---
         function copyProductLink(id, name) {
-            // Direct ID Link (Most Reliable)
-            const url = `${window.location.origin}/product/${id}`;
+            // Direct ID Link (Corrected Format)
+            const url = `${window.location.origin}/product-details.html?id=${id}`;
 
             // Robust Copy Logic
             if (navigator.clipboard) {
