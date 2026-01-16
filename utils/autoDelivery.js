@@ -99,7 +99,33 @@ async function processAutoDelivery(order) {
             }
         }
 
+
+        // --- Auto Stockout Check ---
         if (productsUpdated) {
+            // Re-evaluate stock for potentially affected products
+            for (const item of order.items) {
+                const productIndex = allProducts.findIndex(p => String(p.id) === String(item.id) || p.name === item.name);
+                if (productIndex !== -1) {
+                    const product = allProducts[productIndex];
+
+                    if (product.autoStockOut && product.variants) {
+                        // Calculate Total Available Stock
+                        let totalAvailable = 0;
+                        product.variants.forEach(v => {
+                            if (v.stock && Array.isArray(v.stock)) {
+                                const available = v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length;
+                                totalAvailable += available;
+                            }
+                        });
+
+                        if (totalAvailable <= 0) {
+                            console.log(`[AutoStockOut] Product '${product.name}' is now Out of Stock.`);
+                            product.inStock = false;
+                        }
+                    }
+                }
+            }
+
             await writeLocalJSON('products.json', allProducts);
         }
 

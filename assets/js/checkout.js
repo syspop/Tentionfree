@@ -306,10 +306,10 @@ function togglePaymentSection() {
                      <p class="text-slate-400 text-sm mt-1">You will be redirected to NexoraPay to complete your purchase securely.</p>
                 </div>
                 <div class="flex justify-center flex-wrap gap-4 mt-2">
-                    <img src="https://download.logo.wine/logo/BKash/BKash-Logo.wine.png" alt="Bkash" class="h-10 object-contain bg-white rounded px-2 py-1">
-                    <img src="https://download.logo.wine/logo/Nagad/Nagad-Logo.wine.png" alt="Nagad" class="h-10 object-contain bg-white rounded px-2 py-1">
-                    <img src="https://seeklogo.com/images/D/dutch-bangla-rocket-logo-B4D1CC458D-seeklogo.com.png" alt="Rocket" class="h-10 object-contain bg-white rounded px-2 py-1">
-                    <img src="assets/images/upay.webp" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="/assets/images/Bkash.webp" alt="Bkash" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="/assets/images/Nagad.png" alt="Nagad" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="/assets/images/Rocket.png" alt="Rocket" class="h-10 object-contain bg-white rounded px-2 py-1">
+                    <img src="/assets/images/upay.webp" alt="Upay" class="h-10 object-contain bg-white rounded px-2 py-1">
                 </div>
             </div>
         `;

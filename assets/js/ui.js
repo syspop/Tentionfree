@@ -95,10 +95,10 @@ function renderProducts() {
                             View Details
                         </span>
                     </div>
-                    ${badgeHtml}
                 </div>
+                ${badgeHtml}
 
-                <div class="card-content p-5 flex flex-col flex-grow">
+                <div class="card-content p-3 md:p-5 flex flex-col flex-grow">
                     <div class="mb-1 flex items-center justify-between">
                          <span class="text-[10px] uppercase font-bold tracking-wider text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">
                             ${product.category || 'General'}
@@ -108,32 +108,33 @@ function renderProducts() {
                          </div>
                     </div>
 
-                    <h3 class="text-white font-bold text-lg mb-2 leading-tight group-hover:text-brand-400 transition-colors line-clamp-1" title="${product.name}">
+                    <h3 class="text-white font-bold text-sm md:text-lg mb-2 leading-tight group-hover:text-brand-400 transition-colors line-clamp-1" title="${product.name}">
                         ${product.name}
                     </h3>
 
                     ${variantHtml}
 
-                    <div class="mt-auto pt-4 flex items-end justify-between border-t border-slate-700/50 mt-4">
+                    <div class="mt-auto pt-2 md:pt-4 flex items-end justify-between border-t border-slate-700/50 mt-2 md:mt-4">
                         <div>
-                            <span class="block text-slate-500 text-xs line-through mb-0.5 decoration-red-500/50">৳${product.originalPrice || (product.price * 1.2).toFixed(0)}</span>
-                            <span class="block text-xl font-black text-white" id="price-current-${product.id}">${priceDisplay}</span>
+                            <span class="block text-slate-500 text-[10px] md:text-xs line-through mb-0.5 decoration-red-500/50">৳${product.originalPrice || (product.price * 1.2).toFixed(0)}</span>
+                            <span class="block text-lg md:text-xl font-black text-white" id="price-current-${product.id}">${priceDisplay}</span>
                         </div>
                         
-                        <div class="flex gap-2">
+                        <div class="flex gap-1.5 md:gap-2">
                             <button onclick="event.stopPropagation(); addToCart(${product.id}, true, 'card')" 
-                                class="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center hover:bg-brand-500 transition-all shadow-lg hover:shadow-brand-500/30 active:scale-95 group/btn" 
+                                class="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-slate-700 text-white flex items-center justify-center hover:bg-brand-500 transition-all shadow-lg hover:shadow-brand-500/30 active:scale-95 group/btn" 
                                 title="Add to Cart">
-                                <i class="fa-solid fa-cart-plus group-hover/btn:scale-110 transition-transform"></i>
+                                <i class="fa-solid fa-cart-plus text-xs md:text-base group-hover/btn:scale-110 transition-transform"></i>
                             </button>
                             <button onclick="event.stopPropagation(); buyNow(${product.id}, 'card')" 
-                                class="px-4 h-10 rounded-xl bg-white text-slate-900 font-bold text-sm hover:bg-brand-500 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2">
+                                class="px-3 md:px-4 h-8 md:h-10 rounded-lg md:rounded-xl bg-white text-slate-900 font-bold text-xs md:text-sm hover:bg-brand-500 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-1 md:gap-2">
                                 Buy Now
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
+
         `;
 
         grid.appendChild(card);
