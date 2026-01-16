@@ -2051,7 +2051,8 @@ app.post('/api/payment/create', async (req, res) => {
                 'API-KEY': process.env.NEXORA_API_KEY,
                 'SECRET-KEY': process.env.NEXORA_SECRET_KEY,
                 'BRAND-KEY': process.env.NEXORA_BRAND_KEY
-            }
+            },
+            timeout: 15000 // 15 seconds timeout
         });
 
         if (response.data && response.data.payment_url) {
