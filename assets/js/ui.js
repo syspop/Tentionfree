@@ -372,12 +372,164 @@ async function loadProductDetailsPage() {
 
     container.innerHTML = content;
 
-    // Load Reviews if function exists
-    if (typeof loadReviews === 'function') {
-        const reviewSection = document.getElementById('reviews-section');
-        if (reviewSection) reviewSection.classList.remove('hidden');
-        loadReviews(product.id);
+    // Load Reviews
+    document.getElementById('reviews-section').classList.remove('hidden');
+    // Call loadReviews if defined, or it will be defined below
+    if (typeof loadReviews === 'function') loadReviews(productId);
+}
+
+// --- Reviews System & Modals ---
+
+async function loadReviews(productId) {
+    const list = document.getElementById('page-reviews-list');
+    const summary = document.getElementById('page-rating-summary');
+    if (!list) return;
+
+    list.innerHTML = '<div class="text-center text-slate-500 py-4"><div class="spinner border-brand-500 w-6 h-6 mx-auto mb-2"></div>Loading reviews...</div>';
+
+    try {
+        const res = await fetch(`/api/reviews?productId=${productId}`);
+        // If 404/error, just handle gracefully
+        if (!res.ok) {
+            if (res.status === 404) {
+                list.innerHTML = '<div class="text-center text-slate-500 italic py-4">No reviews yet.</div>';
+                return;
+            }
+            throw new Error("Failed");
+        }
+
+        const reviews = await res.json();
+
+        if (!Array.isArray(reviews) || reviews.length === 0) {
+            list.innerHTML = '<div class="text-center text-slate-500 italic py-4 text-sm opacity-70">No reviews yet. Be the first to share your experience!</div>';
+            if (summary) summary.innerText = '';
+            return;
+        }
+
+        // Calculate Average
+        const totalStars = reviews.reduce((acc, r) => acc + (parseInt(r.rating) || 0), 0);
+        const avg = (totalStars / reviews.length).toFixed(1);
+        if (summary) summary.innerHTML = `<i class="fa-solid fa-star text-yellow-500"></i> ${avg} <span class="text-slate-500 text-sm">(${reviews.length})</span>`;
+
+        // Render List
+        list.innerHTML = reviews.map(r => `
+            <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300 border border-slate-600">
+                            ${(r.userName || r.user || 'A').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h5 class="text-sm font-bold text-slate-200">${r.userName || r.user || 'Anonymous'}</h5>
+                            <div class="text-[10px] text-yellow-500 flex gap-0.5">
+                                ${Array(parseInt(r.rating) || 5).fill('<i class="fa-solid fa-star"></i>').join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-slate-500">${new Date(r.createdAt || Date.now()).toLocaleDateString()}</span>
+                </div>
+                <p class="text-xs md:text-sm text-slate-400 leading-relaxed bg-slate-900/30 p-2 rounded-lg border border-slate-800/50">${r.comment}</p>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        console.error("Reviews load error:", e);
+        list.innerHTML = '<div class="text-center text-red-400 py-4 text-xs opacity-70">Could not load reviews.</div>';
     }
+}
+
+async function submitReviewPage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    if (!productId) return showErrorModal("Error", "Product ID missing.");
+
+    const name = document.getElementById('review-name').value;
+    const rating = document.getElementById('review-rating').value;
+    const comment = document.getElementById('review-comment').value;
+
+    if (!rating) return showErrorModal("Rating Required", "Please select a star rating.");
+    if (!comment) return showErrorModal("Comment Required", "Please write your feedback.");
+
+    // Auth Check
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+        if (confirm("You must be logged in to review. Go to login page?")) {
+            window.location.href = 'login';
+        }
+        return;
+    }
+
+    const submitBtn = document.querySelector('#page-review-form button');
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = "Submitting...";
+    submitBtn.disabled = true;
+
+    try {
+        const res = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                productId: productId,
+                rating: parseInt(rating),
+                comment: comment,
+                userName: name
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            showSuccessModal();
+            document.getElementById('page-review-form').classList.add('hidden');
+            document.getElementById('review-comment').value = '';
+            document.getElementById('review-name').value = '';
+            loadReviews(productId);
+        } else {
+            if (res.status === 403 || (data.message && data.message.toLowerCase().includes('purchase'))) {
+                showErrorModal("Verified Purchase Required", "You can only review products you have actually purchased.");
+            } else {
+                showErrorModal("Review Failed", data.message || "Server rejected the review.");
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        showErrorModal("Network Error", "Unable to contact server.");
+    } finally {
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// Modal Global Functions (Exposed)
+window.closeErrorModal = function () {
+    const m = document.getElementById('global-error-modal');
+    if (m) m.classList.add('hidden');
+}
+
+window.showErrorModal = function (title, msg) {
+    const m = document.getElementById('global-error-modal');
+    if (m) {
+        document.getElementById('error-modal-title').innerText = title;
+        document.getElementById('error-modal-message').innerText = msg;
+        m.classList.remove('hidden');
+    } else {
+        alert(`${title}\n\n${msg}`);
+    }
+}
+
+window.closeSuccessModal = function () {
+    const m = document.getElementById('global-success-modal');
+    if (m) m.classList.add('hidden');
+}
+
+window.showSuccessModal = function () {
+    const m = document.getElementById('global-success-modal');
+    if (m) m.classList.remove('hidden');
+    else alert("Success! Review submitted.");
 }
 
 // Helpers for Details Page
