@@ -2,7 +2,7 @@
 
 function checkLogin() {
     const user = localStorage.getItem('user');
-    const dtLink = document.querySelector('a[href="login"]');
+    const dtLink = document.querySelector('nav a[href="login"], nav a[href="login.html"], nav a[href="profile.html"]');
     const mbLink = document.getElementById('mobile-auth-link');
 
     if (user) {

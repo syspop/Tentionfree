@@ -789,3 +789,15 @@ function startSliderAutoPlay(totalSlides) {
     }
     resetInterval();
 }
+
+// Mobile Search Toggler
+function toggleMobileSearch() {
+    const bar = document.getElementById('mobile-search-bar');
+    if (bar) {
+        bar.classList.toggle('hidden');
+        if (!bar.classList.contains('hidden')) {
+            const input = bar.querySelector('input');
+            if (input) input.focus();
+        }
+    }
+}

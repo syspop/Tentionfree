@@ -16,22 +16,21 @@ const CACHE = {
 // Helper to write data to JSON file (and update Cache)
 // Helper to write data to JSON file (Atomic Write)
 async function writeLocalJSON(filename, data) {
-    // 1. Update Cache Immediately
-    const key = filename.replace('.json', '');
-    if (CACHE.hasOwnProperty(key)) {
-        CACHE[key] = data;
-    }
-
-    // 2. Write to Temp File, then Rename (Atomic)
+    // 1. Write to Temp File, then Rename (Atomic)
     const filePath = path.join(DATA_DIR, filename);
     const tempPath = filePath + '.tmp';
 
     try {
         await fs.writeFile(tempPath, JSON.stringify(data, null, 2));
         await fs.rename(tempPath, filePath);
+
+        // 2. Update Cache ONLY after successful write
+        const key = filename.replace('.json', '');
+        if (CACHE.hasOwnProperty(key)) {
+            CACHE[key] = data;
+        }
     } catch (err) {
         console.error(`❌ Error writing ${filename}:`, err);
-        // Try to clean up temp file if possible
         try { await fs.unlink(tempPath); } catch (e) { }
         throw err;
     }

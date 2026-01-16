@@ -294,8 +294,8 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
 
         console.log(`[SSR] Found product: ${product.name} (ID: ${product.id})`);
 
-        // Read Template
-        let html = fs.readFileSync(path.join(__dirname, 'product-details.html'), 'utf8');
+        // Read Template Async
+        let html = await fs.promises.readFile(path.join(__dirname, 'product-details.html'), 'utf8');
 
         // INJECT DATA (Robust Regex Replace)
 
@@ -364,10 +364,15 @@ app.use((req, res, next) => {
         '/.env.example',
         '/Procfile',
         '/server.js.bak',
+        '/profile.html.bak',
         '/start_server.bat',
-        '/seed_db.js' // Block specific root JS files that are not client-side
+        '/seed_db.js',
+        '/generate_2fa.js',
+        '/debug_orders_2.js',
+        '/test_' // Block all test files
     ];
-    if (blockedPaths.some(p => req.path.startsWith(p) || req.path === p)) {
+    const normalizedPath = req.path.toLowerCase();
+    if (blockedPaths.some(p => normalizedPath.startsWith(p) || normalizedPath === p)) {
         return res.status(403).send(`
             <!DOCTYPE html>
             <html lang="en">
@@ -733,21 +738,7 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 });
 
 // GET All Orders (Admin) - PROTECTED
-app.get('/api/orders', authenticateAdmin, async (req, res) => {
-    try {
-        const allOrders = await readLocalJSON('orders.json') || [];
-
-        // Optional: Filter by type/status if needed via query, e.g. ?status=Completed
-        // For now, return all for admin table.
-        // Sort by ID (newest first usually)
-        allOrders.sort((a, b) => (b.id || 0) - (a.id || 0));
-
-        res.json(allOrders);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to fetch orders' });
-    }
-});
+// Duplicate GET /api/orders removed. The one at line 557 handles pagination and filtering correctly.
 
 
 // GET Single Order (Full Details) - PROTECTED
