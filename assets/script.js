@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 2. Initialize Data
         // Fetch and Render Products (if on home/shop page)
-        if (document.getElementById('product-grid') || document.getElementById('product-details-container')) {
+        if (document.getElementById('product-grid') || document.getElementById('home-product-grid') || document.getElementById('product-details-container')) {
             await fetchProducts(); // From api.js, stores in window.products
         }
 
