@@ -202,6 +202,20 @@ app.get('/admin/script.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin/script.js'));
 });
 
+// --- FORCE MAIN ASSETS (Debug Fix) ---
+app.get('/assets/style.css', (req, res) => {
+    res.setHeader('Content-Type', 'text/css');
+    res.sendFile(path.join(__dirname, 'assets/style.css'));
+});
+app.get('/assets/script.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'assets/script.js'));
+});
+app.get('/assets/images/logo.png', (req, res) => {
+    res.setHeader('Content-Type', 'image/png');
+    res.sendFile(path.join(__dirname, 'assets/images/logo.png'));
+});
+
 // Explicit Root Route
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
