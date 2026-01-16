@@ -77,7 +77,7 @@ function renderProducts() {
                  style="animation: fadeInUp 0.5s ease-out ${delay}ms both;"
                  onclick="window.location.href='product-details.html?id=${product.id}'">
                 
-                <div class="card-image-container relative aspect-[4/3] overflow-hidden bg-slate-900">
+                <div class="card-image-container relative aspect-video overflow-hidden bg-slate-900">
                     <img src="${product.image}" alt="${product.name}" loading="lazy" 
                         class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60"></div>
@@ -170,9 +170,12 @@ function filterProducts(category) {
 }
 
 async function loadProductDetailsPage() {
+    console.log("loadProductDetailsPage started...");
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
     const container = document.getElementById('product-details-container');
+
+    console.log("ProductID from URL:", productId);
 
     if (!container) return; // Not on details page
 
@@ -183,13 +186,17 @@ async function loadProductDetailsPage() {
 
     // Ensure products loaded
     if (!window.products || window.products.length === 0) {
+        console.log("Products not loaded, fetching...");
         try {
             await fetchProducts(); // From api.js
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Fetch failed in details:", e); }
     }
+
+    console.log("Total Products:", window.products ? window.products.length : 0);
 
     const product = window.products.find(p => p.id == productId);
     if (!product) {
+        console.error("Product not found for ID:", productId);
         container.innerHTML = `<div class="text-center text-red-500 py-20">Product not found</div>`;
         return;
     }
