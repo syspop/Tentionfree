@@ -217,7 +217,7 @@ async function loadProductDetailsPage() {
 
     // 2. Features
     let featuresHtml = '';
-    if (product.features && product.features.length > 0) {
+    if (product.features && Array.isArray(product.features) && product.features.length > 0) {
         featuresHtml = `
         <div class="grid grid-cols-2 gap-3 mb-6">
             ${product.features.map(f => `
@@ -234,15 +234,25 @@ async function loadProductDetailsPage() {
     // 3. Instructions
     let instructionsHtml = '';
     if (product.instructions) {
-        instructionsHtml = `
-        <div class="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50 mb-8">
-            <h4 class="text-white font-bold mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-circle-info text-brand-500"></i> How to Redeem
-            </h4>
-            <ol class="list-decimal list-inside space-y-2 text-slate-400 text-sm">
-                ${product.instructions.map(i => `<li>${i}</li>`).join('')}
-            </ol>
-        </div>`;
+        let instructionsList = [];
+        if (Array.isArray(product.instructions)) {
+            instructionsList = product.instructions;
+        } else if (typeof product.instructions === 'string') {
+            // Split by newline or just use as one item
+            instructionsList = product.instructions.split('\n').filter(i => i.trim() !== '');
+        }
+
+        if (instructionsList.length > 0) {
+            instructionsHtml = `
+            <div class="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50 mb-8">
+                <h4 class="text-white font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-brand-500"></i> How to Redeem
+                </h4>
+                <ol class="list-decimal list-inside space-y-2 text-slate-400 text-sm">
+                    ${instructionsList.map(i => `<li>${i}</li>`).join('')}
+                </ol>
+            </div>`;
+        }
     }
 
     // 4. Variants & Price
