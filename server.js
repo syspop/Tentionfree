@@ -842,43 +842,19 @@ app.post('/api/orders', async (req, res) => {
 
         // --- AUTO-DELIVERY LOGIC ---
         // Check if price is 0 AND it's naturally a free order (not just coupon discounted)
-        if (parseFloat(newOrder.price) === 0 && newOrder.paymentMethod === 'Free / Auto-Delivery') {
-            newOrder.status = 'Completed';
+        if (parseFloat(newOrder.price) <= 0 && newOrder.paymentMethod === 'Free / Auto-Delivery') {
+            const result = await processAutoDelivery(newOrder);
+            newOrder.status = result.status;
+            newOrder.deliveryInfo = result.deliveryInfo;
 
-            // Fetch delivery content from Products
-            const allProducts = await readLocalJSON('products.json');
-
-            let combinedDeliveryInfo = "";
-            let deliveryImage = null; // Use first image found
-
-            if (newOrder.items && Array.isArray(newOrder.items)) {
-                newOrder.items.forEach(item => {
-                    // Find product by ID or Name
-                    const product = allProducts.find(p => p.id == item.id || p.name === item.name);
-
-                    if (product && product.autoDeliveryInfo) {
-                        combinedDeliveryInfo += `Product: ${item.name}\n${product.autoDeliveryInfo}\n\n`;
-                        if (!deliveryImage && product.autoDeliveryImage) {
-                            deliveryImage = product.autoDeliveryImage;
-                        }
-                    }
-                });
+            if (newOrder.status === 'Completed' || newOrder.deliveryInfo) {
+                // Send Completed Email Immediately
+                const emailUpdates = {
+                    status: newOrder.status,
+                    deliveryInfo: newOrder.deliveryInfo
+                };
+                sendOrderStatusEmail(newOrder, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
             }
-
-            if (!combinedDeliveryInfo) combinedDeliveryInfo = "Thank you for your free order! Your product is activated.";
-            newOrder.deliveryInfo = combinedDeliveryInfo.trim();
-
-            // Send Completed Email Immediately
-            const emailUpdates = {
-                status: 'Completed',
-                deliveryInfo: newOrder.deliveryInfo
-            };
-            if (deliveryImage) emailUpdates.deliveryImage = deliveryImage; // Extend email service to handle this if needed or embedded in info? 
-            // Email Service handles updates.deliveryInfo. Image support might need update if we want separate attachment visual, 
-            // but for now we can rely on text. If user wants image, we might need to update emailService.js to handle `updates.deliveryImage`.
-            // Let's pass it.
-
-            sendOrderStatusEmail(newOrder, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
         }
 
         // --- COUPON USAGE TRACKING ---
@@ -2312,12 +2288,26 @@ app.get('/api/payment/verify', async (req, res) => {
         if (orderIndex === -1) return res.redirect('/?error=order_not_found');
 
         // Logic: Mark as Paid
-        orders[orderIndex].status = "Processing"; // Or 'Completed' depending on flow
+        orders[orderIndex].status = "Processing"; // Default to processing
         orders[orderIndex].isPaid = true;
         orders[orderIndex].paymentMethod = "B-Kash/Nagad/Rocket (Nexora)";
         orders[orderIndex].trx = transaction_id || "Auto-Verified";
 
+        // --- AUTO-DELIVERY LOGIC (For Paid Items) ---
+        const autoResult = await processAutoDelivery(orders[orderIndex]);
+        orders[orderIndex].status = autoResult.status; // Might update to 'Completed'
+        orders[orderIndex].deliveryInfo = autoResult.deliveryInfo;
+
         await writeLocalJSON('orders.json', orders);
+
+        // Send Email if Completed
+        if (orders[orderIndex].status === 'Completed' || orders[orderIndex].deliveryInfo) {
+            const emailUpdates = {
+                status: orders[orderIndex].status,
+                deliveryInfo: orders[orderIndex].deliveryInfo
+            };
+            sendOrderStatusEmail(orders[orderIndex], emailUpdates).catch(e => console.error("Auto-Email Error:", e));
+        }
 
         // Redirect User to Profile or Success Page
         res.redirect('/profile.html?status=payment_success');
@@ -2328,6 +2318,90 @@ app.get('/api/payment/verify', async (req, res) => {
     }
 });
 
+
+// --- HELPER: Process Auto-Delivery (Stock & Variants) ---
+async function processAutoDelivery(order) {
+    try {
+        let allProducts = await readLocalJSON('products.json');
+        let deliveryMsg = order.deliveryInfo || "";
+        let productsUpdated = false;
+        let allDelivered = true;
+        let hasAutoItems = false;
+
+        if (!order.items || !Array.isArray(order.items)) return { status: order.status, deliveryInfo: deliveryMsg };
+
+        for (const item of order.items) {
+            const productIndex = allProducts.findIndex(p => String(p.id) === String(item.id) || p.name === item.name);
+            if (productIndex === -1) {
+                if (item.quantity > 0) allDelivered = false;
+                continue;
+            }
+
+            const product = allProducts[productIndex];
+            let deliveryForThisItem = "";
+            let itemDelivered = false;
+
+            // 1. Check Variant Stock
+            if (product.variants && Array.isArray(product.variants)) {
+                // Find variant by label
+                const variantIndex = product.variants.findIndex(v => v.label === item.plan || v.label === item.variantName || v.label === (item.variant && item.variant.label));
+                // Note: Frontend sends 'plan' property or item.variantName? 
+                // script.js says: plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard')
+                // But inside items array: item.variantName should be there. Let's assume item.variantName
+
+                if (variantIndex !== -1) {
+                    const variant = product.variants[variantIndex];
+                    if (variant.stock && Array.isArray(variant.stock) && variant.stock.length > 0) {
+                        const qty = parseInt(item.quantity) || 1;
+                        if (variant.stock.length >= qty) {
+                            const codes = variant.stock.splice(0, qty);
+                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${codes.join('\n')}`;
+                            productsUpdated = true;
+                            hasAutoItems = true;
+                            itemDelivered = true;
+                        } else if (variant.stock.length > 0) {
+                            // Partial
+                            const codes = variant.stock.splice(0, variant.stock.length);
+                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${codes.join('\n')} (Partial Delivery)`;
+                            productsUpdated = true;
+                            hasAutoItems = true;
+                            allDelivered = false;
+                        }
+                    }
+                }
+            }
+
+            // 2. Fallback: Global Auto Delivery Info
+            if (!itemDelivered && !deliveryForThisItem && product.autoDeliveryInfo) {
+                // Only if stock logic didn't work (or no stock defined)
+                deliveryForThisItem = `\n[${item.name}]: ${product.autoDeliveryInfo}`;
+                hasAutoItems = true;
+                itemDelivered = true;
+            }
+
+            if (deliveryForThisItem) {
+                deliveryMsg += deliveryForThisItem + "\n";
+            } else {
+                allDelivered = false;
+            }
+        }
+
+        if (productsUpdated) {
+            await writeLocalJSON('products.json', allProducts);
+        }
+
+        let pStatus = order.status;
+        if (hasAutoItems) {
+            pStatus = allDelivered ? 'Completed' : 'Processing';
+        }
+
+        return { status: pStatus, deliveryInfo: deliveryMsg.trim() };
+
+    } catch (e) {
+        console.error("AutoDelivery Error:", e);
+        return { status: order.status, deliveryInfo: order.deliveryInfo };
+    }
+}
 
 // 404 Catch-All Handler (Must be last)
 app.use((req, res) => {

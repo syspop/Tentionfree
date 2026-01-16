@@ -272,19 +272,23 @@
         }
 
         // --- VARIANT LOGIC ---
-        function addVariantRow(label = '', price = '', original = '') {
+        function addVariantRow(label = '', price = '', original = '', stock = []) { // Stock added
             const container = document.getElementById('variants-container');
             const div = document.createElement('div');
             div.style.display = 'grid';
-            div.style.gridTemplateColumns = '2fr 1fr 1fr 30px';
+            div.style.gridTemplateColumns = '1.5fr 1fr 1fr 2fr 30px'; // Adjusted grid for Stock
             div.style.gap = '10px';
             div.style.marginBottom = '10px';
+            div.style.alignItems = 'start';
+
+            const stockText = Array.isArray(stock) ? stock.join('\n') : stock;
 
             div.innerHTML = `
                 <input type="text" placeholder="Label (e.g. 1 Month)" class="input-box" style="margin:0" value="${label}">
                 <input type="number" placeholder="Price" class="input-box" style="margin:0" value="${price}">
                 <input type="number" placeholder="Org. Price" class="input-box" style="margin:0" value="${original}">
-                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold;">×</button>
+                <textarea placeholder="Auto-Delivery Codes (One per line)" class="input-box" style="margin:0; height:38px; min-height:38px; resize:vertical; font-family:monospace; font-size:11px;">${stockText}</textarea>
+                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:10px;">×</button>
             `;
             container.appendChild(div);
         }
@@ -333,10 +337,10 @@
                 container.innerHTML = '';
                 if (p.variants && p.variants.length > 0) {
                     p.variants.forEach(v => {
-                        addVariantRow(v.label, v.price, v.originalPrice);
+                        addVariantRow(v.label, v.price, v.originalPrice, v.stock || []); // Load Stock
                     });
                 } else {
-                    addVariantRow('1 Month', '', '');
+                    addVariantRow('1 Month', '', '', []);
                 }
 
                 // Populate Custom Inputs
@@ -582,11 +586,14 @@
             const variants = [];
             rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
+                const textarea = row.querySelector('textarea'); // Stock
                 if (inputs[0].value) {
+                    const stockList = textarea.value.trim().split('\n').filter(l => l.trim() !== ''); // Clean List
                     variants.push({
                         label: inputs[0].value,
                         price: inputs[1].value,
-                        originalPrice: inputs[2].value
+                        originalPrice: inputs[2].value,
+                        stock: stockList // Save Stock Array
                     });
                 }
             });

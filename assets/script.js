@@ -2407,15 +2407,29 @@ async function submitOrder(e) {
         return;
     }
 
-    // --- 2. PAYMENT TYPE ---
-    const paymentTypeInput = document.querySelector('input[name="paymentType"]:checked');
-    if (!paymentTypeInput) {
-        showErrorModal("Payment Required", "Please select a payment method.");
-        return;
+    // --- 3. CHECK FOR 0 TK (FREE) ---
+    // Calculate total early for check
+    let totalCheck = itemsToOrder.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+    let discountCheck = 0;
+    if (typeof appliedCoupon !== 'undefined' && appliedCoupon) {
+        if (appliedCoupon.type === 'percent') discountCheck = (totalCheck * appliedCoupon.value) / 100;
+        else discountCheck = appliedCoupon.value;
     }
+    const finalCheck = totalCheck - discountCheck;
 
-    const isPayNow = paymentTypeInput.value === 'now';
-    let paymentMethod = isPayNow ? 'Online (NexoraPay)' : 'Pay Later';
+    const isFree = finalCheck <= 0;
+    let paymentMethod = isFree ? 'Free / Auto-Delivery' : 'Pay Later';
+    const isPayNow = !isFree && document.querySelector('input[name="paymentType"]:checked')?.value === 'now';
+
+    if (!isFree) {
+        // --- 2. PAYMENT TYPE (Only if not free) ---
+        const paymentTypeInput = document.querySelector('input[name="paymentType"]:checked');
+        if (!paymentTypeInput) {
+            showErrorModal("Payment Required", "Please select a payment method.");
+            return;
+        }
+        paymentMethod = isPayNow ? 'Online (NexoraPay)' : 'Pay Later';
+    }
 
     // Login Check for Pay Later if needed? (Keeping logic simple)
     const userStr = localStorage.getItem('user');
