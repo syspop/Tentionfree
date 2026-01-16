@@ -258,35 +258,20 @@ function calculateAndDisplayTotal() {
     }
 
     if (totalEl) {
-        if (method === 'binance') {
-            const totalUSD = finalBDT / 100; // Conversion
-            totalEl.innerText = '$' + totalUSD.toFixed(2);
-            totalEl.classList.add('text-green-400');
-            totalEl.classList.remove('text-brand-500');
+        totalEl.innerText = '৳' + finalBDT.toFixed(2);
+        totalEl.classList.remove('text-green-400');
+        totalEl.classList.add('text-brand-500');
 
-            if (discountRow && discountEl) {
-                if (discount > 0) {
-                    discountRow.classList.remove('hidden');
-                    discountEl.innerText = '-$' + (discount / 100).toFixed(2);
-                } else {
-                    discountRow.classList.add('hidden');
-                }
-            }
-        } else {
-            totalEl.innerText = '৳' + finalBDT.toFixed(2);
-            totalEl.classList.remove('text-green-400');
-            totalEl.classList.add('text-brand-500');
-
-            if (discountRow && discountEl) {
-                if (discount > 0) {
-                    discountRow.classList.remove('hidden');
-                    discountEl.innerText = '-৳' + discount.toFixed(2);
-                } else {
-                    discountRow.classList.add('hidden');
-                }
+        if (discountRow && discountEl) {
+            if (discount > 0) {
+                discountRow.classList.remove('hidden');
+                discountEl.innerText = '-৳' + discount.toFixed(2);
+            } else {
+                discountRow.classList.add('hidden');
             }
         }
     }
+
 }
 
 function togglePaymentSection() {

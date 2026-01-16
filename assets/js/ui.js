@@ -91,7 +91,7 @@ function renderProducts() {
                         class="w-full h-full object-contain transform group-hover:scale-110 transition-transform duration-700">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60"></div>
                      <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10 pointer-events-none">
-                        <span class="bg-white/90 text-slate-900 font-bold px-4 py-2 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 text-sm shadow-lg pointer-events-auto">
+                        <span class="bg-white/90 text-slate-900 font-bold px-4 py-2 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 text-sm shadow-lg pointer-events-auto cursor-pointer select-none">
                             View Details
                         </span>
                     </div>
