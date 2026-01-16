@@ -4,7 +4,8 @@
 let lastAnimationTime = 0;
 
 function renderProducts() {
-    const grid = document.getElementById('product-grid');
+    // Check for either grid ID
+    const grid = document.getElementById('product-grid') || document.getElementById('home-product-grid');
     if (!grid) return;
 
     grid.innerHTML = "";
@@ -37,6 +38,9 @@ function renderProducts() {
         `;
         return;
     }
+
+
+
 
     filtered.forEach((product, index) => {
         const delay = index * 50; // Staggered animation
@@ -200,6 +204,16 @@ async function loadProductDetailsPage() {
         container.innerHTML = `<div class="text-center text-red-500 py-20">Product not found</div>`;
         return;
     }
+
+    // --- Update Breadcrumb ---
+    const breadcrumb = document.getElementById('page-product-name-crumb');
+    if (breadcrumb) breadcrumb.innerText = product.name;
+
+    // --- Unhide Reviews Section ---
+    const reviewsSection = document.getElementById('reviews-section');
+    if (reviewsSection) reviewsSection.classList.remove('hidden');
+
+    // --- Render Details ---
 
     // Set Window Title
     document.title = `${product.name} - Tention Free`;
