@@ -957,6 +957,138 @@
                 clearInterval(interval);
             }, 3000);
         }
+
+        // --- STOCK MODAL LOGIC (Global Scope) ---
+        let currentStockBtn = null; // Reference to the button that opened modal
+        let tempStockList = []; // Array to hold stock for currently open variant
+
+        function openStockModal(btn) {
+            currentStockBtn = btn;
+            const container = btn.parentElement;
+            const textarea = container.querySelector('.stock-data-hidden');
+            const json = textarea.value;
+
+            try {
+                tempStockList = json ? JSON.parse(json) : [];
+            } catch (e) {
+                tempStockList = [];
+                console.error("Parsed error", e);
+            }
+
+            // Reset UI
+            document.getElementById('stock-input-text').value = "";
+            document.getElementById('stock-input-file').value = "";
+            switchStockTab('available'); // Default to Add view? Or Avail? Let's show Add/Avail
+            switchStockTab('add'); // Let's start with Add
+
+            updateStockCounts();
+            renderStockLists();
+
+            document.getElementById('stock-modal').style.display = 'flex';
+        }
+
+        function closeStockModal() {
+            document.getElementById('stock-modal').style.display = 'none';
+            currentStockBtn = null;
+        }
+
+        function saveStockModal() {
+            // Save tempStockList back to hidden textarea
+            if (currentStockBtn) {
+                const container = currentStockBtn.parentElement;
+                const textarea = container.querySelector('.stock-data-hidden');
+                textarea.value = JSON.stringify(tempStockList);
+
+                // Update Badge
+                const availCount = tempStockList.filter(s => !s.status || s.status === 'available').length;
+                const badge = container.querySelector('.stock-count-badge');
+                if (badge) badge.innerText = `${availCount} Available`;
+            }
+            closeStockModal();
+        }
+
+        function switchStockTab(tab) {
+            document.querySelectorAll('.stock-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.stock-tab-content').forEach(c => c.style.display = 'none');
+
+            document.querySelector(`.stock-tab[onclick="switchStockTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`tab-${tab}`).style.display = 'block';
+        }
+
+        async function addStockItem() {
+            const text = document.getElementById('stock-input-text').value.trim();
+            const fileInput = document.getElementById('stock-input-file');
+
+            if (!text && fileInput.files.length === 0) {
+                return showToast("Enter text or select image", "error");
+            }
+
+            let imageUrl = null;
+            if (fileInput.files.length > 0) {
+                try {
+                    imageUrl = await uploadImageToServer(fileInput.files[0]);
+                } catch (e) {
+                    return showToast("Image Upload Failed", "error");
+                }
+            }
+
+            // Add to list
+            tempStockList.push({
+                text: text,
+                image: imageUrl,
+                status: 'available',
+                addedAt: new Date().toISOString()
+            });
+
+            // Reset Inputs
+            document.getElementById('stock-input-text').value = "";
+            fileInput.value = "";
+            showToast("Item Added to Stock");
+
+            updateStockCounts();
+            renderStockLists();
+        }
+
+        function removeStockItem(index) {
+            // Only allow removing if available? or force remove?
+            tempStockList.splice(index, 1);
+            updateStockCounts();
+            renderStockLists();
+        }
+
+        function updateStockCounts() {
+            const avail = tempStockList.filter(s => !s.status || s.status === 'available').length;
+            const sold = tempStockList.filter(s => s.status === 'delivered').length;
+            document.getElementById('count-avail').innerText = avail;
+            document.getElementById('count-sold').innerText = sold;
+        }
+
+        function renderStockLists() {
+            const availContainer = document.getElementById('available-list');
+            const soldContainer = document.getElementById('sold-list');
+            availContainer.innerHTML = '';
+            soldContainer.innerHTML = '';
+
+            tempStockList.forEach((item, index) => {
+                const isSold = item.status === 'delivered';
+                const html = `
+            <div class="stock-item">
+                ${item.image ? `<img src="${item.image}">` : '<div style="width:40px;height:40px;background:#334155;border-radius:4px;"></div>'}
+                <div class="stock-item-content">
+                    ${item.text || '<i>(Image Only)</i>'}
+                    ${isSold ? `<br><small style="color:#f59e0b">Sold to Order #${item.orderId || '?'}</small>` : ''}
+                </div>
+                <button class="stock-del-btn" onclick="removeStockItem(${index})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+
+                if (isSold) soldContainer.insertAdjacentHTML('beforeend', html);
+                else availContainer.insertAdjacentHTML('beforeend', html);
+            });
+
+            if (availContainer.innerHTML === '') availContainer.innerHTML = '<p style="color:var(--gray); text-align:center; font-size:12px;">No available items.</p>';
+            if (soldContainer.innerHTML === '') soldContainer.innerHTML = '<p style="color:var(--gray); text-align:center; font-size:12px;">No sold items.</p>';
+        }
     </script>
 </body>
 
