@@ -1,16 +1,18 @@
-const express = require('express');
+﻿const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const compression = require('compression');
 
 
-console.log("🚀 Starting Server...");
+console.log("ðŸš€ Starting Server...");
 
 require('dotenv').config(); // Load env vars
 const bcrypt = require('bcryptjs'); // Password Hashing
 const jwt = require('jsonwebtoken'); // JWT for API Security
 const { writeLocalJSON, readLocalJSON, initializeDatabase } = require('./data/db');
 const { sendOrderStatusEmail, sendBackupEmail } = require('./backend_services/emailService');
+const { processAutoDelivery } = require('./utils/autoDelivery');
+const { authenticateAdmin, authenticateUser, JWT_SECRET } = require('./middleware/auth');
 const multer = require('multer'); // File Uploads
 const path = require('path');
 const fs = require('fs');
@@ -73,13 +75,17 @@ app.use(cors({
 // app.use('/api/', apiLimiter);
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+// Routes
+const apiRoutes = require('./routes/apiRoutes');
+app.use('/api', apiRoutes); // Mounts /products -> /api/products
+
 app.use(compression()); // Compress all responses for speed
 
 // (Reverted static middleware changes)
 
 // (Static file serving moved back down)
 
-// 🛡️ ANTI-SCRAPING / BOT PROTECTION
+// ðŸ›¡ï¸ ANTI-SCRAPING / BOT PROTECTION
 app.use((req, res, next) => {
     const userAgent = req.get('User-Agent') || '';
     const blockedAgents = ['wget', 'curl', 'python', 'httrack', 'libwww-perl', 'http-client', 'scrappy', 'java'];
@@ -102,9 +108,9 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 const speakeasy = require('speakeasy'); // 2FA
 
 // --- BACKUP ENDPOINT (Moved to VERY TOP - BEFORE REDIRECTS) ---
-console.log("✅ Backup Route Registered: /api/backup");
+console.log("âœ… Backup Route Registered: /api/backup");
 app.all('/api/backup', async (req, res) => {
-    console.log("👉 Backup Endpoint Hit!");
+    console.log("ðŸ‘‰ Backup Endpoint Hit!");
     try {
         // Checking multiple sources for robustness
         let pin = (req.body && req.body.pin) || req.query.pin || req.headers['x-backup-pin'];
@@ -120,7 +126,7 @@ app.all('/api/backup', async (req, res) => {
         }
 
         if (pin !== SECURE_PIN) {
-            console.warn(`⚠️ Unauthorized Pin: '${pin}'`);
+            console.warn(`âš ï¸ Unauthorized Pin: '${pin}'`);
             return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
         }
 
@@ -308,7 +314,7 @@ app.get(['/product/:id', '/products.html'], async (req, res, next) => {
         html = html.replace(/(<[^>]*id="product-modal-title"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1${product.name}$3`);
 
         // Price: <span ... id="page-display-price">OLD</span>
-        html = html.replace(/(<[^>]*id="page-display-price"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1৳${product.price}$3`);
+        html = html.replace(/(<[^>]*id="page-display-price"[^>]*>)([\s\S]*?)(<\/[^>]+>)/i, `$1à§³${product.price}$3`);
 
         // Description: <p ... id="modal-desc">OLD</p>
         const safeDesc = product.longDesc ? product.longDesc.replace(/\n/g, '<br>') : product.desc;
@@ -341,8 +347,8 @@ app.get(['/services', '/services/'], (req, res) => {
     res.sendFile(__dirname + '/services.html');
 });
 
-// 🔐 PUBLIC ACCESS RULE — ONLY HTML (FINAL SAFE)
-// 🛡️ SECURITY: Block Sensitive Files & Paths
+// ðŸ” PUBLIC ACCESS RULE â€” ONLY HTML (FINAL SAFE)
+// ðŸ›¡ï¸ SECURITY: Block Sensitive Files & Paths
 app.use((req, res, next) => {
     const blockedPaths = [
         '/data',
@@ -402,7 +408,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🔒 HOTLINK PROTECTION - DISABLED FOR STABILITY
+// ðŸ”’ HOTLINK PROTECTION - DISABLED FOR STABILITY
 // app.use((req, res, next) => {
 //     if (req.path.startsWith('/assets/')) {
 //         const referer = req.headers.referer || '';
@@ -419,7 +425,7 @@ app.use((req, res, next) => {
 //     next();
 // });
 
-// 🛠️ ROBUST CLEAN URL HANDLER (Fix for host issues)
+// ðŸ› ï¸ ROBUST CLEAN URL HANDLER (Fix for host issues)
 app.use((req, res, next) => {
     // Only handle GET requests and ignore api/assets/static paths
     if (req.method !== 'GET') return next();
@@ -435,14 +441,14 @@ app.use((req, res, next) => {
     next();
 });
 
-// 📂 SERVE STATIC FILES (CSS, JS, IMAGES, HTML)
+// ðŸ“‚ SERVE STATIC FILES (CSS, JS, IMAGES, HTML)
 // This handles all assets and html files automatically.
 app.use(express.static(__dirname, { extensions: ['html'] }));
 
 
-const JWT_SECRET = process.env.JWT_SECRET || "unsafe_fallback_secret_change_me_in_prod"; // Fallback to prevent crash, but warn
+// JWT_SECRET imported from middleware/auth
 if (!process.env.JWT_SECRET) {
-    console.warn("⚠️  WARNING: JWT_SECRET is not defined. Using unsafe fallback. Login security is compromised.");
+    console.warn("âš ï¸  WARNING: JWT_SECRET is not defined. Using unsafe fallback. Login security is compromised.");
 }
 
 // --- CREDENTIAL DEBUG CHECKS ---
@@ -458,32 +464,7 @@ console.log("BACKUP_USER:", checkVar("BACKUP_USER", process.env.BACKUP_USER));
 console.log("------------------------------------------------");
 
 // --- SECURITY MIDDLEWARE ---
-const authenticateAdmin = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ success: false, message: "Access Denied: Invalid Token" });
-        if (user.role !== 'admin') return res.status(403).json({ success: false, message: "Access Denied: Admins Only" });
-        req.user = user;
-        next();
-    });
-};
-
-const authenticateUser = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) return res.status(401).json({ success: false, message: "Access Denied: No Token Provided" });
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ success: false, message: "Access Denied: Invalid Token" });
-        req.user = user;
-        next();
-    });
-};
+// Auth middleware moved to middleware/auth.js
 
 // --- MIGRATION UTILITY (Temporary) ---
 // This endpoint allows triggering the seed process from the deployed server
@@ -511,166 +492,7 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
-
-// API Routes
-
-// --- UPLAOD ENDPOINT ---
-app.post('/api/upload', authenticateAdmin, upload.single('image'), (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "No file uploaded" });
-        }
-        // Return the relative URL
-        const fileUrl = `assets/uploads/${req.file.filename}`;
-        res.json({ success: true, url: fileUrl });
-    } catch (err) {
-        console.error("Upload Error:", err);
-        res.status(500).json({ success: false, message: "File upload failed" });
-    }
-});
-
-// --- PRODUCTS ---
-// GET Products (Hybrid: Read from JSON)
-app.get('/api/products', async (req, res) => {
-    try {
-        const products = await readLocalJSON('products.json');
-        res.json(products);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to read products' });
-    }
-});
-
-// POST Save All Products (Reorder)
-app.post('/api/products', authenticateAdmin, async (req, res) => {
-    const products = req.body;
-    if (!Array.isArray(products)) {
-        return res.status(400).json({ success: false, message: "Invalid data format. Expected array." });
-    }
-
-    try {
-        await writeLocalJSON('products.json', products);
-        res.json({ success: true, message: "Product order saved successfully." });
-    } catch (e) {
-        console.error("Error saving product order:", e);
-        res.status(500).json({ success: false, message: "Failed to save order." });
-    }
-});
-
-// POST Add Single Product (Inbuilt)
-app.post('/api/products/add', authenticateAdmin, async (req, res) => {
-    const newProduct = req.body;
-
-    if (!newProduct.name || newProduct.price === undefined || newProduct.price === null) {
-        return res.status(400).json({ success: false, message: "Missing required fields" });
-    }
-
-    try {
-        const allProducts = await readLocalJSON('products.json');
-
-        // Generate ID
-        if (!newProduct.id) {
-            // Find max ID
-            const maxId = allProducts.reduce((max, p) => (p.id > max ? p.id : max), 0);
-            newProduct.id = maxId + 1;
-        }
-
-        allProducts.push(newProduct);
-        await writeLocalJSON('products.json', allProducts);
-
-        res.json({ success: true, message: "Product added successfully", product: newProduct });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Failed to add product" });
-    }
-});
-
-// --- CATEGORIES ---
-// GET Categories
-app.get('/api/categories', async (req, res) => {
-    try {
-        const categories = await readLocalJSON('categories.json');
-        res.json(categories);
-    } catch (err) {
-        // Fallback if file missing (auto-create logic handled in readLocalJSON usually or init, but let's be safe)
-        res.json([
-            { "id": "streaming", "name": "Streaming" },
-            { "id": "gaming", "name": "Gaming" },
-            { "id": "tools", "name": "Tools & VPN" }
-        ]);
-    }
-});
-
-// POST Add Category (Admin)
-app.post('/api/categories', authenticateAdmin, async (req, res) => {
-    const { name, id } = req.body;
-    if (!name || !id) return res.status(400).json({ success: false, message: "Name and ID required" });
-
-    try {
-        const categories = await readLocalJSON('categories.json');
-        if (categories.find(c => c.id === id)) {
-            return res.status(400).json({ success: false, message: "Category ID already exists" });
-        }
-        categories.push({ id, name });
-        await writeLocalJSON('categories.json', categories);
-        res.json({ success: true, message: "Category added" });
-    } catch (err) {
-        res.status(500).json({ success: false, message: "Failed to add category" });
-    }
-});
-
-// PUT Update Category (Admin)
-app.put('/api/categories/:id', authenticateAdmin, async (req, res) => {
-    const id = req.params.id;
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ success: false, message: "Name is required" });
-
-    try {
-        let categories = await readLocalJSON('categories.json');
-        const index = categories.findIndex(c => c.id === id);
-        if (index === -1) return res.status(404).json({ success: false, message: "Category not found" });
-
-        categories[index].name = name; // Only name update allowed for now, ID is key
-        await writeLocalJSON('categories.json', categories);
-        res.json({ success: true, message: "Category updated" });
-    } catch (err) {
-        res.status(500).json({ success: false, message: "Failed to update category" });
-    }
-});
-
-// DELETE Category (Admin)
-app.delete('/api/categories/:id', authenticateAdmin, async (req, res) => {
-    const id = req.params.id;
-    try {
-        let categories = await readLocalJSON('categories.json');
-        categories = categories.filter(c => c.id !== id);
-        await writeLocalJSON('categories.json', categories);
-        res.json({ success: true, message: "Category deleted" });
-    } catch (err) {
-        res.status(500).json({ success: false, message: "Failed to delete category" });
-    }
-});
-
-// --- DEBUG ENDPOINT ---
-app.get('/api/debug/db', async (req, res) => {
-    try {
-        const customers = await readLocalJSON('customers.json');
-        const orders = await readLocalJSON('orders.json');
-        const products = await readLocalJSON('products.json');
-
-        res.json({
-            success: true,
-            counts: {
-                customers: customers.length,
-                orders: orders.length,
-                products: products.length
-            },
-            customersSample: customers.slice(0, 3).map(c => ({ email: c.email, hasPass: !!c.password, id: c.id }))
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
+// Multer, Products, Categories Routes moved to routes/apiRoutes.js
 
 // --- SOCIAL AUTH (Inbuilt Logic) ---
 async function handleSocialLogin(req, res, provider) {
@@ -727,48 +549,6 @@ app.post('/api/auth/google', async (req, res) => {
 // --- NEW SAFE ENDPOINTS ---
 
 
-
-// PUT Update Single Product (Inbuilt)
-app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
-    const id = parseInt(req.params.id);
-    const updates = req.body;
-
-    try {
-        const allProducts = await readLocalJSON('products.json');
-        const productIndex = allProducts.findIndex(p => p.id === id);
-
-        if (productIndex === -1) {
-            return res.status(404).json({ success: false, message: "Product not found" });
-        }
-
-        // Update
-        const updatedProduct = { ...allProducts[productIndex], ...updates };
-        allProducts[productIndex] = updatedProduct;
-
-        await writeLocalJSON('products.json', allProducts);
-
-        res.json({ success: true, message: "Product updated successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Failed to update product" });
-    }
-});
-
-// DELETE Single Product (Inbuilt)
-app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
-    const id = parseInt(req.params.id);
-    try {
-        let allProducts = await readLocalJSON('products.json');
-        allProducts = allProducts.filter(p => p.id !== id);
-
-        await writeLocalJSON('products.json', allProducts);
-
-        res.json({ success: true, message: "Product deleted successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Failed to delete product" });
-    }
-});
 
 // --- ORDERS ---
 // GET Orders - PROTECTED
@@ -1166,7 +946,7 @@ app.post('/api/coupons/verify', async (req, res) => {
 
         // Check Minimum Spend (on total cart value usually)
         if (coupon.minSpend && cartTotal < coupon.minSpend) {
-            return res.json({ success: false, message: `Minimum spend of ৳${coupon.minSpend} required.` });
+            return res.json({ success: false, message: `Minimum spend of à§³${coupon.minSpend} required.` });
         }
 
         // Product Specificity Check
@@ -2318,122 +2098,8 @@ app.get('/api/payment/verify', async (req, res) => {
     }
 });
 
-
 // --- HELPER: Process Auto-Delivery (Stock & Variants) ---
-async function processAutoDelivery(order) {
-    try {
-        let allProducts = await readLocalJSON('products.json');
-        let deliveryMsg = order.deliveryInfo || "";
-        let productsUpdated = false;
-        let allDelivered = true;
-        let hasAutoItems = false;
-
-        if (!order.items || !Array.isArray(order.items)) return { status: order.status, deliveryInfo: deliveryMsg };
-
-        for (const item of order.items) {
-            const productIndex = allProducts.findIndex(p => String(p.id) === String(item.id) || p.name === item.name);
-            if (productIndex === -1) {
-                if (item.quantity > 0) allDelivered = false;
-                continue;
-            }
-
-            const product = allProducts[productIndex];
-            let deliveryForThisItem = "";
-            let itemDelivered = false;
-
-            // 1. Check Variant Stock
-            if (product.variants && Array.isArray(product.variants)) {
-                // Find variant logic (Label match)
-                const variantIndex = product.variants.findIndex(v => v.label === item.plan || v.label === item.variantName || v.label === (item.variant && item.variant.label));
-
-                if (variantIndex !== -1) {
-                    const variant = product.variants[variantIndex];
-                    if (variant.stock && Array.isArray(variant.stock) && variant.stock.length > 0) {
-                        const qty = parseInt(item.quantity) || 1;
-                        const deliveredItems = [];
-
-                        // Filter AVAILABLE items (Legacy String support + New Object support)
-                        // Map indices to avoid modifying array length while iterating if we were splicing (but we are not anymore)
-                        const availableStockIndices = [];
-                        variant.stock.forEach((s, idx) => {
-                            // Support legacy string or new object
-                            const isAvail = (typeof s === 'string') || (s.status === 'available' || !s.status);
-                            if (isAvail) availableStockIndices.push(idx);
-                        });
-
-                        // Consume IDs FIFO
-                        for (let i = 0; i < qty; i++) {
-                            if (i < availableStockIndices.length) {
-                                const stockIdx = availableStockIndices[i];
-                                const stockItem = variant.stock[stockIdx];
-
-                                // Update Status
-                                if (typeof stockItem === 'string') {
-                                    // Upgrade legacy string to object
-                                    const codeText = stockItem;
-                                    variant.stock[stockIdx] = {
-                                        text: codeText,
-                                        status: 'delivered',
-                                        orderId: order.id,
-                                        date: new Date().toISOString()
-                                    };
-                                    deliveredItems.push(codeText);
-                                } else {
-                                    stockItem.status = 'delivered';
-                                    stockItem.orderId = order.id;
-                                    stockItem.date = new Date().toISOString();
-
-                                    let txt = stockItem.text || "";
-                                    if (stockItem.image) txt += `\n[Reference Image]: ${stockItem.image}`;
-                                    deliveredItems.push(txt);
-                                }
-                                productsUpdated = true;
-                            }
-                        }
-
-                        if (deliveredItems.length > 0) {
-                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${deliveredItems.join('\n\n')}`;
-                            hasAutoItems = true;
-                            if (deliveredItems.length >= qty) itemDelivered = true;
-                            else allDelivered = false; // Partial
-                        } else {
-                            allDelivered = false; // Stock Empty
-                        }
-                    }
-                }
-            }
-
-            // 2. Fallback: Global Auto Delivery Info
-            if (!itemDelivered && !deliveryForThisItem && product.autoDeliveryInfo) {
-                // Only if stock logic didn't work (or no stock defined)
-                deliveryForThisItem = `\n[${item.name}]: ${product.autoDeliveryInfo}`;
-                hasAutoItems = true;
-                itemDelivered = true;
-            }
-
-            if (deliveryForThisItem) {
-                deliveryMsg += deliveryForThisItem + "\n";
-            } else {
-                allDelivered = false;
-            }
-        }
-
-        if (productsUpdated) {
-            await writeLocalJSON('products.json', allProducts);
-        }
-
-        let pStatus = order.status;
-        if (hasAutoItems) {
-            pStatus = allDelivered ? 'Completed' : 'Processing';
-        }
-
-        return { status: pStatus, deliveryInfo: deliveryMsg.trim() };
-
-    } catch (e) {
-        console.error("AutoDelivery Error:", e);
-        return { status: order.status, deliveryInfo: order.deliveryInfo };
-    }
-}
+// MOVED TO: utils/autoDelivery.js
 
 // 404 Catch-All Handler (Must be last)
 app.use((req, res) => {
@@ -2502,7 +2168,7 @@ app.listen(PORT, '0.0.0.0', () => {
     // --- AUTO BACKUP SCHEDULER (Weekly) ---
     const startBackupScheduler = () => {
         const checkBackup = async () => {
-            console.log("⏳ Checking Auto-Backup Schedule...");
+            console.log("â³ Checking Auto-Backup Schedule...");
             try {
                 // 1. Read System Data
                 let systemData = await readLocalJSON('system_data.json');
@@ -2517,7 +2183,7 @@ app.listen(PORT, '0.0.0.0', () => {
                 const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
                 if (!lastBackup || (now - lastBackup) > sevenDays) {
-                    console.log("🚀 Triggering Weekly Auto-Backup...");
+                    console.log("ðŸš€ Triggering Weekly Auto-Backup...");
 
                     // 3. Generate Backup Data
                     const backupData = {
@@ -2545,13 +2211,13 @@ app.listen(PORT, '0.0.0.0', () => {
                         // 5. Update System Data
                         systemData.lastBackupDate = now.toISOString();
                         await writeLocalJSON('system_data.json', systemData);
-                        console.log("✅ Auto-Backup Complete & Recorded.");
+                        console.log("âœ… Auto-Backup Complete & Recorded.");
                     }
                 } else {
-                    console.log("⏭️ Backup not due yet. Last: " + lastBackup.toLocaleString());
+                    console.log("â­ï¸ Backup not due yet. Last: " + lastBackup.toLocaleString());
                 }
             } catch (err) {
-                console.error("❌ Auto-Backup Schedule Error:", err);
+                console.error("âŒ Auto-Backup Schedule Error:", err);
             }
         };
 
