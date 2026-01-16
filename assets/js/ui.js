@@ -67,7 +67,14 @@ function renderProducts() {
         let priceDisplay = `৳${product.price}`;
 
         if (product.variants && product.variants.length > 0) {
-            const variantOptions = product.variants.map((v, i) => `<option value="${i}">${v.label}</option>`).join('');
+            const variantOptions = product.variants.map((v, i) => {
+                // Check Visibility
+                if (product.autoStockOut) {
+                    const hasStock = v.stock && Array.isArray(v.stock) && v.stock.some(s => (typeof s === 'string') || (s.status === 'available' || !s.status));
+                    if (!hasStock) return ''; // Hide if no stock and autoStockOut is ON
+                }
+                return `<option value="${i}">${v.label}</option>`;
+            }).join('');
             variantHtml = `
                 <div class="mt-3 relative group/select">
                     <i class="fa-solid fa-layer-group absolute left-3 top-2.5 text-xs text-slate-500 z-10 group-focus-within/select:text-brand-400 transition-colors"></i>
@@ -295,7 +302,13 @@ async function loadProductDetailsPage() {
                 <div class="relative">
                     <select id="page-variant-select" onchange="updatePagePrice(${product.id})" 
                         class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl py-4 pl-4 pr-10 appearance-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all cursor-pointer hover:bg-slate-800">
-                        ${product.variants.map((v, i) => `<option value="${i}">${v.label} - ৳${v.price}</option>`).join('')}
+                        ${product.variants.map((v, i) => {
+            if (product.autoStockOut) {
+                const hasStock = v.stock && Array.isArray(v.stock) && v.stock.some(s => (typeof s === 'string') || (s.status === 'available' || !s.status));
+                if (!hasStock) return '';
+            }
+            return `<option value="${i}">${v.label} - ৳${v.price}</option>`;
+        }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                         <i class="fa-solid fa-chevron-down"></i>
