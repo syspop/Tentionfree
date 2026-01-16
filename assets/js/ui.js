@@ -458,7 +458,6 @@ async function submitReviewPage() {
             showLoginRequiredModal();
         } else {
             // Fallback just in case, though ensureGlobalModals should handle it
-            alert("Login Required");
             window.location.href = 'login';
         }
         return;
