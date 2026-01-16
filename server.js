@@ -2237,7 +2237,7 @@ app.post('/api/payment/create', async (req, res) => {
 
         // Prepare NexoraPay Payload
         const nexoraPayload = {
-            amount: String(order.total),
+            amount: String(order.price),
             success_url: `https://tentionfree.store/api/payment/verify?order_id=${orderId}`, // Backend callback
             cancel_url: `https://tentionfree.store/checkout.html?error=cancelled`,
             metadata: { order_id: orderId, phone: order.phone || order.customerPhone || "N/A" }
