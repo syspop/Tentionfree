@@ -12,6 +12,11 @@ function renderProducts() {
 
     let filtered = window.products || [];
 
+    // Filter for Home Page ONLY
+    if (grid.id === 'home-product-grid') {
+        filtered = filtered.filter(p => p.viewInIndex === true || p.viewInIndex === "true");
+    }
+
     // Filter by Category
     if (window.currentFilter !== 'all') {
         filtered = filtered.filter(p => p.category === window.currentFilter);
