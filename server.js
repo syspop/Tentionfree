@@ -453,6 +453,22 @@ app.use((req, res, next) => {
     next();
 });
 
+// 🛠️ ROBUST CLEAN URL HANDLER (Fix for host issues)
+app.use((req, res, next) => {
+    // Only handle GET requests and ignore api/assets/static paths
+    if (req.method !== 'GET') return next();
+    if (req.path.startsWith('/api') || req.path.startsWith('/assets')) return next();
+
+    // Check if it's a clean URL (no extension)
+    if (!path.extname(req.path)) {
+        const potentialHtml = path.join(__dirname, req.path + '.html');
+        if (fs.existsSync(potentialHtml)) {
+            return res.sendFile(potentialHtml);
+        }
+    }
+    next();
+});
+
 // 📂 SERVE STATIC FILES (CSS, JS, IMAGES, HTML)
 // This handles all assets and html files automatically.
 app.use(express.static(__dirname, { extensions: ['html'] }));
