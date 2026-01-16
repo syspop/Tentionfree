@@ -89,6 +89,12 @@ app.use((req, res, next) => {
     next();
 });
 
+// Serve Assets Explicitly (Fixes CSS/JS issues)
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
+
+
+
 
 // Automatic Redirect: .html -> clean URL
 
@@ -190,30 +196,6 @@ app.post('/api/backup-login', async (req, res) => {
     }
 
     return res.status(401).json({ success: false, message: "Invalid Credentials" });
-});
-
-// --- FORCE ADMIN ASSETS ---
-app.get('/admin/style.css', (req, res) => {
-    res.setHeader('Content-Type', 'text/css');
-    res.sendFile(path.join(__dirname, 'admin/style.css'));
-});
-app.get('/admin/script.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, 'admin/script.js'));
-});
-
-// --- FORCE MAIN ASSETS (Debug Fix) ---
-app.get('/assets/style.css', (req, res) => {
-    res.setHeader('Content-Type', 'text/css');
-    res.sendFile(path.join(__dirname, 'assets/style.css'));
-});
-app.get('/assets/script.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, 'assets/script.js'));
-});
-app.get('/assets/images/logo.png', (req, res) => {
-    res.setHeader('Content-Type', 'image/png');
-    res.sendFile(path.join(__dirname, 'assets/images/logo.png'));
 });
 
 // Explicit Root Route
@@ -419,57 +401,22 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🔒 HOTLINK PROTECTION (Block Direct Image Access)
-app.use((req, res, next) => {
-    if (req.path.startsWith('/assets/')) {
-        const referer = req.headers.referer || '';
-        const allowedDomains = ['tentionfree.store', 'localhost', '127.0.0.1'];
-
-        // Allow if referer matches our domains
-        const isAllowed = allowedDomains.some(domain => referer.includes(domain));
-
-        // BLOCK if: No referer (direct type in URL) OR wrong referer
-        if (!referer || !isAllowed) {
-            return res.status(403).send(`
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Access Denied</title>
-                    <script src="https://cdn.tailwindcss.com"></script>
-                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-                    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-                    <style>
-                        body { font-family: 'Poppins', sans-serif; background: #0f172a; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-                        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-                    </style>
-                </head>
-                <body class="text-slate-200">
-                    <div class="glass-card p-10 rounded-3xl max-w-md w-full mx-4 text-center relative overflow-hidden">
-                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-red-500/20 blur-[60px] rounded-full pointer-events-none"></div>
-                        <div class="relative z-10">
-                            <div class="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
-                                <i class="fa-solid fa-lock text-4xl text-red-400"></i>
-                            </div>
-                            <h1 class="text-6xl font-bold text-white mb-2 tracking-tighter">403</h1>
-                            <h2 class="text-xl font-semibold text-white mb-3">Direct Access Restricted</h2>
-                            <p class="text-sm text-slate-400 mb-8 leading-relaxed">
-                                Direct access to this resource is not allowed. Please view it on the website.
-                            </p>
-                            <a href="/" class="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold bg-red-600 hover:bg-red-500 text-white transition-all shadow-lg shadow-red-500/25 group">
-                                <i class="fa-solid fa-house text-sm group-hover:-translate-y-0.5 transition-transform"></i>
-                                <span>Return Home</span>
-                            </a>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `);
-        }
-    }
-    next();
-});
+// 🔒 HOTLINK PROTECTION - DISABLED FOR STABILITY
+// app.use((req, res, next) => {
+//     if (req.path.startsWith('/assets/')) {
+//         const referer = req.headers.referer || '';
+//         const allowedDomains = ['tentionfree.store', 'localhost', '127.0.0.1'];
+//
+//         // Allow if referer matches our domains
+//         const isAllowed = allowedDomains.some(domain => referer.includes(domain));
+//
+//         // BLOCK if: No referer (direct type in URL) OR wrong referer
+//         if (!referer || !isAllowed) {
+//             return res.status(403).send('Access Denied');
+//         }
+//     }
+//     next();
+// });
 
 // 🛠️ ROBUST CLEAN URL HANDLER (Fix for host issues)
 app.use((req, res, next) => {
