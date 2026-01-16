@@ -2509,7 +2509,7 @@ async function submitOrder(e) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': user ? `Bearer ${user.token}` : ''
+                    'Authorization': localStorage.getItem('userToken') ? `Bearer ${localStorage.getItem('userToken')}` : ''
                 },
                 body: JSON.stringify({ orderId: orderData.id })
             });

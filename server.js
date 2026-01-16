@@ -2223,7 +2223,7 @@ app.post('/api/reviews', authenticateUser, async (req, res) => {
 // --- NEXORAPAY INTEGRATION ---
 
 // POST Initiate Payment
-app.post('/api/payment/create', authenticateUser, async (req, res) => {
+app.post('/api/payment/create', async (req, res) => {
     try {
         const { orderId } = req.body;
         if (!orderId) return res.status(400).json({ success: false, message: "Order ID required" });
