@@ -504,17 +504,124 @@ async function submitReviewPage() {
     }
 }
 
-// Modal Global Functions (Exposed)
+// --- Modal System (Dynamic Injection) ---
+
+function ensureGlobalModals() {
+    // 1. Error Modal
+    if (!document.getElementById('global-error-modal')) {
+        const errorModalHtml = `
+        <div id="global-error-modal" class="fixed inset-0 z-[999999] overflow-y-auto hidden" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeErrorModal()"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-red-500/30">
+                    <div class="bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-900/30 sm:mx-0 sm:h-10 sm:w-10 border border-red-500/30">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-bold text-white" id="error-modal-title">Error</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-300" id="error-modal-message">Something went wrong.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-800">
+                        <button type="button" onclick="closeErrorModal()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-bold text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-all transform active:scale-95">
+                            OK, Got it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', errorModalHtml);
+    }
+
+    // 2. Success Modal
+    if (!document.getElementById('global-success-modal')) {
+        const successModalHtml = `
+        <div id="global-success-modal" class="fixed inset-0 z-[999999] overflow-y-auto hidden" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeSuccessModal()"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-green-500/30">
+                    <div class="bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-900/30 sm:mx-0 sm:h-10 sm:w-10 border border-green-500/30">
+                                <i class="fa-solid fa-check text-green-500 text-xl"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-bold text-white" id="success-modal-title">Success!</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-300" id="success-modal-message">Operation completed successfully.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-800">
+                        <button type="button" onclick="closeSuccessModal()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-bold text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-all transform active:scale-95">
+                            Awesome!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', successModalHtml);
+    }
+
+    // 3. Login Required Modal (New)
+    if (!document.getElementById('global-login-modal')) {
+        const loginModalHtml = `
+        <div id="global-login-modal" class="fixed inset-0 z-[999999] overflow-y-auto hidden" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeLoginModal()"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-brand-500/30">
+                    <div class="bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-brand-900/30 sm:mx-0 sm:h-10 sm:w-10 border border-brand-500/30">
+                                <i class="fa-solid fa-right-to-bracket text-brand-500 text-xl"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-bold text-white">Login Required</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-300">You need to be logged in to perform this action.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-800 gap-2">
+                        <a href="login" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-bold text-white hover:bg-brand-700 focus:outline-none sm:w-auto sm:text-sm transition-all transform active:scale-95 text-center items-center">
+                            Login Now
+                        </a>
+                        <button type="button" onclick="closeLoginModal()" class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-700 shadow-sm px-4 py-2 bg-slate-800 text-base font-bold text-slate-300 hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', loginModalHtml);
+    }
+}
+
+// Ensure modals are ready on load
+document.addEventListener('DOMContentLoaded', ensureGlobalModals);
+
+// Exposed Global Functions
 window.closeErrorModal = function () {
     const m = document.getElementById('global-error-modal');
     if (m) m.classList.add('hidden');
 }
 
 window.showErrorModal = function (title, msg) {
+    ensureGlobalModals(); // Just in case
     const m = document.getElementById('global-error-modal');
     if (m) {
-        document.getElementById('error-modal-title').innerText = title;
-        document.getElementById('error-modal-message').innerText = msg;
+        document.getElementById('error-modal-title').innerText = title || "Error";
+        document.getElementById('error-modal-message').innerText = msg || "Something went wrong.";
         m.classList.remove('hidden');
     } else {
         alert(`${title}\n\n${msg}`);
@@ -526,10 +633,30 @@ window.closeSuccessModal = function () {
     if (m) m.classList.add('hidden');
 }
 
-window.showSuccessModal = function () {
+window.showSuccessModal = function (title, msg) {
+    ensureGlobalModals(); // Just in case
     const m = document.getElementById('global-success-modal');
+    if (m) {
+        if (title) document.getElementById('success-modal-title').innerText = title;
+        if (msg) document.getElementById('success-modal-message').innerText = msg;
+        m.classList.remove('hidden');
+    } else {
+        alert("Success!");
+    }
+}
+
+window.closeLoginModal = function () {
+    const m = document.getElementById('global-login-modal');
+    if (m) m.classList.add('hidden');
+}
+
+window.showLoginRequiredModal = function () {
+    ensureGlobalModals();
+    const m = document.getElementById('global-login-modal');
     if (m) m.classList.remove('hidden');
-    else alert("Success! Review submitted.");
+    else {
+        if (confirm("Login Required. Go to login page?")) window.location.href = 'login';
+    }
 }
 
 // Helpers for Details Page
