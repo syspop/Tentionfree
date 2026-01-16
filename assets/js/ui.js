@@ -77,10 +77,10 @@ function renderProducts() {
                  style="animation: fadeInUp 0.5s ease-out ${delay}ms both;"
                  onclick="window.location.href='product-details.html?id=${product.id}'">
                 
-                <div class="card-image-container relative aspect-video overflow-hidden bg-slate-900">
+                <div class="card-image-container relative aspect-video overflow-hidden bg-slate-900 p-2">
                     <img src="${product.image}" alt="${product.name}" loading="lazy" 
-                        class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60"></div>
+                        class="w-full h-full object-contain transform group-hover:scale-110 transition-transform duration-700">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60"></div>
                     ${badgeHtml}
                 </div>
 
@@ -302,11 +302,11 @@ async function loadProductDetailsPage() {
     `;
 
     const content = `
-        <!-- Left: Image -->
-        <div class="relative group h-full">
-            <div class="relative rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl bg-slate-800 aspect-[4/5] md:aspect-auto h-full">
-                <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                <!-- Left: Image -->
+        <div class="relative group h-full flex items-center justify-center">
+            <div class="relative rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl bg-slate-800 w-full max-w-md aspect-square flex items-center justify-center p-6">
+                <img src="${product.image}" alt="${product.name}" class="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-700">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent"></div>
                 ${badgeHtml}
                 
                 <!-- Floating Info (Optional) -->
