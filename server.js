@@ -74,6 +74,10 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(compression()); // Compress all responses for speed
 
+// 📂 SERVE STATIC FILES (CSS, JS, IMAGES, HTML)
+// Placed at top to ensure assets load before any other logic/redirects
+app.use(express.static(__dirname, { extensions: ['html'] }));
+
 // 🛡️ ANTI-SCRAPING / BOT PROTECTION
 app.use((req, res, next) => {
     const userAgent = req.get('User-Agent') || '';
@@ -469,9 +473,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 📂 SERVE STATIC FILES (CSS, JS, IMAGES, HTML)
-// This handles all assets and html files automatically.
-app.use(express.static(__dirname, { extensions: ['html'] }));
+// (Moved static file serving to top)
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "unsafe_fallback_secret_change_me_in_prod"; // Fallback to prevent crash, but warn
