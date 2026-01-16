@@ -48,7 +48,8 @@ function createCartItem(id, source = 'card') {
         image: product.image,
         category: product.category,
         quantity: 1,
-        customFields: product.customFields || []
+        customFields: product.customFields || [],
+        disablePayLater: product.disablePayLater || false
     };
 }
 

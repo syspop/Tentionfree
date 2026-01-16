@@ -135,6 +135,7 @@ async function loadProductForEdit(id) {
         document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
         document.getElementById('p-stock').value = p.inStock !== false ? "true" : "false";
         document.getElementById('p-auto-stockout').checked = p.autoStockOut || false;
+        document.getElementById('p-disable-paylater').checked = p.disablePayLater || false;
         document.getElementById('p-img').value = p.image;
         updatePreview(p.image); // Show preview
         document.getElementById('p-desc').value = p.desc;
@@ -370,6 +371,7 @@ async function saveProduct() {
     const category = document.getElementById('p-category').value;
     const inStock = document.getElementById('p-stock').value === "true";
     const autoStockOut = document.getElementById('p-auto-stockout').checked;
+    const disablePayLater = document.getElementById('p-disable-paylater').checked;
     // Image is now just the value of the text input (populated by upload or manual)
     const img = document.getElementById('p-img').value;
     const desc = document.getElementById('p-desc').value;
@@ -427,7 +429,7 @@ async function saveProduct() {
 
     try {
         const productData = {
-            name, badge, category, inStock, autoStockOut, image: img, desc, longDesc, features, instructions, variants,
+            name, badge, category, inStock, autoStockOut, disablePayLater, image: img, desc, longDesc, features, instructions, variants,
             price: mainPrice,
             originalPrice: mainOriginalPrice,
             autoDeliveryInfo: autoInfo,
@@ -480,6 +482,7 @@ async function saveProduct() {
 function resetForm() {
     document.querySelectorAll('input, textarea').forEach(i => i.value = "");
     if (document.getElementById('p-auto-stockout')) document.getElementById('p-auto-stockout').checked = false;
+    if (document.getElementById('p-disable-paylater')) document.getElementById('p-disable-paylater').checked = false;
     document.getElementById('variants-container').innerHTML = '';
     addVariantRow('1 Month', '', '');
     document.getElementById('custom-inputs-container').innerHTML = '';

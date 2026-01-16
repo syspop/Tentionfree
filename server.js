@@ -1759,6 +1759,39 @@ app.post('/api/admin-login', async (req, res) => {
 });
 
 
+
+// --- CONFIG ROUTES ---
+
+app.get('/api/config/pay-later', async (req, res) => {
+    try {
+        const data = await readLocalJSON('system_data.json');
+        // Default to true if not present
+        const enabled = data.payLaterEnabled !== false;
+        res.json({ success: true, enabled });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Error reading config" });
+    }
+});
+
+app.post('/api/admin/config/pay-later', authenticateAdmin, async (req, res) => {
+    try {
+        const { enabled } = req.body;
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ success: false, message: "Invalid value" });
+        }
+
+        const data = await readLocalJSON('system_data.json');
+        data.payLaterEnabled = enabled;
+        await writeLocalJSON('system_data.json', data);
+
+        res.json({ success: true, enabled: data.payLaterEnabled });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Error saving config" });
+    }
+});
+
 // --- Banner Management Routes ---
 
 // Get all banners

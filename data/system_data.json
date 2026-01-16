@@ -1,4 +1,5 @@
 {
   "admin2faSecret": "MR5WE4KBHRCTKYLOKU4CMZJRMVQXWMJF",
-  "backup2faSecret": "GZSGMMREPISHQ4C6PVSXMRRGMEZSIVDT"
+  "backup2faSecret": "GZSGMMREPISHQ4C6PVSXMRRGMEZSIVDT",
+  "payLaterEnabled": true
 }

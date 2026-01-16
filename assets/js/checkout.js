@@ -9,8 +9,49 @@ function initCheckoutPage() {
 
     renderCheckoutItems();
     // Payment section toggle logic
-    if (document.querySelector('input[name="paymentType"]')) {
+    // Payment section toggle logic & Pay Later Config
+    const toggleContainer = document.getElementById('payment-method-toggle');
+    if (toggleContainer || document.querySelector('input[name="paymentType"]')) {
+        // Run toggle initially
         togglePaymentSection();
+
+        // Fetch Config
+        fetch('/api/config/pay-later')
+            .then(res => res.json())
+            .then(data => {
+                const globalEnabled = data.success ? data.enabled : true;
+                const isFree = document.getElementById('is-free-order')?.value === 'true';
+
+                // Check Per-Product Restriction
+                let hasRestrictedItems = false;
+                try {
+                    const buyNowData = localStorage.getItem('tentionfree_buyNow');
+                    let items = [];
+                    if (buyNowData) items = [JSON.parse(buyNowData)];
+                    else items = JSON.parse(localStorage.getItem('tentionfree_cart')) || [];
+
+                    if (items.some(i => i.disablePayLater)) {
+                        hasRestrictedItems = true;
+                    }
+                } catch (e) { console.error(e); }
+
+                const payLaterAvailable = globalEnabled && !hasRestrictedItems;
+
+                if (!payLaterAvailable && !isFree) {
+                    if (toggleContainer) toggleContainer.classList.add('hidden');
+                    // Force Pay Now
+                    const nowInput = document.querySelector('input[value="now"]');
+                    if (nowInput) {
+                        if (!nowInput.checked) {
+                            nowInput.checked = true;
+                            togglePaymentSection();
+                        }
+                    }
+                } else if (!isFree) {
+                    if (toggleContainer) toggleContainer.classList.remove('hidden');
+                }
+            })
+            .catch(err => console.error("Config Error:", err));
     }
     prefillCheckout();
 
@@ -489,6 +530,17 @@ async function submitOrder(e) {
 
     showToast("Processing Order...");
 
+    // Pay Later - WhatsApp Only (No DB Save)
+    if (!isPayNow && !isFree) {
+        clearCarts();
+        const message = `Hello Tention Free,\nI placed a new order via Pay Later.\n\nName: ${customerName}\nPhone: ${customerPhone}\nItems: ${orderData.product}\nTotal: ৳${finalCheck.toFixed(2)}\n\nPlease confirm my order.`;
+        const waUrl = `https://wa.me/8801869895549?text=${encodeURIComponent(message)}`;
+
+        showSuccessModal();
+        setTimeout(() => { window.location.href = waUrl; }, 2000);
+        return;
+    }
+
     try {
         const saveRes = await fetch('api/orders', {
             method: 'POST',
@@ -522,13 +574,6 @@ async function submitOrder(e) {
             clearCarts();
             showSuccessModal();
             setTimeout(() => { window.location.href = 'profile.html'; }, 2000);
-        } else {
-            // Pay Later - WhatsApp
-            clearCarts();
-            const message = `Hello Tention Free,\nI placed a new order #${orderData.id}.\n\nName: ${customerName}\nItem: ${orderData.product}\nTotal: ৳${finalCheck.toFixed(2)}\n\nPlease confirm my order.`;
-            const waUrl = `https://wa.me/8801869895549?text=${encodeURIComponent(message)}`;
-            showSuccessModal();
-            setTimeout(() => { window.location.href = waUrl; }, 2000);
         }
 
     } catch (err) {
