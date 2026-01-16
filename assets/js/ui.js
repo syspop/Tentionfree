@@ -454,7 +454,11 @@ async function submitReviewPage() {
     // Auth Check
     const token = localStorage.getItem('userToken');
     if (!token) {
-        if (confirm("You must be logged in to review. Go to login page?")) {
+        if (typeof showLoginRequiredModal === 'function') {
+            showLoginRequiredModal();
+        } else {
+            // Fallback just in case, though ensureGlobalModals should handle it
+            alert("Login Required");
             window.location.href = 'login';
         }
         return;
