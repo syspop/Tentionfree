@@ -14,6 +14,7 @@ const { sendOrderStatusEmail, sendBackupEmail } = require('./backend_services/em
 const multer = require('multer'); // File Uploads
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
 
 // const helmet = require('helmet'); // Secure Headers (Removed for deployment fix)
 // const rateLimit = require('express-rate-limit'); // Rate Limiting (Removed for deployment fix)
