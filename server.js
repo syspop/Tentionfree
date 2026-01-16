@@ -1923,12 +1923,23 @@ app.post('/api/login', async (req, res) => {
 // --- BACKUP SYSTEM ROUTES ---
 
 // POST Backup Login
-// (Duplicate Backup Login Route Removed)
+// POST Backup Login
+app.post('/api/backup-login', (req, res) => {
+    const { u, p } = req.body;
+    const BACKUP_USER = process.env.BACKUP_USER || "haque@12MW";
+    const BACKUP_PASS = process.env.BACKUP_PASS || "sowrov@12MW";
+
+    if (u === BACKUP_USER && p === BACKUP_PASS) {
+        res.json({ success: true });
+    } else {
+        res.json({ success: false, message: "Invalid Credentials" });
+    }
+});
 
 // POST Backup Download (Secure PIN)
 app.post('/api/backup', async (req, res) => {
     const { pin } = req.body;
-    const SECURE_PIN = process.env.BACKUP_PIN;
+    const SECURE_PIN = process.env.BACKUP_PIN || "105090";
 
     if (pin !== SECURE_PIN) {
         return res.status(403).json({ error: "Invalid Security PIN" });
