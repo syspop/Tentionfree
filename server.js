@@ -2343,29 +2343,61 @@ async function processAutoDelivery(order) {
 
             // 1. Check Variant Stock
             if (product.variants && Array.isArray(product.variants)) {
-                // Find variant by label
+                // Find variant logic (Label match)
                 const variantIndex = product.variants.findIndex(v => v.label === item.plan || v.label === item.variantName || v.label === (item.variant && item.variant.label));
-                // Note: Frontend sends 'plan' property or item.variantName? 
-                // script.js says: plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard')
-                // But inside items array: item.variantName should be there. Let's assume item.variantName
 
                 if (variantIndex !== -1) {
                     const variant = product.variants[variantIndex];
                     if (variant.stock && Array.isArray(variant.stock) && variant.stock.length > 0) {
                         const qty = parseInt(item.quantity) || 1;
-                        if (variant.stock.length >= qty) {
-                            const codes = variant.stock.splice(0, qty);
-                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${codes.join('\n')}`;
-                            productsUpdated = true;
+                        const deliveredItems = [];
+
+                        // Filter AVAILABLE items (Legacy String support + New Object support)
+                        // Map indices to avoid modifying array length while iterating if we were splicing (but we are not anymore)
+                        const availableStockIndices = [];
+                        variant.stock.forEach((s, idx) => {
+                            // Support legacy string or new object
+                            const isAvail = (typeof s === 'string') || (s.status === 'available' || !s.status);
+                            if (isAvail) availableStockIndices.push(idx);
+                        });
+
+                        // Consume IDs FIFO
+                        for (let i = 0; i < qty; i++) {
+                            if (i < availableStockIndices.length) {
+                                const stockIdx = availableStockIndices[i];
+                                const stockItem = variant.stock[stockIdx];
+
+                                // Update Status
+                                if (typeof stockItem === 'string') {
+                                    // Upgrade legacy string to object
+                                    const codeText = stockItem;
+                                    variant.stock[stockIdx] = {
+                                        text: codeText,
+                                        status: 'delivered',
+                                        orderId: order.id,
+                                        date: new Date().toISOString()
+                                    };
+                                    deliveredItems.push(codeText);
+                                } else {
+                                    stockItem.status = 'delivered';
+                                    stockItem.orderId = order.id;
+                                    stockItem.date = new Date().toISOString();
+
+                                    let txt = stockItem.text || "";
+                                    if (stockItem.image) txt += `\n[Reference Image]: ${stockItem.image}`;
+                                    deliveredItems.push(txt);
+                                }
+                                productsUpdated = true;
+                            }
+                        }
+
+                        if (deliveredItems.length > 0) {
+                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${deliveredItems.join('\n\n')}`;
                             hasAutoItems = true;
-                            itemDelivered = true;
-                        } else if (variant.stock.length > 0) {
-                            // Partial
-                            const codes = variant.stock.splice(0, variant.stock.length);
-                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${codes.join('\n')} (Partial Delivery)`;
-                            productsUpdated = true;
-                            hasAutoItems = true;
-                            allDelivered = false;
+                            if (deliveredItems.length >= qty) itemDelivered = true;
+                            else allDelivered = false; // Partial
+                        } else {
+                            allDelivered = false; // Stock Empty
                         }
                     }
                 }

@@ -7,138 +7,227 @@
     <title>Quick Payment - TentionFree</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#0f172a',
+                            100: '#1e293b',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        },
+                        slate: {
+                            850: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg-gradient-start: #0f172a;
-            --bg-gradient-end: #1e293b;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text-main: #f8fafc;
+        body {
+            font-family: 'Outfit', sans-serif;
         }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-            color: var(--text-main);
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .bg-glow-1 {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(80px);
+        }
+
+        .bg-glow-2 {
+            position: fixed;
+            bottom: -10%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(15, 23, 42, 0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(80px);
         }
 
         .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border-radius: 1.5rem;
         }
 
-        .input-modern {
+        .input-glass {
             background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             color: white;
             transition: all 0.3s ease;
         }
 
-        .input-modern:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        .input-glass:focus {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
             outline: none;
         }
 
-        .btn-modern {
-            background: linear-gradient(to right, var(--primary), var(--primary-hover));
-            transition: transform 0.2s, box-shadow 0.2s;
+        .btn-brand {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .btn-modern:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        .btn-brand:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
         }
     </style>
 </head>
 
-<body>
+<body
+    class="bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen relative overflow-x-hidden selection:bg-brand-500/30">
 
-    <div class="glass-card w-full max-w-md p-8 md:p-10 mx-4 relative z-10">
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-500/10 mb-4">
-                <i class="fa-solid fa-wallet text-3xl text-indigo-400"></i>
-            </div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Quick Pay</h1>
-            <p class="text-sm text-slate-400 mt-2">Send custom amount securely</p>
+    <!-- Ambient Background -->
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <!-- Navigation (Simple) -->
+    <nav class="absolute top-0 w-full p-6 z-20">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                Tention<span class="text-brand-500">Free</span>
+            </a>
+            <a href="/" class="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Home
+            </a>
         </div>
+    </nav>
 
-        <form id="payment-form" class="space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Your
-                    Name</label>
-                <input type="text" id="p-name" required
-                    class="input-modern w-full px-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white"
-                    placeholder="Enter full name">
+    <div class="w-full max-w-md px-4 mt-16 md:mt-0 relative z-10">
+        <div class="glass-card p-8 md:p-10 relative overflow-hidden group">
+
+            <!-- Decorative corner glow -->
+            <div
+                class="absolute -top-10 -right-10 w-24 h-24 bg-brand-500/20 blur-2xl rounded-full group-hover:bg-brand-500/30 transition-all duration-700">
             </div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Phone
-                    Number</label>
-                <input type="tel" id="p-phone" required
-                    class="input-modern w-full px-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white"
-                    placeholder="01xxxxxxxxx">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Amount
-                    (BDT)</label>
-                <div class="relative">
-                    <span
-                        class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">৳</span>
-                    <input type="number" id="p-amount" required min="1" step="0.01"
-                        class="input-modern w-full pl-8 pr-4 py-3 rounded-xl text-lg font-bold placeholder-slate-500 text-white"
-                        placeholder="0.00">
+            <div class="text-center mb-8 relative">
+                <div
+                    class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/20 transform rotate-3 group-hover:rotate-6 transition-transform duration-500">
+                    <i class="fa-solid fa-wallet text-2xl text-white"></i>
                 </div>
+                <h1 class="text-3xl font-bold text-white mb-2">Quick Payment</h1>
+                <p class="text-sm text-slate-400">Secure checkout via NexoraPay</p>
             </div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Note
-                    (Optional)</label>
-                <input type="text" id="p-note"
-                    class="input-modern w-full px-4 py-3 rounded-xl text-sm placeholder-slate-500 text-white"
-                    placeholder="Payment for...">
+            <form id="payment-form" class="space-y-5">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Your Name</label>
+                    <div class="relative group/input">
+                        <i
+                            class="fa-regular fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-brand-500 transition-colors"></i>
+                        <input type="text" id="p-name" required
+                            class="input-glass w-full pl-11 pr-4 py-3.5 rounded-xl text-sm placeholder-slate-500/80"
+                            placeholder="Enter your full name">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Phone
+                        Number</label>
+                    <div class="relative group/input">
+                        <i
+                            class="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-brand-500 transition-colors"></i>
+                        <input type="tel" id="p-phone" required
+                            class="input-glass w-full pl-11 pr-4 py-3.5 rounded-xl text-sm placeholder-slate-500/80"
+                            placeholder="01xxxxxxxxx">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Amount
+                        (BDT)</label>
+                    <div class="relative group/input">
+                        <span
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold group-focus-within/input:text-brand-500 transition-colors">৳</span>
+                        <input type="number" id="p-amount" required min="1" step="0.01"
+                            class="input-glass w-full pl-10 pr-4 py-3.5 rounded-xl text-lg font-bold placeholder-slate-500/80"
+                            placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Note
+                        (Optional)</label>
+                    <div class="relative group/input">
+                        <i
+                            class="fa-regular fa-message absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/input:text-brand-500 transition-colors"></i>
+                        <input type="text" id="p-note"
+                            class="input-glass w-full pl-11 pr-4 py-3.5 rounded-xl text-sm placeholder-slate-500/80"
+                            placeholder="Payment reference...">
+                    </div>
+                </div>
+
+                <div id="error-msg"
+                    class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="error-text">Something went wrong</span>
+                </div>
+
+                <button type="submit" id="pay-btn"
+                    class="btn-brand w-full py-4 rounded-xl font-bold text-white shadow-lg tracking-wide mt-2 flex items-center justify-center gap-2 group/btn">
+                    <span>Pay Now</span>
+                    <i class="fa-solid fa-arrow-right group-hover/btn:translate-x-1 transition-transform"></i>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p
+                    class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold flex items-center justify-center gap-2 opacity-60">
+                    <i class="fa-solid fa-lock"></i> Secured by NexoraPay
+                </p>
             </div>
-
-            <div id="error-msg"
-                class="hidden p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs"></div>
-
-            <button type="submit" id="pay-btn"
-                class="btn-modern w-full py-4 rounded-xl font-bold text-white shadow-lg tracking-wide mt-4 flex items-center justify-center gap-2">
-                <span>Pay Now</span> <i class="fa-solid fa-arrow-right"></i>
-            </button>
-        </form>
+        </div>
     </div>
 
     <!-- Toast Logic (Inline) -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed top-24 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
         function showToast(msg) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = 'bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg shadow-xl text-sm flex items-center gap-2 animate-bounce';
-            toast.innerHTML = `<i class="fa-solid fa-circle-info text-indigo-400"></i> ${msg}`;
+            toast.className = 'bg-slate-800/90 backdrop-blur border border-slate-700 text-white px-5 py-3 rounded-xl shadow-2xl text-sm flex items-center gap-3 animate-[fade-in-up_0.3s_ease-out] pointer-events-auto';
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-brand-500"></i> ${msg}`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         document.getElementById('payment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('pay-btn');
             const errorDiv = document.getElementById('error-msg');
+            const errorText = document.getElementById('error-text');
 
             const name = document.getElementById('p-name').value.trim();
             const phone = document.getElementById('p-phone').value.trim();
@@ -146,7 +235,7 @@
             const note = document.getElementById('p-note').value.trim();
 
             if (!name || !phone || !amount || amount <= 0) {
-                errorDiv.innerText = "Please fill all fields correctly.";
+                errorText.innerText = "Please fill all fields correctly.";
                 errorDiv.classList.remove('hidden');
                 return;
             }
@@ -209,10 +298,10 @@
 
             } catch (err) {
                 console.error(err);
-                errorDiv.innerText = err.message || "Something went wrong.";
+                errorText.innerText = err.message || "Something went wrong.";
                 errorDiv.classList.remove('hidden');
                 btn.disabled = false;
-                btn.innerHTML = '<span>Pay Now</span> <i class="fa-solid fa-arrow-right"></i>';
+                btn.innerHTML = '<span>Pay Now</span> <i class="fa-solid fa-arrow-right group-hover/btn:translate-x-1 transition-transform"></i>';
             }
         });
     </script>

@@ -14,6 +14,118 @@
     <div class="admin-box">
         <nav id="admin-nav"></nav>
 
+        <!-- STOCK MANAGEMENT MODAL -->
+        <div id="stock-modal" class="custom-modal-overlay" style="display:none; z-index:9999;">
+            <div class="custom-modal-card" style="width:600px; max-width:95%;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 class="modal-title" style="margin:0;"><i class="fa-solid fa-boxes-stacked"></i> Manage Stock
+                    </h3>
+                    <button onclick="closeStockModal()"
+                        style="background:none; border:none; color:var(--gray); cursor:pointer; font-size:20px;">&times;</button>
+                </div>
+
+                <!-- Tabs -->
+                <div
+                    style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                    <button class="stock-tab active" onclick="switchStockTab('add')">Add Stock</button>
+                    <button class="stock-tab" onclick="switchStockTab('available')">Available (<span
+                            id="count-avail">0</span>)</button>
+                    <button class="stock-tab" onclick="switchStockTab('sold')">Sold (<span
+                            id="count-sold">0</span>)</button>
+                </div>
+
+                <!-- Tab: Add Stock -->
+                <div id="tab-add" class="stock-tab-content active">
+                    <label>Stock Content (Text/Code)</label>
+                    <textarea id="stock-input-text" class="input-box" rows="4"
+                        placeholder="Enter code, credentials, or instructions..."></textarea>
+
+                    <label>Attachment Image (Optional)</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="file" id="stock-input-file" accept="image/*" class="input-box" style="margin:0;">
+                        <button onclick="addStockItem()" class="btn-main" style="width:auto; padding:10px 20px;">
+                            <i class="fa-solid fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: Available -->
+                <div id="tab-available" class="stock-tab-content" style="display:none;">
+                    <div id="available-list" class="stock-list-container"></div>
+                </div>
+
+                <!-- Tab: Sold -->
+                <div id="tab-sold" class="stock-tab-content" style="display:none;">
+                    <div id="sold-list" class="stock-list-container"></div>
+                </div>
+
+                <div class="modal-actions" style="margin-top:20px; text-align:right;">
+                    <button class="modal-btn confirm-success" onclick="saveStockModal()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .stock-tab {
+                background: none;
+                border: none;
+                color: var(--gray);
+                padding: 8px 15px;
+                cursor: pointer;
+                font-weight: 500;
+                border-radius: 5px;
+            }
+
+            .stock-tab.active {
+                background: var(--blue);
+                color: white;
+            }
+
+            .stock-list-container {
+                max-height: 300px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .stock-item {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 10px;
+                border-radius: 8px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border: 1px solid var(--border);
+            }
+
+            .stock-item img {
+                width: 40px;
+                height: 40px;
+                object-fit: cover;
+                border-radius: 4px;
+                border: 1px solid var(--border);
+            }
+
+            .stock-item-content {
+                flex: 1;
+                margin: 0 10px;
+                font-family: monospace;
+                font-size: 12px;
+                color: #e2e8f0;
+                white-space: pre-wrap;
+                word-break: break-all;
+            }
+
+            .stock-del-btn {
+                color: #ef4444;
+                background: none;
+                border: none;
+                cursor: pointer;
+            }
+        </style>
+
+
         <!-- Add Product Content -->
         <div class="section active" style="display:block;">
             <h3>📦 New Product Setup</h3>
@@ -281,14 +393,30 @@
             div.style.marginBottom = '10px';
             div.style.alignItems = 'start';
 
-            const stockText = Array.isArray(stock) ? stock.join('\n') : stock;
+            // Ensure stock is array (might come as string from old logic, though we wiped it. Handle safe)
+            if (typeof stock === 'string' && stock.includes('[')) {
+                try { stock = JSON.parse(stock); } catch (e) { stock = []; }
+            } else if (typeof stock === 'string') {
+                // Convert legacy newline string to new object format
+                stock = stock.split('\n').filter(l => l.trim()).map(code => ({ text: code, status: 'available' }));
+            }
+            if (!Array.isArray(stock)) stock = [];
 
             div.innerHTML = `
                 <input type="text" placeholder="Label (e.g. 1 Month)" class="input-box" style="margin:0" value="${label}">
                 <input type="number" placeholder="Price" class="input-box" style="margin:0" value="${price}">
                 <input type="number" placeholder="Org. Price" class="input-box" style="margin:0" value="${original}">
-                <textarea placeholder="Auto-Delivery Codes (One per line)" class="input-box" style="margin:0; height:38px; min-height:38px; resize:vertical; font-family:monospace; font-size:11px;">${stockText}</textarea>
-                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:10px;">×</button>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <button onclick="openStockModal(this)" style="background:var(--blue); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer; font-size:11px;">
+                        <i class="fa-solid fa-boxes-stacked"></i> Manage Stock
+                    </button>
+                    <span class="stock-count-badge" style="font-size:10px; color:var(--gray); text-align:center;">
+                        ${Array.isArray(stock) ? stock.filter(s => !s.status || s.status === 'available').length : 0} Available
+                    </span>
+                    <!-- Hidden input to store JSON string of stock array -->
+                    <textarea class="stock-data-hidden" style="display:none;">${JSON.stringify(Array.isArray(stock) ? stock : [])}</textarea>
+                </div>
+                <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:25px;">×</button>
             `;
             container.appendChild(div);
         }
@@ -586,20 +714,154 @@
             const variants = [];
             rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
-                const textarea = row.querySelector('textarea'); // Stock
+                const textarea = row.querySelector('.stock-data-hidden'); // Hidden JSON
                 if (inputs[0].value) {
-                    const stockList = textarea.value.trim().split('\n').filter(l => l.trim() !== ''); // Clean List
+                    let stockList = [];
+                    try { stockList = JSON.parse(textarea.value); } catch (e) { }
+
                     variants.push({
                         label: inputs[0].value,
                         price: inputs[1].value,
                         originalPrice: inputs[2].value,
-                        stock: stockList // Save Stock Array
+                        stock: stockList // Save Full Stock Object
                     });
                 }
             });
 
             if (!name || !img || variants.length === 0) {
                 return showAlert("Missing Info", "Please fill required fields (Name, Image, at least 1 variant)", "error");
+            }
+
+            // --- STOCK MODAL LOGIC ---
+            let currentStockBtn = null; // Reference to the button that opened modal
+            let tempStockList = []; // Array to hold stock for currently open variant
+
+            function openStockModal(btn) {
+                currentStockBtn = btn;
+                const container = btn.parentElement;
+                const textarea = container.querySelector('.stock-data-hidden');
+                const json = textarea.value;
+
+                try {
+                    tempStockList = json ? JSON.parse(json) : [];
+                } catch (e) {
+                    tempStockList = [];
+                    console.error("Parsed error", e);
+                }
+
+                // Reset UI
+                document.getElementById('stock-input-text').value = "";
+                document.getElementById('stock-input-file').value = "";
+                switchStockTab('available'); // Default to Add view? Or Avail? Let's show Add/Avail
+                switchStockTab('add'); // Let's start with Add
+
+                updateStockCounts();
+                renderStockLists();
+
+                document.getElementById('stock-modal').style.display = 'flex';
+            }
+
+            function closeStockModal() {
+                document.getElementById('stock-modal').style.display = 'none';
+                currentStockBtn = null;
+            }
+
+            function saveStockModal() {
+                // Save tempStockList back to hidden textarea
+                if (currentStockBtn) {
+                    const container = currentStockBtn.parentElement;
+                    const textarea = container.querySelector('.stock-data-hidden');
+                    textarea.value = JSON.stringify(tempStockList);
+
+                    // Update Badge
+                    const availCount = tempStockList.filter(s => !s.status || s.status === 'available').length;
+                    const badge = container.querySelector('.stock-count-badge');
+                    if (badge) badge.innerText = `${availCount} Available`;
+                }
+                closeStockModal();
+            }
+
+            function switchStockTab(tab) {
+                document.querySelectorAll('.stock-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.stock-tab-content').forEach(c => c.style.display = 'none');
+
+                document.querySelector(`.stock-tab[onclick="switchStockTab('${tab}')"]`).classList.add('active');
+                document.getElementById(`tab-${tab}`).style.display = 'block';
+            }
+
+            async function addStockItem() {
+                const text = document.getElementById('stock-input-text').value.trim();
+                const fileInput = document.getElementById('stock-input-file');
+
+                if (!text && fileInput.files.length === 0) {
+                    return showToast("Enter text or select image", "error");
+                }
+
+                let imageUrl = null;
+                if (fileInput.files.length > 0) {
+                    try {
+                        imageUrl = await uploadImageToServer(fileInput.files[0]);
+                    } catch (e) {
+                        return showToast("Image Upload Failed", "error");
+                    }
+                }
+
+                // Add to list
+                tempStockList.push({
+                    text: text,
+                    image: imageUrl,
+                    status: 'available',
+                    addedAt: new Date().toISOString()
+                });
+
+                // Reset Inputs
+                document.getElementById('stock-input-text').value = "";
+                fileInput.value = "";
+                showToast("Item Added to Stock");
+
+                updateStockCounts();
+                renderStockLists();
+            }
+
+            function removeStockItem(index) {
+                // Only allow removing if available? or force remove?
+                tempStockList.splice(index, 1);
+                updateStockCounts();
+                renderStockLists();
+            }
+
+            function updateStockCounts() {
+                const avail = tempStockList.filter(s => !s.status || s.status === 'available').length;
+                const sold = tempStockList.filter(s => s.status === 'delivered').length;
+                document.getElementById('count-avail').innerText = avail;
+                document.getElementById('count-sold').innerText = sold;
+            }
+
+            function renderStockLists() {
+                const availContainer = document.getElementById('available-list');
+                const soldContainer = document.getElementById('sold-list');
+                availContainer.innerHTML = '';
+                soldContainer.innerHTML = '';
+
+                tempStockList.forEach((item, index) => {
+                    const isSold = item.status === 'delivered';
+                    const html = `
+                    <div class="stock-item">
+                        ${item.image ? `<img src="${item.image}">` : '<div style="width:40px;height:40px;background:#334155;border-radius:4px;"></div>'}
+                        <div class="stock-item-content">
+                            ${item.text || '<i>(Image Only)</i>'}
+                            ${isSold ? `<br><small style="color:#f59e0b">Sold to Order #${item.orderId || '?'}</small>` : ''}
+                        </div>
+                        <button class="stock-del-btn" onclick="removeStockItem(${index})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+
+                    if (isSold) soldContainer.insertAdjacentHTML('beforeend', html);
+                    else availContainer.insertAdjacentHTML('beforeend', html);
+                });
+
+                if (availContainer.innerHTML === '') availContainer.innerHTML = '<p style="color:var(--gray); text-align:center; font-size:12px;">No available items.</p>';
+                if (soldContainer.innerHTML === '') soldContainer.innerHTML = '<p style="color:var(--gray); text-align:center; font-size:12px;">No sold items.</p>';
             }
 
             // Derive main Price and Original Price from the first variant
