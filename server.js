@@ -2073,17 +2073,27 @@ app.get('/api/payment/verify', async (req, res) => {
         // For now, let's update order to "Processing" / "Paid"
 
         const orders = await readLocalJSON('orders.json');
-        const orderIndex = orders.findIndex(o => o.id === order_id);
+        if (orderIndex === -1) {
+            // Fallback: try converting to number if query is string
+            const orderIdNum = Number(order_id);
+            orderIndex = orders.findIndex(o => o.id === orderIdNum);
+        }
 
-        if (orderIndex === -1) return res.redirect('/?error=order_not_found');
+        // Final check
+        if (orderIndex === -1) {
+            // Debug log
+            console.error(`Payment Verification Failed: Order ID ${order_id} not found.`);
+            return res.redirect('/?error=order_not_found');
+        }
 
         // Logic: Mark as Paid
         orders[orderIndex].status = "Processing"; // Default to processing
         orders[orderIndex].isPaid = true;
-        orders[orderIndex].paymentMethod = "B-Kash/Nagad/Rocket (Nexora)";
+        orders[orderIndex].paymentMethod = "Online Payment (Nexora)";
         orders[orderIndex].trx = transaction_id || "Auto-Verified";
 
         // --- AUTO-DELIVERY LOGIC (For Paid Items) ---
+        console.log(`Processing Auto-Delivery for Order #${orders[orderIndex].id}...`);
         const autoResult = await processAutoDelivery(orders[orderIndex]);
         orders[orderIndex].status = autoResult.status; // Might update to 'Completed'
         orders[orderIndex].deliveryInfo = autoResult.deliveryInfo;
