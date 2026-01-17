@@ -795,8 +795,8 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 
         await writeLocalJSON('orders.json', allOrders);
 
-        // [NEW] AUTO RESTOCK ON CANCEL/REFUND
-        if (updates.status && (updates.status === 'Cancelled' || updates.status === 'Refunded')) {
+        // [NEW] AUTO RESTOCK ON CANCEL/REFUND/FAILED
+        if (updates.status && (updates.status === 'Cancelled' || updates.status === 'Refunded' || updates.status === 'Failed')) {
             try {
                 const allProducts = await readLocalJSON('products.json');
                 let stockRestored = false;
@@ -820,7 +820,7 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
 
                 if (stockRestored) {
                     await writeLocalJSON('products.json', allProducts);
-                    console.log(`[STOCK RESTORED] Order #${id} was cancelled/refunded. Stock released.`);
+                    console.log(`[STOCK RESTORED] Order #${id} was cancelled/refunded/failed. Stock released.`);
                 }
             } catch (e) {
                 console.error("Failed to restore stock:", e);
@@ -828,7 +828,7 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
         }
 
         // [NEW] Send Status Email if status changed to critical states
-        if (updates.status && ['Completed', 'Cancelled', 'Refunded'].includes(updates.status)) {
+        if (updates.status && ['Completed', 'Cancelled', 'Refunded', 'Failed'].includes(updates.status)) {
             try {
                 // Enrich items with images from products.json
                 const allProducts = await readLocalJSON('products.json');

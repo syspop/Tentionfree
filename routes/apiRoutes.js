@@ -196,6 +196,32 @@ router.put('/products/:id', authenticateAdmin, async (req, res) => {
         }
 
         const updatedProduct = { ...allProducts[productIndex], ...updates };
+
+        // [NEW] AUTO IN-STOCK LOGIC
+        // If stock is added and autoStockOut is ON, verify total stock and set inStock = true
+        if (updatedProduct.autoStockOut) {
+            let totalStock = 0;
+            if (updatedProduct.variants && Array.isArray(updatedProduct.variants)) {
+                updatedProduct.variants.forEach(v => {
+                    if (v.stock && Array.isArray(v.stock)) {
+                        totalStock += v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length;
+                    }
+                });
+            }
+
+            // Only flip to TRUE if currently false and we now have stock
+            // (We generally trust manual 'false' setting unless stock is explicitly added, 
+            // but user request implies "when I add product, it doesn't auto in stock". 
+            // So we force True if stock > 0).
+            if (totalStock > 0) {
+                updatedProduct.inStock = true;
+            } else {
+                // Should we force false? Maybe. But let's stick to the user's "Auto In Stock" request first.
+                // If autoStockOut is ON, 0 stock SHOULD mean out of stock.
+                updatedProduct.inStock = false;
+            }
+        }
+
         allProducts[productIndex] = updatedProduct;
 
         await writeDB('products.json', allProducts);
