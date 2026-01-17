@@ -94,21 +94,21 @@ function addVariantRow(label = '', price = '', original = '', stock = []) { // S
         <input type="number" placeholder="Price" class="input-box" style="margin:0" value="${price}">
         <input type="number" placeholder="Org. Price" class="input-box" style="margin:0" value="${original}">
         <div style="display:flex; flex-direction:column; gap:5px;">
-            <button onclick="openStockModal(this)" style="background:var(--blue); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer; font-size:11px;">
+            ${currentEditingId ? `
+            <button onclick="window.open('stock-manage.html?id=${currentEditingId}', '_blank')" style="background:var(--blue); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer; font-size:11px;">
                 <i class="fa-solid fa-boxes-stacked"></i> Manage Stock
             </button>
+            ` : `
+            <button disabled style="background:var(--gray); color:white; border:none; padding:8px; border-radius:5px; cursor:not-allowed; font-size:11px;">
+                Save First to Manage Stock
+            </button>
+            `}
             <span class="stock-count-badge" style="font-size:10px; color:var(--gray); text-align:center;">
                 ${Array.isArray(stock) ? stock.filter(s => !s.status || s.status === 'available').length : 0} Available
             </span>
-            <!-- Hidden input to store JSON string of stock array -->
-            <textarea class="stock-data-hidden" style="display:none;"></textarea>
         </div>
         <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:25px;">×</button>
     `;
-
-    // Safely set the value to avoid HTML escaping issues with innerHTML
-    const finalStock = Array.isArray(stock) ? stock : [];
-    div.querySelector('.stock-data-hidden').value = JSON.stringify(finalStock);
 
     container.appendChild(div);
 }
@@ -378,6 +378,7 @@ function updatePreview(src) {
 }
 
 // --- SAVE PRODUCT ---
+// --- SAVE PRODUCT ---
 async function saveProduct() {
     const name = document.getElementById('p-name').value;
     const badge = document.getElementById('p-badge').value;
@@ -385,7 +386,6 @@ async function saveProduct() {
     const inStock = document.getElementById('p-stock').value === "true";
     const autoStockOut = document.getElementById('p-auto-stockout').checked;
     const disablePayLater = document.getElementById('p-disable-paylater').checked;
-    // Image is now just the value of the text input (populated by upload or manual)
     const img = document.getElementById('p-img').value;
     const desc = document.getElementById('p-desc').value;
     const longDesc = document.getElementById('p-long-desc').value;
@@ -402,8 +402,6 @@ async function saveProduct() {
     customRows.forEach(row => {
         const inputs = row.querySelectorAll('input');
         const select = row.querySelector('select');
-        // 0: Label, 1: Placeholder, 2: Checkbox (Required)
-        // Select is for Type
         if (inputs[0].value.trim()) {
             customFields.push({
                 label: inputs[0].value.trim(),
@@ -413,27 +411,50 @@ async function saveProduct() {
             });
         }
     });
-    // Variants
+
+    // --- VARIANT LOGIC (Refactored for Stock Safety) ---
+    // We need to construct the new variants list from the UI inputs (Price, Label)
+    // BUT we must PRESERVE the 'stock' array from the server if we are editing.
+    // The UI no longer holds the full stock data in hidden inputs.
+
+    let existingVariants = [];
+    if (currentEditingId) {
+        try {
+            // Fetch LATEST to ensure we don't wipe stock added in the new tab
+            const res = await fetch(`/api/products?t=${Date.now()}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+            });
+            const all = await res.json();
+            const p = all.find(x => x.id == currentEditingId);
+            if (p && p.variants) existingVariants = p.variants;
+        } catch (e) {
+            console.warn("Could not fetch latest stock data, proceeding might be risky for stock.", e);
+        }
+    }
+
     const rows = document.querySelectorAll('#variants-container > div');
     const variants = [];
-    rows.forEach(row => {
+
+    rows.forEach((row, index) => {
         const inputs = row.querySelectorAll('input');
-        const textarea = row.querySelector('.stock-data-hidden'); // Hidden JSON
+        // inputs[0]: Label, [1]: Price, [2]: Org Price
         if (inputs[0].value) {
-            let stockList = [];
-            try {
-                const parsed = JSON.parse(textarea.value);
-                if (Array.isArray(parsed)) stockList = parsed;
-            } catch (e) {
-                console.warn("Failed to parse stock JSON, defaulting to empty", e);
-                stockList = [];
+            // Try to match with existing variant to keep stock
+            // Matching by INDEX is safest if we assume order hasn't radically changed without save.
+            // Or we could match by Label if valid. Let's use Index for now as it maps 1:1 visually.
+
+            let preservedStock = [];
+
+            // Check if this row maps to an existing variant index
+            if (index < existingVariants.length) {
+                preservedStock = existingVariants[index].stock || [];
             }
 
             variants.push({
                 label: inputs[0].value,
                 price: inputs[1].value,
                 originalPrice: inputs[2].value,
-                stock: stockList // Save Full Stock Object
+                stock: preservedStock
             });
         }
     });
@@ -442,7 +463,6 @@ async function saveProduct() {
         return showAlert("Required Information Missing", "Please fill name, image and at least 1 variant.", "error");
     }
 
-    // Derive main Price and Original Price from the first variant
     const mainPrice = variants.length > 0 ? variants[0].price : 0;
     const mainOriginalPrice = variants.length > 0 ? variants[0].originalPrice : 0;
 
@@ -458,7 +478,6 @@ async function saveProduct() {
 
         let res;
         if (currentEditingId) {
-            // Update Single Product
             res = await fetch(`/api/products/${currentEditingId}`, {
                 method: 'PUT',
                 headers: {
@@ -468,7 +487,6 @@ async function saveProduct() {
                 body: JSON.stringify(productData)
             });
         } else {
-            // Create New Product
             res = await fetch('/api/products/add', {
                 method: 'POST',
                 headers: {
@@ -538,134 +556,7 @@ function showSaveSuccessModal(msg) {
     }, 3000);
 }
 
-// --- STOCK MODAL LOGIC (Global Scope) ---
-let currentStockBtn = null; // Reference to the button that opened modal
-let tempStockList = []; // Array to hold stock for currently open variant
 
-function openStockModal(btn) {
-    currentStockBtn = btn;
-    const container = btn.parentElement;
-    const textarea = container.querySelector('.stock-data-hidden');
-    const json = textarea.value;
+// Custom Inputs & Variants logic ends here.
+// Old Stock Modal Logic Removed.
 
-    try {
-        tempStockList = json ? JSON.parse(json) : [];
-    } catch (e) {
-        tempStockList = [];
-        console.error("Parsed error", e);
-    }
-
-    // Reset UI
-    document.getElementById('stock-input-text').value = "";
-    document.getElementById('stock-input-file').value = "";
-    switchStockTab('available'); // Default to Add view? Or Avail? Let's show Add/Avail
-    switchStockTab('add'); // Let's start with Add
-
-    updateStockCounts();
-    renderStockLists();
-
-    document.getElementById('stock-modal').style.display = 'flex';
-}
-
-function closeStockModal() {
-    document.getElementById('stock-modal').style.display = 'none';
-    currentStockBtn = null;
-}
-
-function saveStockModal() {
-    // Save tempStockList back to hidden textarea
-    if (currentStockBtn) {
-        const container = currentStockBtn.parentElement;
-        const textarea = container.querySelector('.stock-data-hidden');
-        textarea.value = JSON.stringify(tempStockList);
-
-        // Update Badge
-        const availCount = tempStockList.filter(s => !s.status || s.status === 'available').length;
-        const badge = container.querySelector('.stock-count-badge');
-        if (badge) badge.innerText = `${availCount} Available`;
-    }
-    closeStockModal();
-}
-
-function switchStockTab(tab) {
-    document.querySelectorAll('.stock-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.stock-tab-content').forEach(c => c.style.display = 'none');
-
-    document.querySelector(`.stock-tab[onclick="switchStockTab('${tab}')"]`).classList.add('active');
-    document.getElementById(`tab-${tab}`).style.display = 'block';
-}
-
-async function addStockItem() {
-    const text = document.getElementById('stock-input-text').value.trim();
-    const fileInput = document.getElementById('stock-input-file');
-
-    if (!text && fileInput.files.length === 0) {
-        return showToast("Please enter text or select an image file", "error");
-    }
-
-    let imageUrl = null;
-    if (fileInput.files.length > 0) {
-        try {
-            imageUrl = await uploadImageToServer(fileInput.files[0]);
-        } catch (e) {
-            return showToast("Could not upload the selected image", "error");
-        }
-    }
-
-    // Add to list
-    tempStockList.push({
-        text: text,
-        image: imageUrl,
-        status: 'available',
-        addedAt: new Date().toISOString()
-    });
-
-    // Reset Inputs
-    document.getElementById('stock-input-text').value = "";
-    fileInput.value = "";
-    showToast("Item Added to Stock");
-
-    updateStockCounts();
-    renderStockLists();
-}
-
-function removeStockItem(index) {
-    // Only allow removing if available? or force remove?
-    tempStockList.splice(index, 1);
-    updateStockCounts();
-    renderStockLists();
-}
-
-function updateStockCounts() {
-    const avail = tempStockList.filter(s => !s.status || s.status === 'available').length;
-    const sold = tempStockList.filter(s => s.status && s.status !== 'available').length;
-    document.getElementById('count-avail').innerText = avail;
-    document.getElementById('count-sold').innerText = sold;
-}
-
-function renderStockLists() {
-    const availContainer = document.getElementById('available-list');
-    const soldContainer = document.getElementById('sold-list');
-    availContainer.innerHTML = '';
-    soldContainer.innerHTML = '';
-
-    tempStockList.forEach((item, index) => {
-        const isSold = item.status && item.status !== 'available';
-        const html = `
-    <div class="stock-item">
-        ${item.image ? `<img src="${item.image}">` : '<div style="width:40px;height:40px;background:#334155;border-radius:4px;"></div>'}
-        <div class="stock-item-content">
-            ${item.text || '<i>(Image Only)</i>'}
-            ${isSold ? `<br><small style="color:#f59e0b">Sold to Order #${item.orderId || '?'} (${item.customerName || 'Unknown'})</small>` : ''}
-        </div>
-        <button class="stock-del-btn" onclick="removeStockItem(${index})"><i class="fa-solid fa-trash"></i></button>
-    </div>
-`;
-
-        if (isSold) soldContainer.insertAdjacentHTML('beforeend', html);
-        else availContainer.insertAdjacentHTML('beforeend', html);
-    });
-
-    if (availContainer.innerHTML === '') availContainer.innerHTML = '<p style="color:var(--gray); text-align:center; font-size:12px;">No available items.</p>';
-    if (soldContainer.innerHTML === '') soldContainer.innerHTML = '<p style="color:var(--gray); text-align:center; font-size:12px;">No sold items.</p>';
-}

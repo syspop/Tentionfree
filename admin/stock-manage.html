@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Stock - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: #f1f5f9;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .header-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .header-info h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+        }
+
+        .header-info p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .variant-list {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .variant-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .variant-item:hover {
+            background: #f8fafc;
+        }
+
+        .variant-item.active {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .variant-item h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .variant-item span {
+            font-size: 11px;
+            padding: 2px 6px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            color: #64748b;
+        }
+
+        .stock-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            min-height: 500px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #64748b;
+            transition: 0.2s;
+        }
+
+        .tab.active {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-box {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .btn-add {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-add:hover {
+            background: #2563eb;
+        }
+
+        .stock-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .stock-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .stock-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .stock-content {
+            flex: 1;
+            font-size: 13px;
+            color: #334155;
+            word-break: break-all;
+        }
+
+        .stock-action {
+            color: #ef4444;
+            cursor: pointer;
+            padding: 5px;
+            opacity: 0.6;
+        }
+
+        .stock-action:hover {
+            opacity: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-val {
+            font-size: 24px;
+            font-weight: 700;
+            color: #334155;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loader">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; color: #3b82f6;"></i>
+    </div>
+
+    <div class="container">
+        <!-- Breadcrumb / Back -->
+        <div style="margin-bottom: 15px;">
+            <a href="javascript:window.close()" style="color: #64748b; text-decoration: none; font-size: 14px;">
+                <i class="fa-solid fa-arrow-left"></i> Close & Return
+            </a>
+        </div>
+
+        <!-- Product Header -->
+        <div class="header-card" id="product-header">
+            <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 8px;"></div> <!-- Placeholder -->
+            <div>
+                <h2 style="width: 200px; height: 20px; background: #f1f5f9; border-radius: 4px;"></h2>
+                <p style="width: 100px; height: 15px; background: #f1f5f9; border-radius: 4px; margin-top: 10px;"></p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Sidebar: Variant Selector -->
+            <div>
+                <h3
+                    style="font-size: 14px; color: #64748b; margin-bottom: 10px; text-transform: uppercase; font-weight: 600;">
+                    Variants</h3>
+                <div class="variant-list" id="variant-list">
+                    <!-- Loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Main Panel -->
+            <div class="stock-panel">
+                <h3 id="panel-title"
+                    style="margin-top: 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px;">
+                    Select a Variant</h3>
+
+                <div id="stock-content-area" style="display:none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-val" id="stat-avail">0</span>
+                            <span class="stat-label">Available</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-val" id="stat-sold">0</span>
+                            <span class="stat-label">Sold</span>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('add')"><i class="fa-solid fa-plus"></i> Add Stock
+                        </div>
+                        <div class="tab" onclick="switchTab('view')"><i class="fa-solid fa-list"></i> View Available
+                        </div>
+                        <div class="tab" onclick="switchTab('sold')"><i class="fa-solid fa-history"></i> View Sold</div>
+                    </div>
+
+                    <!-- PREVIEW SECTION FOR UPLOAD -->
+                    <div id="upload-preview"
+                        style="display:none; margin-bottom: 10px; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 6px; text-align: center;">
+                        <img id="preview-img" src="" style="max-height: 100px; max-width: 100%; border-radius: 4px;">
+                        <div style="font-size: 11px; color: #64748b; margin-top: 5px;">Image Selected (Click 'Add' to
+                            save)</div>
+                    </div>
+
+                    <!-- TAB: ADD -->
+                    <div id="tab-add" class="tab-content">
+                        <div class="input-group">
+                            <input type="text" id="inp-code" class="input-box"
+                                placeholder="Enter Code, Pin, or Text Data...">
+                            <label class="btn-add"
+                                style="background: #e2e8f0; color: #334155; display: flex; align-items: center; padding: 0 15px;">
+                                <i class="fa-solid fa-image"></i>
+                                <input type="file" id="inp-file" accept="image/*" hidden
+                                    onchange="previewStockImage(this)">
+                            </label>
+                            <button class="btn-add" onclick="addStockItem()">Add</button>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b;">
+                            <i class="fa-solid fa-circle-info"></i> Enter text code OR upload an image (QR/Screenshot).
+                            You can do both properly.
+                        </p>
+                    </div>
+
+                    <!-- TAB: VIEW AVAILABLE -->
+                    <div id="tab-view" class="tab-content" style="display:none;">
+                        <div class="stock-list" id="list-avail"></div>
+                    </div>
+
+                    <!-- TAB: SOLD -->
+                    <div id="tab-sold" class="tab-content" style="display:none;">
+                        <div class="stock-list" id="list-sold"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;"></div>
+
+    <script src="js/stock-manage.js"></script>
+</body>
+
+</html>
