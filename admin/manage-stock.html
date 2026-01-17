@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Stock List - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="admin-box">
+        <nav id="admin-nav"></nav>
+
+        <div class="section active" style="display:block;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h3><i class="fa-solid fa-boxes-stacked"></i> Stock Management</h3>
+            </div>
+
+            <!-- Search Bar -->
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="search-input" class="input-box" placeholder="Search by Product Name..."
+                    onkeyup="filterProducts()">
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Img</th>
+                        <th>Name</th>
+                        <th>Variants</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="p-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadProducts);
+
+        let allProducts = [];
+
+        async function loadProducts() {
+            const list = document.getElementById('p-list');
+            list.innerHTML = "<tr><td colspan='5' style='text-align:center'>Loading...</td></tr>";
+
+            try {
+                const res = await fetch('/api/products?t=' + Date.now());
+                allProducts = await res.json();
+
+                if (!Array.isArray(allProducts)) allProducts = [];
+
+                renderProducts(allProducts);
+
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error loading products.</td></tr>";
+            }
+        }
+
+        function renderProducts(products) {
+            const list = document.getElementById('p-list');
+            list.innerHTML = "";
+
+            if (products.length === 0) {
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center'>No products found.</td></tr>";
+                return;
+            }
+
+            products.forEach((p) => {
+                let displayImg = p.image || '';
+                if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('data:') && !displayImg.startsWith('../')) {
+                    displayImg = '../' + displayImg;
+                }
+
+                const variantCount = p.variants ? p.variants.length : 0;
+
+                // Calculate Total Available Stock across all variants
+                let totalStock = 0;
+                if (p.variants) {
+                    p.variants.forEach(v => {
+                        if (Array.isArray(v.stock)) {
+                            totalStock += v.stock.filter(s => !s.status || s.status === 'available').length;
+                        }
+                    });
+                }
+
+                const statusBadge = totalStock > 0
+                    ? `<span class="badge bg-success">In Stock (${totalStock})</span>`
+                    : `<span class="badge" style="background:var(--red)">Out of Stock</span>`;
+
+                list.innerHTML += `
+                    <tr>
+                        <td><img src="${displayImg}" width="40" style="border-radius:5px" onerror="this.src='https://placehold.co/40'"></td>
+                        <td>
+                            <strong>${p.name}</strong><br>
+                            <small style="color:var(--gray)">ID: ${p.id}</small>
+                        </td>
+                        <td>${variantCount} Variants</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button onclick="openStockManage(${p.id})" class="btn-main" style="padding: 8px 15px; width: auto; font-size: 14px;">
+                                <i class="fa-solid fa-box-open"></i> Manage Stock
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allProducts.filter(p => p.name.toLowerCase().includes(query));
+            renderProducts(filtered);
+        }
+
+        function openStockManage(id) {
+            window.open(`stock-manage.html?id=${id}`, '_blank');
+        }
+    </script>
+</body>
+
+</html>

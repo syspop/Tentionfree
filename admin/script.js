@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <a href="products" class="nav-link ${window.location.pathname.includes('products') ? 'active' : ''}">
                 <i class="fa-solid fa-box-open"></i> Products
             </a>
+            <a href="manage-stock" class="nav-link ${window.location.pathname.includes('manage-stock') ? 'active' : ''}">
+                <i class="fa-solid fa-boxes-stacked"></i> Manage Stock
+            </a>
             <a href="manage-orders" class="nav-link ${window.location.pathname.includes('manage-orders') ? 'active' : ''}">
                 <i class="fa-solid fa-clipboard-list"></i> Orders
             </a>
