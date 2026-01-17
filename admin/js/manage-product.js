@@ -193,15 +193,8 @@ async function loadProductForEdit(id) {
             }
         }
 
-        // ALWAYS ensure Identity Fields are present if they weren't found
-        // (Unless user explicitly deletes them and saves, but since we map logic based on label presence,
-        // re-adding them allows re-enabling them easily. The user asked for "Default Enable").
-        if (!hasName) addCustomInputRow("Full Name", "Enter Name", true, 'text');
-        if (!hasPhone) addCustomInputRow("Phone Number", "Enter Phone", true, 'tel');
-        if (!hasEmail) addCustomInputRow("Email Address", "Enter Email", true, 'email');
-
-        // Inform user
-        // showToast("Auto-detected Identity Fields"); 
+        // Identity Fields (Name, Phone, Email) are handled natively by Checkout.
+        // We do NOT add them as Custom Fields anymore to avoid duplication. 
 
         // Trigger check after population
         setTimeout(checkPriceForAutoDelivery, 100);
