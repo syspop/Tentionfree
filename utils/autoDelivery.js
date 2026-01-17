@@ -77,7 +77,7 @@ async function processAutoDelivery(order, isPaid = false) {
                         }
 
                         if (deliveredItems.length > 0) {
-                            deliveryForThisItem = `\n[${item.name} - ${variant.label}]:\n${deliveredItems.join('\n\n')}`;
+                            deliveryForThisItem = `${item.name} - ${variant.label}:\n${deliveredItems.join('\n\n')}`;
                             hasAutoItems = true;
                             if (deliveredItems.length >= qty) itemDelivered = true;
                             else allDelivered = false; // Partial
