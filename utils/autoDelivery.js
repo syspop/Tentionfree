@@ -1,7 +1,7 @@
 const { readLocalJSON, writeLocalJSON } = require('../data/db');
 
 // --- HELPER: Process Auto-Delivery (Stock & Variants) ---
-async function processAutoDelivery(order) {
+async function processAutoDelivery(order, isPaid = false) {
     try {
         let allProducts = await readLocalJSON('products.json');
         let deliveryMsg = order.deliveryInfo || "";
@@ -56,12 +56,16 @@ async function processAutoDelivery(order) {
                                         text: codeText,
                                         status: 'delivered',
                                         orderId: order.id,
+                                        customerName: order.customer,
+                                        customerEmail: order.email || order.customerEmail,
                                         date: new Date().toISOString()
                                     };
                                     deliveredItems.push(codeText);
                                 } else {
                                     stockItem.status = 'delivered';
                                     stockItem.orderId = order.id;
+                                    stockItem.customerName = order.customer;
+                                    stockItem.customerEmail = order.email || order.customerEmail;
                                     stockItem.date = new Date().toISOString();
 
                                     let txt = stockItem.text || "";
@@ -130,8 +134,10 @@ async function processAutoDelivery(order) {
         }
 
         let pStatus = order.status;
-        if (hasAutoItems) {
-            pStatus = allDelivered ? 'Completed' : 'Processing';
+        if (hasAutoItems && allDelivered) {
+            // Only auto-complete if it's paid (or free)
+            if (isPaid) pStatus = 'Completed';
+            // If not paid, keep existing status (likely 'Pending'), but we returned the deliveryInfo so it can be saved hidden
         }
 
         return { status: pStatus, deliveryInfo: deliveryMsg.trim() };

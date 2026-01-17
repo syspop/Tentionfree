@@ -420,7 +420,7 @@ async function saveProduct() {
     });
 
     if (!name || !img || variants.length === 0) {
-        return showAlert("Missing Info", "Please fill required fields (Name, Image, at least 1 variant)", "error");
+        return showAlert("Required Information Missing", "Please fill name, image and at least 1 variant.", "error");
     }
 
     // Derive main Price and Original Price from the first variant
@@ -462,7 +462,7 @@ async function saveProduct() {
 
         if (!res.ok) {
             const errorDate = await res.json();
-            throw new Error(errorDate.message || "Server rejected request");
+            throw new Error(errorDate.message || "The server rejected the request.");
         }
 
         showSaveSuccessModal(currentEditingId ? "Product Updated!" : "Product Added!");
@@ -475,7 +475,7 @@ async function saveProduct() {
 
     } catch (err) {
         console.error(err);
-        showAlert("Error", "Error saving to server.", "error");
+        showAlert("Error", "Failed to communicate with the server to save product.", "error");
     }
 }
 
@@ -581,7 +581,7 @@ async function addStockItem() {
     const fileInput = document.getElementById('stock-input-file');
 
     if (!text && fileInput.files.length === 0) {
-        return showToast("Enter text or select image", "error");
+        return showToast("Please enter text or select an image file", "error");
     }
 
     let imageUrl = null;
@@ -589,7 +589,7 @@ async function addStockItem() {
         try {
             imageUrl = await uploadImageToServer(fileInput.files[0]);
         } catch (e) {
-            return showToast("Image Upload Failed", "error");
+            return showToast("Could not upload the selected image", "error");
         }
     }
 
@@ -637,7 +637,7 @@ function renderStockLists() {
         ${item.image ? `<img src="${item.image}">` : '<div style="width:40px;height:40px;background:#334155;border-radius:4px;"></div>'}
         <div class="stock-item-content">
             ${item.text || '<i>(Image Only)</i>'}
-            ${isSold ? `<br><small style="color:#f59e0b">Sold to Order #${item.orderId || '?'}</small>` : ''}
+            ${isSold ? `<br><small style="color:#f59e0b">Sold to Order #${item.orderId || '?'} (${item.customerName || 'Unknown'})</small>` : ''}
         </div>
         <button class="stock-del-btn" onclick="removeStockItem(${index})"><i class="fa-solid fa-trash"></i></button>
     </div>

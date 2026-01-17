@@ -425,7 +425,7 @@ async function applyCoupon() {
         }
     } catch (err) {
         console.error(err);
-        msgDiv.innerText = "Error verifying coupon";
+        msgDiv.innerText = "Could not verify coupon. connection error?";
         msgDiv.className = "text-xs mt-1 h-4 text-red-500";
     }
 }
@@ -549,7 +549,7 @@ async function submitOrder(e) {
         });
         const saveData = await saveRes.json();
 
-        if (!saveData.success) throw new Error(saveData.message || "Failed to save order");
+        if (!saveData.success) throw new Error(saveData.message || "We could not save your order. Please try again.");
 
         if (isPayNow) {
             const payRes = await fetch('/api/payment/create', {
@@ -568,7 +568,7 @@ async function submitOrder(e) {
                 console.error("Payment Init Failed:", payData);
                 // Extract detailed error if available
                 const detailMsg = payData.details ? (typeof payData.details === 'string' ? payData.details : JSON.stringify(payData.details)) : "";
-                throw new Error((payData.message || "Payment initiation failed") + (detailMsg ? `\nDetails: ${detailMsg}` : ""));
+                throw new Error((payData.message || "Failed to initiate payment gateway") + (detailMsg ? `\nDetails: ${detailMsg}` : ""));
             }
         } else if (isFree) {
             clearCarts();

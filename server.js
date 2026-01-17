@@ -21,6 +21,21 @@ const axios = require('axios');
 // const helmet = require('helmet'); // Secure Headers (Removed for deployment fix)
 // const rateLimit = require('express-rate-limit'); // Rate Limiting (Removed for deployment fix)
 
+// --- CONCURRENCY LOCK (Mutex) ---
+class Mutex {
+    constructor() {
+        this._locking = Promise.resolve();
+    }
+    lock() {
+        let unlock;
+        const newLock = new Promise(resolve => unlock = resolve);
+        const rv = this._locking.then(() => unlock);
+        this._locking = this._locking.then(() => newLock);
+        return rv;
+    }
+}
+const orderMutex = new Mutex();
+
 const app = express();
 
 // Health Check (Critical for Deployments)
@@ -581,7 +596,9 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
         }
 
         const total = allOrders.length;
-        const orders = allOrders.slice(skip, skip + limit);
+        // Filter out hidden orders (Initiated but not paid)
+        const visibleOrders = allOrders.filter(o => !o.isHidden).slice(skip, skip + limit);
+        const orders = visibleOrders;
 
         res.json({
             orders,
@@ -597,8 +614,11 @@ app.get('/api/orders', authenticateAdmin, async (req, res) => {
 
 // POST Order (Add NEW Order from Checkout) (Inbuilt)
 app.post('/api/orders', async (req, res) => {
-    const newOrder = req.body;
+    // Acquire Lock
+    const unlock = await orderMutex.lock();
     try {
+        const newOrder = req.body;
+
         // Strict Ban Check
         const customers = await readLocalJSON('customers.json') || [];
 
@@ -625,21 +645,36 @@ app.post('/api/orders', async (req, res) => {
             newOrder.id = maxId + 1;
         }
 
-        // --- AUTO-DELIVERY LOGIC ---
-        // Check if price is 0 AND it's naturally a free order (not just coupon discounted)
-        if (parseFloat(newOrder.price) <= 0 && newOrder.paymentMethod === 'Free / Auto-Delivery') {
-            const result = await processAutoDelivery(newOrder);
-            newOrder.status = result.status;
-            newOrder.deliveryInfo = result.deliveryInfo;
+        // --- AUTO-DELIVERY LOGIC (STOCK DEDUCTION) ---
+        // Run for ALL orders to reserve stock immediately
+        // isPaid = true only if price is 0 AND method is 'Free / Auto-Delivery'
+        const isFreeAuto = parseFloat(newOrder.price) <= 0 && newOrder.paymentMethod === 'Free / Auto-Delivery';
 
-            if (newOrder.status === 'Completed' || newOrder.deliveryInfo) {
-                // Send Completed Email Immediately
-                const emailUpdates = {
-                    status: newOrder.status,
-                    deliveryInfo: newOrder.deliveryInfo
-                };
-                sendOrderStatusEmail(newOrder, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
-            }
+        // Pass 'isFreeAuto' as isPaid flag to processAutoDelivery
+        // This ensures unpaid orders get stock reserved but status remains 'Pending'
+        const result = await processAutoDelivery(newOrder, isFreeAuto);
+
+        // Update Delivery Info (Contains codes)
+        newOrder.deliveryInfo = result.deliveryInfo;
+
+        // Update Status:
+        // If processAutoDelivery set it to 'Completed' (b/c isFreeAuto was true), respect it.
+        // Otherwise, keep the original status (likely 'Pending').
+        if (result.status === 'Completed') {
+            newOrder.status = 'Completed';
+        } else if (result.status && result.status !== newOrder.status) {
+            // Only if we want to support 'Processing' or partial logic, usually we respect what we sent or 'Pending'
+            // For now, if not completed, we default to 'Pending' unless it was already set
+            if (!newOrder.status) newOrder.status = 'Pending';
+        }
+
+        // --- EMAIL NOTIFICATION (If Completed) ---
+        if (newOrder.status === 'Completed' || (newOrder.deliveryInfo && isFreeAuto)) {
+            const emailUpdates = {
+                status: newOrder.status,
+                deliveryInfo: newOrder.deliveryInfo
+            };
+            sendOrderStatusEmail(newOrder, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
         }
 
         // --- COUPON USAGE TRACKING ---
@@ -664,6 +699,11 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
+        // Initialize Hidden Status for Online Payment
+        if (newOrder.paymentMethod !== 'Free / Auto-Delivery' && newOrder.paymentMethod !== 'Pay Later') {
+            newOrder.isHidden = true; // Hide from User/Admin until Paid
+        }
+
         allOrders.push(newOrder);
         await writeLocalJSON('orders.json', allOrders);
 
@@ -671,6 +711,8 @@ app.post('/api/orders', async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ success: false, error: 'Failed to save order' });
+    } finally {
+        unlock(); // RELEASE LOCK
     }
 });
 
@@ -692,11 +734,13 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const updates = req.body;
 
+    const unlock = await orderMutex.lock(); // Ensure atomic update with products
     try {
         const allOrders = await readLocalJSON('orders.json');
         const orderIndex = allOrders.findIndex(o => o.id === id);
 
         if (orderIndex === -1) {
+            unlock();
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
@@ -705,6 +749,38 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
         allOrders[orderIndex] = updatedOrder;
 
         await writeLocalJSON('orders.json', allOrders);
+
+        // [NEW] AUTO RESTOCK ON CANCEL/REFUND
+        if (updates.status && (updates.status === 'Cancelled' || updates.status === 'Refunded')) {
+            try {
+                const allProducts = await readLocalJSON('products.json');
+                let stockRestored = false;
+
+                allProducts.forEach(p => {
+                    if (p.variants) {
+                        p.variants.forEach(v => {
+                            if (v.stock && Array.isArray(v.stock)) {
+                                v.stock.forEach(s => {
+                                    if (typeof s !== 'string' && String(s.orderId) === String(id)) {
+                                        s.status = 'available';
+                                        s.orderId = null;
+                                        delete s.date; // Remove sold date
+                                        stockRestored = true;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+
+                if (stockRestored) {
+                    await writeLocalJSON('products.json', allProducts);
+                    console.log(`[STOCK RESTORED] Order #${id} was cancelled/refunded. Stock released.`);
+                }
+            } catch (e) {
+                console.error("Failed to restore stock:", e);
+            }
+        }
 
         // [NEW] Send Status Email if status changed to critical states
         if (updates.status && ['Completed', 'Cancelled', 'Refunded'].includes(updates.status)) {
@@ -734,6 +810,8 @@ app.put('/api/orders/:id', authenticateAdmin, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: "Failed to update order" });
+    } finally {
+        unlock(); // RELEASE LOCK
     }
 });
 
@@ -771,6 +849,12 @@ app.get('/api/orders/:id', async (req, res) => {
             return res.status(403).json({ error: 'Access denied: You do not own this order.' });
         }
 
+        // Hide Delivery Info if using User Token and Order is NOT Completed
+        if (!isAdmin && order.status !== 'Completed') {
+            delete order.deliveryInfo;
+            delete order.deliveryImage;
+        }
+
         res.json(order);
     } catch (err) {
         res.status(500).json({ error: 'Server Error' });
@@ -786,8 +870,8 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
 
     try {
         const allOrders = await readLocalJSON('orders.json') || [];
-        // Filter by email
-        const myOrdersFull = allOrders.filter(o => o.email && o.email.toLowerCase().trim() === userEmail);
+        // Filter by email AND exclude hidden
+        const myOrdersFull = allOrders.filter(o => o.email && o.email.toLowerCase().trim() === userEmail && !o.isHidden);
 
         // Sort newest first
         myOrdersFull.sort((a, b) => (b.id || 0) - (a.id || 0));
@@ -807,7 +891,9 @@ app.get('/api/my-orders', authenticateUser, async (req, res) => {
             customer: o.customer,
             phone: o.phone,
             email: o.email,
-            deliveryInfo: o.deliveryInfo,
+            email: o.email,
+            deliveryInfo: o.status === 'Completed' ? o.deliveryInfo : undefined, // Hide unless completed
+            cancelReason: o.cancelReason,
             cancelReason: o.cancelReason,
             refundMethod: o.refundMethod,
             refundTrx: o.refundTrx,
@@ -1595,7 +1681,7 @@ app.post('/api/auth/:provider', async (req, res) => {
         }
     } catch (err) {
         console.error("[AUTH ERROR]", err);
-        res.status(500).json({ success: false, message: "Auth Error" });
+        res.status(500).json({ success: false, message: "Authentication failed. Please try a different method." });
     }
 });
 
@@ -1655,11 +1741,11 @@ app.post('/api/login', async (req, res) => {
                 res.json({ success: true, user: userWithoutPass, token });
             } else {
                 console.warn(`[LOGIN FAIL] Password mismatch for ${email}`);
-                res.json({ success: false, message: "Invalid email or password" });
+                res.json({ success: false, message: "Incorrect email address or password." });
             }
         } else {
             console.warn(`[LOGIN FAIL] User not found: ${email}`);
-            res.json({ success: false, message: "Invalid email or password" });
+            res.json({ success: false, message: "Incorrect email address or password." });
         }
     } catch (err) {
         console.error(err);
@@ -1679,7 +1765,7 @@ app.post('/api/backup-login', (req, res) => {
     if (u === BACKUP_USER && p === BACKUP_PASS) {
         res.json({ success: true });
     } else {
-        res.json({ success: false, message: "Invalid Credentials" });
+        res.json({ success: false, message: "Incorrect Backup Username or Password." });
     }
 });
 
@@ -1689,7 +1775,7 @@ app.post('/api/backup', async (req, res) => {
     const SECURE_PIN = process.env.BACKUP_PIN || "105090";
 
     if (pin !== SECURE_PIN) {
-        return res.status(403).json({ error: "Invalid Security PIN" });
+        return res.status(403).json({ error: "The Security PIN you entered is incorrect." });
     }
 
     try {
@@ -2040,7 +2126,7 @@ app.post('/api/payment/create', async (req, res) => {
         const nexoraPayload = {
             amount: String(order.price),
             success_url: `https://tentionfree.store/api/payment/verify?order_id=${orderId}`, // Backend callback
-            cancel_url: `https://tentionfree.store/checkout.html?error=cancelled`,
+            cancel_url: `https://tentionfree.store/api/payment/cancel?order_id=${orderId}`, // Backend cancel handler
             metadata: { order_id: orderId, phone: order.phone || order.customerPhone || "N/A" }
         };
 
@@ -2077,69 +2163,130 @@ app.post('/api/payment/create', async (req, res) => {
 
 // GET Payment Verify (Callback from Nexora)
 app.get('/api/payment/verify', async (req, res) => {
+    const unlock = await orderMutex.lock();
     try {
-        const { order_id, transaction_id, status } = req.query; // Adjust based on what Nexora sends in URL
+        const { order_id, transaction_id } = req.query;
 
-        // Nexora Documentation says they send data? Or we assume check status?
-        // User workflow: "verify" endpoint
-        // Let's verify manually using the transaction_id or just trust if successful redirection?
-        // BETTER: Call Nexora Verify API to be safe.
-        // API: https://pay.nexorapay.top/api/payment/verify (POST)
-        // Payload: transaction_id (if available)
-
-        // Only proceed if we have an order_id
-        if (!order_id) return res.redirect('/?error=invalid_callback');
-
-        // Verify with Nexora
-        // If we don't have trx_id from query, we might just mark 'Processing' if status=success
-        // But safer to check.
-        // Assuming Nexora redirects with `?status=success&transaction_id=...`
-
-        // For now, let's update order to "Processing" / "Paid"
+        if (!order_id) {
+            unlock();
+            return res.redirect('/index.html?error=invalid_callback');
+        }
 
         const orders = await readLocalJSON('orders.json');
+
+        // Find Order
+        // Try Number first
+        let orderIndex = orders.findIndex(o => o.id === Number(order_id));
         if (orderIndex === -1) {
-            // Fallback: try converting to number if query is string
-            const orderIdNum = Number(order_id);
-            orderIndex = orders.findIndex(o => o.id === orderIdNum);
+            // Try String
+            orderIndex = orders.findIndex(o => String(o.id) === String(order_id));
         }
 
-        // Final check
         if (orderIndex === -1) {
-            // Debug log
             console.error(`Payment Verification Failed: Order ID ${order_id} not found.`);
-            return res.redirect('/?error=order_not_found');
+            unlock();
+            return res.redirect('/index.html?error=order_not_found');
         }
 
-        // Logic: Mark as Paid
-        orders[orderIndex].status = "Processing"; // Default to processing
-        orders[orderIndex].isPaid = true;
-        orders[orderIndex].paymentMethod = "Online Payment (Nexora)";
-        orders[orderIndex].trx = transaction_id || "Auto-Verified";
+        const order = orders[orderIndex];
 
-        // --- AUTO-DELIVERY LOGIC (For Paid Items) ---
-        console.log(`Processing Auto-Delivery for Order #${orders[orderIndex].id}...`);
-        const autoResult = await processAutoDelivery(orders[orderIndex]);
-        orders[orderIndex].status = autoResult.status; // Might update to 'Completed'
-        orders[orderIndex].deliveryInfo = autoResult.deliveryInfo;
+        // Logic: Mark as Paid & Completed
+        // Since stock was ALREADY deducted/reserved at creation (via processAutoDelivery in POST /api/orders),
+        // we DO NOT call processAutoDelivery again here to avoid double deduction.
+        // We just need to Unlock the visibility and set status to Completed.
+
+        order.status = "Completed"; // Completed marks the code as visible
+        order.isPaid = true;
+        order.isHidden = false; // Reveal Order
+        order.paymentMethod = "Online Payment (Nexora)";
+        order.trx = transaction_id || "Auto-Verified";
+
+        // Update Reference
+        orders[orderIndex] = order;
 
         await writeLocalJSON('orders.json', orders);
 
-        // Send Email if Completed
-        if (orders[orderIndex].status === 'Completed' || orders[orderIndex].deliveryInfo) {
-            const emailUpdates = {
-                status: orders[orderIndex].status,
-                deliveryInfo: orders[orderIndex].deliveryInfo
-            };
-            sendOrderStatusEmail(orders[orderIndex], emailUpdates).catch(e => console.error("Auto-Email Error:", e));
-        }
+        // Send Email
+        const emailUpdates = {
+            status: order.status,
+            deliveryInfo: order.deliveryInfo
+        };
+        sendOrderStatusEmail(order, emailUpdates).catch(e => console.error("Auto-Email Error:", e));
 
-        // Redirect User to Profile or Success Page
+        unlock(); // Release Lock
+        // Redirect User to Profile
         res.redirect('/profile.html?status=payment_success');
 
     } catch (err) {
         console.error("Payment Verify Error:", err);
-        res.redirect('/checkout.html?error=verification_failed');
+        unlock();
+        res.redirect('/index.html?error=verification_failed');
+    }
+});
+
+// GET Payment Cancel (Callback from Nexora)
+app.get('/api/payment/cancel', async (req, res) => {
+    const unlock = await orderMutex.lock();
+    try {
+        const { order_id } = req.query;
+        if (!order_id) {
+            unlock();
+            return res.redirect('/index.html?error=cancelled');
+        }
+
+        let orders = await readLocalJSON('orders.json');
+
+        let orderIndex = orders.findIndex(o => o.id === Number(order_id));
+        if (orderIndex === -1) orderIndex = orders.findIndex(o => String(o.id) === String(order_id));
+
+        if (orderIndex !== -1) {
+            const order = orders[orderIndex];
+
+            // Only delete if it was hidden (initiated but failed)
+            // This prevents deleting legitimate orders if user accidentally checks cancel link later
+            // Although generally cancel_url is only hit during payment flow.
+
+            // RESTORE STOCK LOGIC
+            // Since we reserved stock at creation, we MUST release it now.
+            const allProducts = await readLocalJSON('products.json');
+            let stockRestored = false;
+
+            // Iterate products to find stock assigned to this order
+            allProducts.forEach(p => {
+                if (p.variants) {
+                    p.variants.forEach(v => {
+                        if (v.stock && Array.isArray(v.stock)) {
+                            v.stock.forEach(s => {
+                                if (typeof s !== 'string' && (String(s.orderId) === String(order.id))) {
+                                    s.status = 'available';
+                                    s.orderId = null;
+                                    delete s.date;
+                                    stockRestored = true;
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            if (stockRestored) {
+                await writeLocalJSON('products.json', allProducts);
+                console.log(`[PAYMENT CANCEL] Stock restored for Order #${order.id}`);
+            }
+
+            // DELETE ORDER (No traces left)
+            orders.splice(orderIndex, 1);
+            await writeLocalJSON('orders.json', orders);
+            console.log(`[PAYMENT CANCEL] Order #${order.id} deleted.`);
+        }
+
+        unlock();
+        res.redirect('/index.html?error=cancelled');
+
+    } catch (e) {
+        console.error("Cancel Error:", e);
+        if (typeof unlock === 'function') unlock();
+        res.redirect('/index.html?error=cancelled');
     }
 });
 
