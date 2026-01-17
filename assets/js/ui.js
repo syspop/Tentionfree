@@ -57,7 +57,17 @@ function renderProducts() {
         if (product.badge) {
             badgeHtml = `<div class="absolute top-3 right-3 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg z-10 uppercase tracking-wide border border-brand-400/50">${product.badge}</div>`;
         }
-        if (product.inStock === false) {
+        // Check Auto Stockout Logic
+        let isOutOfStock = product.inStock === false;
+        if (product.autoStockOut && product.variants) {
+            const hasStock = product.variants.some(v => v.stock && Array.isArray(v.stock) && v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length > 0);
+            if (!hasStock) isOutOfStock = true;
+        } else if (product.autoStockOut && !product.variants) {
+            // No variants but auto stockout ON -> Out of Stock
+            isOutOfStock = true;
+        }
+
+        if (isOutOfStock) {
             badgeHtml = `<div class="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-20">
                 <span class="border-2 border-white/80 text-white font-bold px-4 py-2 uppercase tracking-widest text-sm rotate-12">Out of Stock</span>
              </div>`;
@@ -325,19 +335,39 @@ async function loadProductDetailsPage() {
         </div>
     `;
 
-    // 5. Buttons
-    const buttonsHtml = `
-        <div class="grid grid-cols-2 gap-4 mt-6">
-            <button onclick="addToCartPage(${product.id})" 
-                class="py-4 rounded-xl bg-slate-800 text-white font-bold hover:bg-slate-700 transition-all border border-slate-700 hover:border-slate-500 flex items-center justify-center gap-2 group">
-                <i class="fa-solid fa-cart-plus group-hover:scale-110 transition-transform text-brand-400"></i> Add to Cart
-            </button>
-            <button onclick="buyNowPage(${product.id})" 
-                class="py-4 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold hover:from-brand-500 hover:to-brand-400 transition-all shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transform active:scale-95">
-                Buy Now <i class="fa-solid fa-bolt"></i>
-            </button>
-        </div>
-    `;
+    // Calculate Stock Status for Details Page
+    let isDetailsOutOfStock = product.inStock === false;
+    if (product.autoStockOut && product.variants) {
+        const hasStock = product.variants.some(v => v.stock && Array.isArray(v.stock) && v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length > 0);
+        if (!hasStock) isDetailsOutOfStock = true;
+    } else if (product.autoStockOut && !product.variants) {
+        isDetailsOutOfStock = true;
+    }
+
+    let buttonsHtml = '';
+    if (isDetailsOutOfStock) {
+        buttonsHtml = `
+            <div class="col-span-2 mt-6">
+                <button disabled 
+                    class="w-full py-4 rounded-xl bg-slate-700 text-slate-400 font-bold opacity-50 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-600">
+                    <i class="fa-solid fa-ban"></i> Out of Stock
+                </button>
+            </div>
+            `;
+    } else {
+        buttonsHtml = `
+            <div class="grid grid-cols-2 gap-4 mt-6">
+                <button onclick="addToCartPage(${product.id})" 
+                    class="py-4 rounded-xl bg-slate-800 text-white font-bold hover:bg-slate-700 transition-all border border-slate-700 hover:border-slate-500 flex items-center justify-center gap-2 group">
+                    <i class="fa-solid fa-cart-plus group-hover:scale-110 transition-transform text-brand-400"></i> Add to Cart
+                </button>
+                <button onclick="buyNowPage(${product.id})" 
+                    class="py-4 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold hover:from-brand-500 hover:to-brand-400 transition-all shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transform active:scale-95">
+                    Buy Now <i class="fa-solid fa-bolt"></i>
+                </button>
+            </div>
+            `;
+    }
 
     const content = `
                 <!-- Left: Image -->

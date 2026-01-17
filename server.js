@@ -646,6 +646,51 @@ app.post('/api/orders', async (req, res) => {
         }
 
         // --- AUTO-DELIVERY LOGIC (STOCK DEDUCTION) ---
+        // NEW VALIDATION: Block if Auto Stockout is ON and no stock/variants exist
+        // Identify the product first (we need to find it in allProducts)
+        // Since order items might just have IDs/Names, we loop them.
+        for (const item of newOrder.items) {
+            const prod = allOrders.find(p => String(p.id) === String(item.id)) ||
+                (await readLocalJSON('products.json')).find(p => String(p.id) === String(item.id) || p.name === item.name);
+
+            // If we found the product definition from DB (not just order history)
+            if (prod && prod.autoStockOut) {
+                const hasVariants = prod.variants && Array.isArray(prod.variants) && prod.variants.length > 0;
+                let hasStock = false;
+
+                if (hasVariants) {
+                    // Check if ANY variant has stock or if the specific selected variant has stock
+                    // If item has a specific variant selected, we ideally check THAT one. 
+                    // But for general "is orderable" check, we at least need SOME stock.
+                    // Let's be strict: If item specifies a variant, that variant MUST have stock.
+                    // If item doesn't specify (rare for varied products), we check general.
+
+                    // Try to match variant
+                    const vIndex = prod.variants.findIndex(v => v.label === item.plan || v.label === item.variantName || (item.variant && v.label === item.variant.label));
+
+                    if (vIndex !== -1) {
+                        const v = prod.variants[vIndex];
+                        const available = v.stock && Array.isArray(v.stock) ? v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length : 0;
+                        if (available > 0) hasStock = true;
+                    } else {
+                        // No specific variant match found in order item (shouldn't happen if UI is good), 
+                        // but if it happens, check if ANY stock exists? No, that's risky. 
+                        // Treat as no stock found for this specific request.
+                        hasStock = false;
+                    }
+                } else {
+                    // No variants but AutoStockOut is ON? 
+                    // This implies it relies on main stock? currently our system uses variants for stock.
+                    // So if no variants, it has NO STOCK.
+                    hasStock = false;
+                }
+
+                if (!hasStock) {
+                    return res.status(400).json({ success: false, message: `Product '${prod.name}' is presently Out of Stock.` });
+                }
+            }
+        }
+
         // Run for ALL orders to reserve stock immediately
         // isPaid = true only if price is 0 AND method is 'Free / Auto-Delivery'
         const isFreeAuto = parseFloat(newOrder.price) <= 0 && newOrder.paymentMethod === 'Free / Auto-Delivery';
