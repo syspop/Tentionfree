@@ -27,21 +27,21 @@ const resolveImage = (img) => {
     // Normalize path separators (Windows fix)
     cleanImg = cleanImg.replace(/\\/g, '/');
 
-    // Remove leading slash or ./
+    // Remove leading slash or ./ or ../
     cleanImg = cleanImg.replace(/^(\.|\/)+/, '');
 
-    // Ensure we don't duplicate 'assets/' if the input already has it but SITE_URL path might assume structure
-    // Current server structure: http://domain/assets/uploads/file.jpg
+    // Ensure 'assets/' is present if it starts with 'uploads/'
+    if (cleanImg.startsWith('uploads/')) {
+        cleanImg = 'assets/' + cleanImg;
+    }
 
-    // Debug logging (will show in server console)
+    // Debug logging
     console.log(`[Email] Resolving Image Path: '${img}' -> '${cleanImg}'`);
 
-    // Append timestamp to bust email client caches (Gmail)
-    // Use encodeURI instead of splitting to avoid breaking valid paths, but encode invalid chars
-    // However, simplest is to trust standard URL encoding for path segments if needed.
-    // For safety, we just join with SITE_URL.
+    // URL Encode path segments to handle spaces etc.
+    const encodedPath = cleanImg.split('/').map(part => encodeURIComponent(part)).join('/');
 
-    return `${SITE_URL}/${cleanImg}?v=${Date.now()}`;
+    return `${SITE_URL}/${encodedPath}?v=${Date.now()}`;
 };
 
 async function sendOrderStatusEmail(order, updates) {
