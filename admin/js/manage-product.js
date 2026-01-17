@@ -458,11 +458,6 @@ async function saveProduct() {
 
         let res;
         if (currentEditingId) {
-            // DEBUG: Show what we are sending
-            if (variants.length > 0) {
-                alert(`DEBUG: Sending Stock for V1: ${variants[0].stock.length} items`);
-            }
-
             // Update Single Product
             res = await fetch(`/api/products/${currentEditingId}`, {
                 method: 'PUT',
