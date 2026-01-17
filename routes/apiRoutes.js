@@ -51,10 +51,50 @@ router.post('/upload', authenticateAdmin, upload.single('image'), (req, res) => 
 });
 
 // --- PRODUCTS ROUTES ---
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../middleware/auth');
+
 router.get('/products', async (req, res) => {
     try {
+        // Force refresh cache/read
         const products = await readDB('products.json');
-        res.json(products);
+
+        // Security Check: Is Admin?
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        let isAdmin = false;
+
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                if (decoded.role === 'admin') isAdmin = true;
+            } catch (e) { /* Invalid token, treat as public */ }
+        }
+
+        if (isAdmin) {
+            // Return FULL data for Admin
+            res.json(products);
+        } else {
+            // Return SANITIZED data for Public
+            const sanitized = products.map(p => {
+                const { autoDeliveryInfo, autoDeliveryImage, ...rest } = p;
+                if (rest.variants) {
+                    rest.variants = rest.variants.map(v => {
+                        const { stock, ...vRest } = v;
+                        // Hide actual codes, but preserve availability status for UI
+                        const cleanStock = (stock || []).map(s => {
+                            // If string (legacy), it's available. If object, check status.
+                            const status = (typeof s === 'string') ? 'available' : (s.status || 'available');
+                            // We ONLY return the status, effectively stripping 'text', 'image', 'orderId', etc.
+                            return { status };
+                        });
+                        return { ...vRest, stock: cleanStock };
+                    });
+                }
+                return rest;
+            });
+            res.json(sanitized);
+        }
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to read products' });

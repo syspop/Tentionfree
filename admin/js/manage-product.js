@@ -101,10 +101,14 @@ function addVariantRow(label = '', price = '', original = '', stock = []) { // S
                 ${Array.isArray(stock) ? stock.filter(s => !s.status || s.status === 'available').length : 0} Available
             </span>
             <!-- Hidden input to store JSON string of stock array -->
-            <textarea class="stock-data-hidden" style="display:none;">${JSON.stringify(Array.isArray(stock) ? stock : [])}</textarea>
+            <textarea class="stock-data-hidden" style="display:none;"></textarea>
         </div>
         <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:25px;">×</button>
     `;
+
+    // Safely set the value to avoid HTML escaping issues with innerHTML
+    div.querySelector('.stock-data-hidden').value = JSON.stringify(Array.isArray(stock) ? stock : []);
+
     container.appendChild(div);
 }
 
@@ -114,7 +118,10 @@ async function loadProductForEdit(id) {
     try {
         console.log("Fetching product for edit...");
         // Use absolute path for API
-        const res = await fetch('/api/products?t=' + Date.now());
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch('/api/products?t=' + Date.now(), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (!res.ok) throw new Error("Failed to fetch products");
 
         const products = await res.json();
