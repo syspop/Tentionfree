@@ -107,7 +107,8 @@ function addVariantRow(label = '', price = '', original = '', stock = []) { // S
     `;
 
     // Safely set the value to avoid HTML escaping issues with innerHTML
-    div.querySelector('.stock-data-hidden').value = JSON.stringify(Array.isArray(stock) ? stock : []);
+    const finalStock = Array.isArray(stock) ? stock : [];
+    div.querySelector('.stock-data-hidden').value = JSON.stringify(finalStock);
 
     container.appendChild(div);
 }
@@ -408,7 +409,13 @@ async function saveProduct() {
         const textarea = row.querySelector('.stock-data-hidden'); // Hidden JSON
         if (inputs[0].value) {
             let stockList = [];
-            try { stockList = JSON.parse(textarea.value); } catch (e) { }
+            try {
+                const parsed = JSON.parse(textarea.value);
+                if (Array.isArray(parsed)) stockList = parsed;
+            } catch (e) {
+                console.warn("Failed to parse stock JSON, defaulting to empty", e);
+                stockList = [];
+            }
 
             variants.push({
                 label: inputs[0].value,
