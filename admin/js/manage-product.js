@@ -612,7 +612,7 @@ function removeStockItem(index) {
 
 function updateStockCounts() {
     const avail = tempStockList.filter(s => !s.status || s.status === 'available').length;
-    const sold = tempStockList.filter(s => s.status === 'delivered').length;
+    const sold = tempStockList.filter(s => s.status && s.status !== 'available').length;
     document.getElementById('count-avail').innerText = avail;
     document.getElementById('count-sold').innerText = sold;
 }
@@ -624,7 +624,7 @@ function renderStockLists() {
     soldContainer.innerHTML = '';
 
     tempStockList.forEach((item, index) => {
-        const isSold = item.status === 'delivered';
+        const isSold = item.status && item.status !== 'available';
         const html = `
     <div class="stock-item">
         ${item.image ? `<img src="${item.image}">` : '<div style="width:40px;height:40px;background:#334155;border-radius:4px;"></div>'}
