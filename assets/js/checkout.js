@@ -462,16 +462,26 @@ async function submitOrder(e) {
     const finalCheck = totalCheck - discountCheck;
     const isFree = finalCheck <= 0;
 
-    let paymentMethod = isFree ? 'Free / Auto-Delivery' : 'Pay Later';
+    let paymentMethod = 'Pay Later';
+    let trxValue = 'Pay Later';
     const isPayNow = !isFree && document.querySelector('input[name="paymentType"]:checked')?.value === 'now';
 
-    if (!isFree) {
+    if (isFree) {
+        if (appliedCoupon && discountCheck > 0) {
+            paymentMethod = 'Coupon';
+            trxValue = 'Coupon';
+        } else {
+            paymentMethod = 'Free';
+            trxValue = 'Free';
+        }
+    } else {
         const paymentTypeInput = document.querySelector('input[name="paymentType"]:checked');
         if (!paymentTypeInput) {
             showErrorModal("Payment Required", "Please select a payment method.");
             return;
         }
         paymentMethod = isPayNow ? 'Online (NexoraPay)' : 'Pay Later';
+        trxValue = isPayNow ? "PENDING_NEXORA" : "Pay Later";
     }
 
     const user = JSON.parse(localStorage.getItem('user'));
@@ -523,7 +533,7 @@ async function submitOrder(e) {
         discount: discountCheck.toFixed(2),
         status: "Pending",
         paymentMethod: paymentMethod,
-        trx: isPayNow ? "PENDING_NEXORA" : "Pay Later",
+        trx: trxValue,
         items: itemsToOrder,
         plan: itemsToOrder.length > 1 ? 'Multiple Items' : (itemsToOrder[0].variantName || 'Standard')
     };
