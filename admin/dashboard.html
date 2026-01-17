@@ -232,33 +232,40 @@
                 const value = input.checked;
                 const label = key === 'viewInIndex' ? "Show All on Home" : "Auto Stockout";
 
-                if (!confirm(`Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`)) {
-                    input.checked = !value; // Revert if cancelled
-                    return;
-                }
+                // Prevent immediate change visual (wait for confirm)
+                input.checked = !value;
 
-                try {
-                    const res = await fetch('../api/products/bulk-update', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                        },
-                        body: JSON.stringify({ key, value })
-                    });
+                showConfirm(
+                    "Confirm Action",
+                    `Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`,
+                    async () => {
+                        // Optimistic Update
+                        input.checked = value;
 
-                    const data = await res.json();
-                    if (data.success) {
-                        showToast(`${label} Updated Successfully!`);
-                    } else {
-                        input.checked = !value;
-                        showToast(data.message || "Failed to update", "error");
+                        try {
+                            const res = await fetch('../api/products/bulk-update', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                                },
+                                body: JSON.stringify({ key, value })
+                            });
+
+                            const data = await res.json();
+                            if (data.success) {
+                                showToast(`${label} Updated Successfully!`);
+                            } else {
+                                input.checked = !value; // Revert
+                                showToast(data.message || "Failed to update", "error");
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            input.checked = !value; // Revert
+                            showToast("Network Error", "error");
+                        }
                     }
-                } catch (e) {
-                    console.error(e);
-                    input.checked = !value;
-                    showToast("Network Error", "error");
-                }
+                );
             }
 
             function animateValue(id, start, end, duration, prefix) {
