@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.close();
         return;
     }
+
+    // Reveal Body (Auth Checked)
+    document.body.style.visibility = 'visible';
+    document.body.style.opacity = '1';
+
     loadProductData();
 });
 
