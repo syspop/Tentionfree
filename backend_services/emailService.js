@@ -20,17 +20,28 @@ const formatPrice = (amount, currency, method) => {
 // If it's a blob/file input, it's likely base64.
 const resolveImage = (img) => {
     if (!img) return null;
-    if (img.startsWith('http')) return img;
-    if (img.startsWith('data:image')) return img; // Base64
+    let cleanImg = img.trim();
+    if (cleanImg.startsWith('http')) return cleanImg;
+    if (cleanImg.startsWith('data:image')) return cleanImg; // Base64
 
-    // Clean leading slash
-    const cleanPath = img.replace(/^\//, '');
+    // Normalize path separators (Windows fix)
+    cleanImg = cleanImg.replace(/\\/g, '/');
 
-    // Enable this for debugging if needed, but for now just encode
-    // console.log('Resolving Image:', cleanPath);
+    // Remove leading slash or ./
+    cleanImg = cleanImg.replace(/^(\.|\/)+/, '');
+
+    // Ensure we don't duplicate 'assets/' if the input already has it but SITE_URL path might assume structure
+    // Current server structure: http://domain/assets/uploads/file.jpg
+
+    // Debug logging (will show in server console)
+    console.log(`[Email] Resolving Image Path: '${img}' -> '${cleanImg}'`);
 
     // Append timestamp to bust email client caches (Gmail)
-    return `${SITE_URL}/${cleanPath.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`;
+    // Use encodeURI instead of splitting to avoid breaking valid paths, but encode invalid chars
+    // However, simplest is to trust standard URL encoding for path segments if needed.
+    // For safety, we just join with SITE_URL.
+
+    return `${SITE_URL}/${cleanImg}?v=${Date.now()}`;
 };
 
 async function sendOrderStatusEmail(order, updates) {
