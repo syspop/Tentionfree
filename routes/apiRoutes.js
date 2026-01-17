@@ -187,6 +187,14 @@ router.put('/products/:id', authenticateAdmin, async (req, res) => {
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
+        // DEBUG: Trace Stock Data
+        if (updates.variants) {
+            const fs = require('fs');
+            const logMsg = `[${new Date().toISOString()}] UPDATE Product ${id}: Variants Count: ${updates.variants.length}\n` +
+                updates.variants.map((v, i) => `  V${i}: Stock Length: ${v.stock ? v.stock.length : 'N/A'}`).join('\n') + '\n---\n';
+            fs.appendFileSync('debug_log.txt', logMsg);
+        }
+
         const updatedProduct = { ...allProducts[productIndex], ...updates };
         allProducts[productIndex] = updatedProduct;
 
