@@ -76,6 +76,8 @@ async function loadProductData() {
 
 // --- RENDERING ---
 function renderHeader() {
+    const p = currentProduct; // Fix: Define p
+
     // Fix Image Path: Prepend '../' if relative
     let displayImg = p.image || '';
     if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('data:') && !displayImg.startsWith('../')) {
