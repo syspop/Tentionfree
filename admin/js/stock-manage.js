@@ -76,10 +76,15 @@ async function loadProductData() {
 
 // --- RENDERING ---
 function renderHeader() {
-    const p = currentProduct;
+    // Fix Image Path: Prepend '../' if relative
+    let displayImg = p.image || '';
+    if (displayImg && !displayImg.startsWith('http') && !displayImg.startsWith('data:') && !displayImg.startsWith('../')) {
+        displayImg = '../' + displayImg;
+    }
+
     const box = document.getElementById('product-header');
     box.innerHTML = `
-        <img src="${p.image}" alt="Img">
+        <img src="${displayImg || 'https://placehold.co/80'}" alt="Img" onerror="this.src='https://placehold.co/80'">
         <div class="header-info">
             <h2>${p.name}</h2>
             <p>ID: ${p.id} &bull; ${p.variants ? p.variants.length : 0} Variants</p>

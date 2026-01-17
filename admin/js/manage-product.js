@@ -94,20 +94,11 @@ function addVariantRow(label = '', price = '', original = '', stock = []) { // S
         <input type="number" placeholder="Price" class="input-box" style="margin:0" value="${price}">
         <input type="number" placeholder="Org. Price" class="input-box" style="margin:0" value="${original}">
         <div style="display:flex; flex-direction:column; gap:5px;">
-            ${currentEditingId ? `
-            <button onclick="window.open('stock-manage.html?id=${currentEditingId}', '_blank')" style="background:var(--blue); color:white; border:none; padding:8px; border-radius:5px; cursor:pointer; font-size:11px;">
-                <i class="fa-solid fa-boxes-stacked"></i> Manage Stock
-            </button>
-            ` : `
-            <button disabled style="background:var(--gray); color:white; border:none; padding:8px; border-radius:5px; cursor:not-allowed; font-size:11px;">
-                Save First to Manage Stock
-            </button>
-            `}
             <span class="stock-count-badge" style="font-size:10px; color:var(--gray); text-align:center;">
                 ${Array.isArray(stock) ? stock.filter(s => !s.status || s.status === 'available').length : 0} Available
             </span>
         </div>
-        <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:25px;">×</button>
+        <button onclick="this.parentElement.remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:bold; margin-top:5px;">×</button>
     `;
 
     container.appendChild(div);
