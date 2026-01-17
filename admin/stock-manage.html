@@ -363,16 +363,27 @@
 
                     <!-- TAB: ADD -->
                     <div id="tab-add" class="tab-content">
-                        <div class="input-group">
-                            <input type="text" id="inp-code" class="stock-input"
-                                placeholder="Enter Code, Pin, or Text Data...">
-                            <label class="btn-add"
-                                style="background: rgba(255,255,255,0.1); color: white; display: flex; align-items: center; padding: 0 15px; cursor: pointer;">
-                                <i class="fa-solid fa-image"></i>
-                                <input type="file" id="inp-file" accept="image/*" hidden
-                                    onchange="previewStockImage(this)">
-                            </label>
-                            <button class="btn-add" onclick="addStockItem()">Add</button>
+                        <div class="input-group" style="flex-direction: column; gap: 15px;">
+                            <textarea id="inp-code" class="stock-input" rows="6"
+                                placeholder="Enter Code, Pin, or Text Data (Multi-line supported)..."
+                                style="resize: vertical; font-family: inherit; line-height: 1.5;"></textarea>
+
+                            <div style="display:flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 12px; color: #94a3b8;">
+                                    <i class="fa-solid fa-circle-info"></i> Enter text code OR upload an image.
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <label class="btn-add"
+                                        style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; display: flex; align-items: center; padding: 10px 20px; cursor: pointer; border: 1px solid rgba(59, 130, 246, 0.2);">
+                                        <i class="fa-solid fa-image" style="margin-right: 8px;"></i> Attach Image
+                                        <input type="file" id="inp-file" accept="image/*" hidden
+                                            onchange="previewStockImage(this)">
+                                    </label>
+                                    <button class="btn-add" onclick="addStockItem()" style="padding: 10px 30px;">
+                                        <i class="fa-solid fa-plus"></i> Add Immediately
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <p style="font-size: 12px; color: #94a3b8;">
                             <i class="fa-solid fa-circle-info"></i> Enter text code OR upload an image (QR/Screenshot).
