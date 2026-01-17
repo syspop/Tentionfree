@@ -128,6 +128,18 @@ async function loadProductForEdit(id) {
         const products = await res.json();
         console.log("Products loaded:", products.length);
 
+        // Security / Integrity Check
+        // If we requested with a token but got public data (no _isAdminView), 
+        // it means the token is invalid/expired. Do NOT proceed.
+        if (products.length > 0 && !products[0]._isAdminView) {
+            showAlert("Session Expired", "Please login again to manage products.", "error");
+            setTimeout(() => {
+                localStorage.removeItem('adminToken');
+                window.location.href = '../chodir-vai';
+            }, 2000);
+            return;
+        }
+
         const p = products.find(prod => prod.id == id); // loose equality for string/num match
 
         if (!p) {

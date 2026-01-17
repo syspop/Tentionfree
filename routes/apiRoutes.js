@@ -72,8 +72,9 @@ router.get('/products', async (req, res) => {
         }
 
         if (isAdmin) {
-            // Return FULL data for Admin
-            res.json(products);
+            // Return FULL data for Admin with Metadata flag
+            const fullData = products.map(p => ({ ...p, _isAdminView: true }));
+            res.json(fullData);
         } else {
             // Return SANITIZED data for Public
             const sanitized = products.map(p => {
