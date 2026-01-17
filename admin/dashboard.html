@@ -59,29 +59,82 @@
                     <span
                         style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"
                         class="slider round"></span>
-                    <style>
-                        .slider:before {
-                            position: absolute;
-                            content: "";
-                            height: 18px;
-                            width: 18px;
-                            left: 3px;
-                            bottom: 3px;
-                            background-color: white;
-                            transition: .4s;
-                            border-radius: 50%;
-                        }
-
-                        input:checked+.slider {
-                            background-color: #25D366;
-                        }
-
-                        input:checked+.slider:before {
-                            transform: translateX(20px);
-                        }
-                    </style>
                 </label>
             </div>
+
+            <!-- Show All on Home -->
+            <div class="stat-card"
+                style="flex-direction: row; justify-content: space-between; align-items: center; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-home" style="color:#3b82f6; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="text-align: left; margin-bottom: 2px;">Show All on Home</div>
+                        <div style="font-size: 11px; color: #888;">Show/Hide all products on index page</div>
+                    </div>
+                </div>
+                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                    <input type="checkbox" id="showHomeToggle" onchange="toggleBulkProductOption('viewInIndex', this)">
+                    <span
+                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"
+                        class="slider round"></span>
+                </label>
+            </div>
+
+            <!-- Auto Stockout -->
+            <div class="stat-card"
+                style="flex-direction: row; justify-content: space-between; align-items: center; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-ban" style="color:#ef4444; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <div class="stat-label" style="text-align: left; margin-bottom: 2px;">Auto Stockout</div>
+                        <div style="font-size: 11px; color: #888;">Enable/Disable Auto Stockout for ALL</div>
+                    </div>
+                </div>
+                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                    <input type="checkbox" id="autoStockToggle"
+                        onchange="toggleBulkProductOption('autoStockOut', this)">
+                    <span
+                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"
+                        class="slider round"></span>
+                </label>
+            </div>
+
+            <style>
+                .slider:before {
+                    position: absolute;
+                    content: "";
+                    height: 18px;
+                    width: 18px;
+                    left: 3px;
+                    bottom: 3px;
+                    background-color: white;
+                    transition: .4s;
+                    border-radius: 50%;
+                }
+
+                input:checked+.slider {
+                    background-color: #25D366;
+                }
+
+                /* Use dynamic color for others? Or just stick to green for active */
+                #showHomeToggle:checked+.slider {
+                    background-color: #3b82f6;
+                }
+
+                #autoStockToggle:checked+.slider {
+                    background-color: #ef4444;
+                }
+
+                input:checked+.slider:before {
+                    transform: translateX(20px);
+                }
+            </style>
 
             <div class="chart-container">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -172,6 +225,39 @@
                     console.error(err);
                     input.checked = !enabled; // Revert
                     showToast("Network Error", 'error');
+                }
+            }
+
+            async function toggleBulkProductOption(key, input) {
+                const value = input.checked;
+                const label = key === 'viewInIndex' ? "Show All on Home" : "Auto Stockout";
+
+                if (!confirm(`Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`)) {
+                    input.checked = !value; // Revert if cancelled
+                    return;
+                }
+
+                try {
+                    const res = await fetch('../api/products/bulk-update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify({ key, value })
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`${label} Updated Successfully!`);
+                    } else {
+                        input.checked = !value;
+                        showToast(data.message || "Failed to update", "error");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    input.checked = !value;
+                    showToast("Network Error", "error");
                 }
             }
 

@@ -142,6 +142,38 @@ router.post('/products/add', authenticateAdmin, async (req, res) => {
     }
 });
 
+// [NEW] Bulk Update Products
+router.post('/products/bulk-update', authenticateAdmin, async (req, res) => {
+    const { key, value } = req.body; // e.g., { key: 'viewInIndex', value: true }
+
+    // Whitelist allowed keys for bulk update
+    const allowedKeys = ['viewInIndex', 'autoStockOut'];
+    if (!allowedKeys.includes(key)) {
+        return res.status(400).json({ success: false, message: "Invalid key for bulk update" });
+    }
+
+    if (typeof value !== 'boolean') {
+        return res.status(400).json({ success: false, message: "Value must be boolean" });
+    }
+
+    try {
+        const allProducts = await readDB('products.json');
+
+        // Update ALL products
+        const updatedProducts = allProducts.map(p => ({
+            ...p,
+            [key]: value
+        }));
+
+        await writeDB('products.json', updatedProducts);
+
+        res.json({ success: true, message: `All products updated: ${key} = ${value}` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to bulk update products" });
+    }
+});
+
 router.put('/products/:id', authenticateAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const updates = req.body;
