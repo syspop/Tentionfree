@@ -51,33 +51,33 @@ app.use(cors({
     credentials: true
 }));
 
-// Security Middleware (Helmet)
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "cdnjs.cloudflare.com", "kit.fontawesome.com"],
-            styleSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "cdnjs.cloudflare.com", "fonts.googleapis.com", "kit.fontawesome.com"],
-            imgSrc: ["'self'", "data:", "https:", "*"],
-            connectSrc: ["'self'", "https:", "wss:"],
-            fontSrc: ["'self'", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
-            objectSrc: ["'none'"],
-            upgradeInsecureRequests: [],
-        },
-    },
-    crossOriginEmbedderPolicy: false
-}));
+// Security Middleware (Helmet) - TEMPORARILY DISABLED
+// app.use(helmet({
+//     contentSecurityPolicy: {
+//         directives: {
+//             defaultSrc: ["'self'"],
+//             scriptSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "cdnjs.cloudflare.com", "kit.fontawesome.com"],
+//             styleSrc: ["'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "cdnjs.cloudflare.com", "fonts.googleapis.com", "kit.fontawesome.com"],
+//             imgSrc: ["'self'", "data:", "https:", "*"], 
+//             connectSrc: ["'self'", "https:", "wss:"],
+//             fontSrc: ["'self'", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
+//             objectSrc: ["'none'"],
+//             upgradeInsecureRequests: [],
+//         },
+//     },
+//     crossOriginEmbedderPolicy: false
+// }));
 
-// Rate Limiting
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1000,
-    message: { success: false, message: "Too many requests, please try again later." },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+// Rate Limiting - TEMPORARILY DISABLED
+// const apiLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000, 
+//     max: 1000, 
+//     message: { success: false, message: "Too many requests, please try again later." },
+//     standardHeaders: true, 
+//     legacyHeaders: false, 
+// });
 
-app.use('/api/', apiLimiter);
+// app.use('/api/', apiLimiter);
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(compression());
