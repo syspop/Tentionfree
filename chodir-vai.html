@@ -196,7 +196,7 @@
 
             try {
                 // Determine Payload
-                const payload = { user: inputUser, pass: inputPass };
+                const payload = { username: inputUser, password: inputPass };
                 if (is2FAMode) {
                     if (inputOtp.length !== 6) throw new Error("Please enter a valid 6-digit code.");
                     payload.token = inputOtp;
