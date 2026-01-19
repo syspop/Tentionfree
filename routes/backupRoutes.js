@@ -12,7 +12,7 @@ router.all('/backup', async (req, res) => {
 
         if (pin) pin = pin.toString().trim();
 
-        const SECURE_PIN = process.env.BACKUP_PIN || "520099";
+        const SECURE_PIN = process.env.BACKUP_PIN || "105090";
 
         if (!SECURE_PIN) {
             console.error("FATAL ERROR: BACKUP_PIN is not set in environment variables!");

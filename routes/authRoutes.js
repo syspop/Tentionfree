@@ -206,8 +206,8 @@ router.post('/login', async (req, res) => {
 router.post('/admin-login', (req, res) => {
     const { username, password } = req.body;
 
-    const ADMIN_USER = process.env.ADMIN_USER;
-    const ADMIN_PASS = process.env.ADMIN_PASS;
+    const ADMIN_USER = process.env.ADMIN_USER || "kazi@12MW";
+    const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
 
     if (username === ADMIN_USER && password === ADMIN_PASS) {
         // Sign Admin Token
