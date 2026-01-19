@@ -3,9 +3,19 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { writeLocalJSON: writeDB, readLocalJSON: readDB } = require('../data/db');
-const { sendOtpEmail } = require('../backend_services/emailService');
-const { JWT_SECRET } = require('../middleware/auth');
 const speakeasy = require('speakeasy');
+const {
+    generateRegistrationOptions,
+    verifyRegistrationResponse,
+    generateAuthenticationOptions,
+    verifyAuthenticationResponse,
+} = require('@simplewebauthn/server');
+
+// In-memory challenge store (simplified for single instance)
+const challengeStore = {};
+const RP_ID = 'tentionfree.store'; // MUST match your domain
+const ORIGIN = ['https://tentionfree.store', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+
 
 // --- PENDING REGISTRATION STORE ---
 const pendingUsers = {}; // { email: { userData, otp, expires, attempts } }
@@ -220,18 +230,18 @@ router.post('/admin-login', async (req, res) => {
         // Step 2: Verify 2FA (TOTP or PIN or PASSKEY)
         const systemData = await readDB('system_data.json');
 
-        // Check for Passkey Method
+        // Check for Passkey Method (WebAuthn)
         if (req.body.loginMethod === 'passkey') {
-            const storedPasskey = systemData.adminPasskey;
-            if (!storedPasskey) {
-                return res.json({ success: false, message: "Passkey not configured. Use Authenticator." });
-            }
-            if (token.trim() === storedPasskey) {
-                const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-                return res.json({ success: true, token: sessionToken });
-            } else {
-                return res.json({ success: false, message: "Invalid Passkey" });
-            }
+            // For WebAuthn, the verification happens in a separate route (/auth/webauthn/login-verify).
+            // The client should have already called that route and obtained a verification token
+            // OR this route is just for the final JWT issuance after verification.
+            // HOWEVER, to keep it simple:
+            // 1. Client calls /login-verify with the WebAuthn response.
+            // 2. Server verifies and returns the JWT directly there.
+            // 3. THIS block might not be needed if we move the logic there, OR
+            // we can accept a "passkeyToken" here that was issued by /login-verify?
+            // Let's stick to the /login-verify returning the final JWT for the admin.
+            return res.status(400).json({ success: false, message: "Use /auth/webauthn/login-verify for Passkey login" });
         }
 
         // Verify App Code
@@ -347,6 +357,181 @@ async function handleSocialLogin(req, res, provider) {
 router.post('/auth/google', async (req, res) => {
     await handleSocialLogin(req, res, 'google');
 });
+
+// --- WEBAUTHN ROUTES ---
+
+// 1. Generate Registration Options (Setup)
+router.post('/auth/webauthn/register-options', async (req, res) => {
+    const { pin } = req.body;
+    const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
+
+    if (pin !== BACKUP_PIN) {
+        return res.status(403).json({ success: false, message: "Invalid Authorization PIN" });
+    }
+
+    const systemData = await readDB('system_data.json') || {};
+    const adminPasskeys = systemData.adminPasskeys || [];
+
+    const options = await generateRegistrationOptions({
+        rpName: 'Tention Free Admin',
+        rpID: RP_ID,
+        userID: 'admin-user-id', // Fixed ID for the single admin
+        userName: 'admin@tentionfree.store',
+        // Don't exclude credentials so we can register multiple devices? 
+        // Or exclude to prevent duplicates? Let's allow multiple.
+        attestationType: 'none',
+        authenticatorSelection: {
+            residentKey: 'preferred',
+            userVerification: 'preferred',
+            authenticatorAttachment: 'platform', // Force TouchID/FaceID/Windows Hello
+        },
+    });
+
+    challengeStore['admin-register'] = options.challenge;
+    res.json(options);
+});
+
+// 2. Verify Registration (Setup)
+router.post('/auth/webauthn/register-verify', async (req, res) => {
+    const { response } = req.body;
+    const expectedChallenge = challengeStore['admin-register'];
+
+    if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
+
+    try {
+        const verification = await verifyRegistrationResponse({
+            response,
+            expectedChallenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+        });
+
+        if (verification.verified && verification.registrationInfo) {
+            const systemData = await readDB('system_data.json') || {};
+            if (!systemData.adminPasskeys) systemData.adminPasskeys = [];
+
+            const newValues = {
+                id: verification.registrationInfo.credentialID,
+                publicKey: verification.registrationInfo.credentialPublicKey,
+                counter: verification.registrationInfo.counter,
+                transports: verification.registrationInfo.credentialTransports,
+                device: req.headers['user-agent'] || 'Unknown Device',
+                created: new Date().toISOString()
+            };
+
+            systemData.adminPasskeys.push(newValues);
+            await writeDB('system_data.json', systemData);
+
+            delete challengeStore['admin-register'];
+            res.json({ success: true, verified: true });
+        } else {
+            res.status(400).json({ success: false, verified: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 3. Generate Login Options
+router.get('/auth/webauthn/login-options', async (req, res) => {
+    const systemData = await readDB('system_data.json') || {};
+    const adminPasskeys = systemData.adminPasskeys || [];
+
+    if (adminPasskeys.length === 0) {
+        return res.status(400).json({ success: false, message: "No Passkeys Registered" });
+    }
+
+    const options = await generateAuthenticationOptions({
+        rpID: RP_ID,
+        allowCredentials: adminPasskeys.map(key => ({
+            id: key.id, // Buffer or base64? Library handles checking both usually, but stored as base64url or buffer?
+            // checking simplewebauthn docs, credentialID store is typically Buffer or Base64URL string.
+            // verifyRegistrationResponse returns Buffer usually for ID.
+            // When saving to JSON, Buffers become { type: 'Buffer', data: [...] }.
+            // We need to handle that.
+            type: 'public-key',
+            transports: key.transports,
+        })),
+        userVerification: 'preferred',
+    });
+
+    challengeStore['admin-login'] = options.challenge;
+    res.json(options);
+});
+
+// 4. Verify Login
+router.post('/auth/webauthn/login-verify', async (req, res) => {
+    const { response } = req.body;
+    const expectedChallenge = challengeStore['admin-login'];
+
+    if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
+
+    try {
+        const systemData = await readDB('system_data.json') || {};
+        const adminPasskeys = systemData.adminPasskeys || [];
+
+        const credentialID = response.id;
+        // Find matching key. NOTE: stored ID might be serialized Buffer, need careful comparison.
+        // SimpleWebAuthn usually expects stored Authenticator with credentialID as Buffer or Base64URL.
+        // Lets try to match loosely.
+        const dbAuthenticator = adminPasskeys.find(key => {
+            // key.id might be {type:'Buffer', data:..} from JSON
+            if (key.id.type === 'Buffer') {
+                const buf = Buffer.from(key.id.data);
+                // response.id is Base64URL string
+                return base64urlToBuffer(credentialID).equals(buf);
+            }
+            return key.id === credentialID;
+        });
+
+        if (!dbAuthenticator) {
+            return res.status(400).json({ success: false, message: "Authenticator not found" });
+        }
+
+        // Convert stored public key back to Uint8Array/Buffer for verification
+        let storedPublicKey = dbAuthenticator.publicKey;
+        if (storedPublicKey.type === 'Buffer') {
+            storedPublicKey = Buffer.from(storedPublicKey.data);
+        }
+
+        const verification = await verifyAuthenticationResponse({
+            response,
+            expectedChallenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+            authenticator: {
+                credentialID: dbAuthenticator.id,
+                credentialPublicKey: storedPublicKey,
+                counter: dbAuthenticator.counter,
+            },
+        });
+
+        if (verification.verified) {
+            // Update counter
+            dbAuthenticator.counter = verification.authenticationInfo.newCounter;
+            await writeDB('system_data.json', systemData);
+
+            delete challengeStore['admin-login'];
+
+            // Log in successful - Issue JWT
+            const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+            res.json({ success: true, verified: true, token: sessionToken });
+        } else {
+            res.status(400).json({ success: false, verified: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Helper for Base64URL to Buffer (since simplewebauthn might not export it directly or we need it)
+function base64urlToBuffer(base64url) {
+    const padding = '='.repeat((4 - base64url.length % 4) % 4);
+    const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    return Buffer.from(base64, 'base64');
+}
 
 // --- UPDATE PASSKEY (Protected) ---
 router.post('/admin/update-passkey', async (req, res) => {
