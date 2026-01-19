@@ -358,10 +358,25 @@ router.post('/auth/google', async (req, res) => {
     await handleSocialLogin(req, res, 'google');
 });
 
-// --- WEBAUTHN ROUTES ---
+// --- WEBAUTHN CONFIG ---
+const RP_ID = 'tentionfree.store'; // Effective domain
+const ORIGIN = ['https://tentionfree.store', 'http://localhost:3000', 'https://www.tentionfree.store']; // Allowed origins
 
 // 1. Generate Registration Options (Setup)
 router.post('/auth/webauthn/register-options', async (req, res) => {
+    // 1. Security Check: Require Admin Token (Authorization Header)
+    // The user requested "login na kore access kora jay" -> implies we must prevent this.
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, message: "Unauthorized: Admin Login Required" });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+        return res.status(403).json({ success: false, message: "Invalid or Expired Admin Token" });
+    }
+
     const { pin } = req.body;
     const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
 
@@ -370,20 +385,18 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
     }
 
     const systemData = await readDB('system_data.json') || {};
-    const adminPasskeys = systemData.adminPasskeys || [];
+    // const adminPasskeys = systemData.adminPasskeys || []; // Not used here directly
 
     const options = await generateRegistrationOptions({
         rpName: 'Tention Free Admin',
         rpID: RP_ID,
-        userID: 'admin-user-id', // Fixed ID for the single admin
+        userID: 'admin-user-id',
         userName: 'admin@tentionfree.store',
-        // Don't exclude credentials so we can register multiple devices? 
-        // Or exclude to prevent duplicates? Let's allow multiple.
         attestationType: 'none',
         authenticatorSelection: {
             residentKey: 'preferred',
             userVerification: 'preferred',
-            // authenticatorAttachment: 'platform', // Relaxed to allow any available authenticator (fixes "Application failed to respond")
+            // Relaxed to allow any available authenticator (Platform, Cross-Platform)
         },
     });
 

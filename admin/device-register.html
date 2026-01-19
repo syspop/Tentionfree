@@ -79,10 +79,14 @@
 
             try {
                 // 1. Get Registration Options
+                const token = localStorage.getItem('adminToken');
                 // Note: Relative path works because this file will be served from the same domain
                 const resp = await fetch('/api/auth/webauthn/register-options', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ pin })
                 });
 
