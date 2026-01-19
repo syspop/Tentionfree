@@ -359,8 +359,7 @@ router.post('/auth/google', async (req, res) => {
 });
 
 // --- WEBAUTHN CONFIG ---
-const RP_ID = 'tentionfree.store'; // Effective domain
-const ORIGIN = ['https://tentionfree.store', 'http://localhost:3000', 'https://www.tentionfree.store']; // Allowed origins
+// RP_ID and ORIGIN are defined at the top of the file.
 
 // 1. Generate Registration Options (Setup)
 router.post('/auth/webauthn/register-options', async (req, res) => {
