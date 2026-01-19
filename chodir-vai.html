@@ -141,7 +141,7 @@
             </div>
 
             <!-- 2FA Input (Hidden initially) -->
-            <div id="otp-input-container" class="hidden animate-fade-in-up mt-4">
+            <div id="section-2fa" class="hidden animate-enter mt-4">
 
                 <!-- Auth Method Selection -->
                 <div class="flex gap-4 mb-4 justify-center">
@@ -283,7 +283,11 @@
                     if (data.require2fa) {
                         is2FAMode = true;
                         document.getElementById('credentials-section').classList.add('hidden');
-                        document.getElementById('otp-input-container').classList.remove('hidden'); // Show 2FA container
+
+                        // Show 2FA Section
+                        const sec2fa = document.getElementById('section-2fa');
+                        if (sec2fa) sec2fa.classList.remove('hidden');
+
                         btn.disabled = false;
                         document.getElementById('admin-otp').focus();
                         btn.innerHTML = 'Verify Login'; // Reset button text
