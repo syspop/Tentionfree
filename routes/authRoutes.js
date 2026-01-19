@@ -220,12 +220,6 @@ router.post('/admin-login', async (req, res) => {
         // Step 2: Verify 2FA (TOTP or PIN)
         const systemData = await readDB('system_data.json');
 
-        // Allow Master PIN
-        if (token.trim() === MASTER_PIN) {
-            const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-            return res.json({ success: true, token: sessionToken });
-        }
-
         // Verify App Code
         if (systemData && systemData.admin2faSecret) {
             const verified = speakeasy.totp.verify({
