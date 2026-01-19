@@ -43,7 +43,41 @@ app.use((req, res, next) => {
     const normalizedPath = req.path.toLowerCase();
     if (blockedPaths.some(p => normalizedPath.startsWith(p) || normalizedPath === p)) {
         console.log(`[BLOCKED] Access to sensitive file: ${req.path}`);
-        return res.status(403).send('Access Denied');
+        return res.status(403).send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Access Denied - Security</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+            </head>
+            <body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4 font-sans">
+                <div class="max-w-md w-full bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-blue-500/5 pointer-events-none"></div>
+                    
+                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 mb-6 relative z-10">
+                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    
+                    <h1 class="text-3xl font-bold mb-3 relative z-10">Restricted Access</h1>
+                    <p class="text-slate-400 mb-8 relative z-10 leading-relaxed">
+                        This file is protected for security reasons. You cannot access it directly.
+                    </p>
+                    
+                    <a href="/" class="relative z-10 inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-2xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg shadow-blue-500/25">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        Back to Home
+                    </a>
+                </div>
+            </body>
+            </html>
+        `);
     }
     next();
 });
@@ -65,7 +99,32 @@ app.use('/assets', (req, res, next) => {
     if (isImage) {
         if (!referer) {
             // Block Direct Access (Type URL in browser)
-            return res.status(403).send('Access Denied: Direct link access is not allowed.');
+            return res.status(403).send(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Image Protected</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                </head>
+                <body class="bg-gray-950 min-h-screen flex flex-col items-center justify-center p-4 text-white">
+                    <div class="relative w-full max-w-lg bg-gray-900 rounded-3xl p-10 text-center shadow-2xl border border-gray-800">
+                        <div class="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h1 class="text-2xl font-bold mb-4">Direct Access Not Allowed</h1>
+                        <p class="text-gray-400 mb-8">
+                            This image is protected. You can only view it on <span class="text-blue-400 font-medium">tentionfree.store</span>.
+                        </p>
+                        <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-200 transition-all">
+                            Visit Website
+                        </a>
+                    </div>
+                </body>
+                </html>
+            `);
         }
 
         const origin = new URL(referer).origin;
