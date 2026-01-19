@@ -322,6 +322,24 @@
                 document.getElementById('admin-otp').required = false;
             }
         }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-6 py-4 rounded-xl shadow-2xl text-white transform transition-all duration-300 translate-y-[-100%] opacity-0 z-50 flex items-center gap-3 glass-card border border-white/10`;
+
+            let icon = '<i class="fa-solid fa-circle-info text-blue-400 text-xl"></i>';
+            if (type === 'success') icon = '<i class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>';
+            if (type === 'error') icon = '<i class="fa-solid fa-circle-xmark text-red-400 text-xl"></i>';
+
+            toast.innerHTML = `${icon}<span class="font-medium tracking-wide">${message}</span>`;
+
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-[-100%]', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-100%]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
     </script>
 </body>
 
