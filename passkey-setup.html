@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Passkey Setup</title>
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .field {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #fff;
+            border-radius: 0.5rem;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            ring: 2px solid rgba(59, 130, 246, 0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .status {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.875rem;
+            min-height: 1.25rem;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .note {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <h1>Fingerprint/FaceID Setup</h1>
+
+        <div class="field">
+            <label>Server URL</label>
+            <input type="text" id="serverUrl" value="https://tentionfree.store" placeholder="https://yourdomain.com">
+        </div>
+
+        <div class="field">
+            <label>Authorization PIN (Backup PIN)</label>
+            <input type="password" id="pin" placeholder="Enter PIN to authorize">
+        </div>
+
+        <button onclick="registerPasskey()" id="btn">Register This Device</button>
+
+        <div id="status" class="status"></div>
+        <div class="note">This will register your current device's biometric authenticator (Fingerprint, FaceID, or
+            Windows Hello).</div>
+    </div>
+
+    <script>
+        async function registerPasskey() {
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            const serverUrl = document.getElementById('serverUrl').value.replace(/\/$/, "");
+            const pin = document.getElementById('pin').value;
+
+            if (!pin) {
+                status.innerHTML = '<span class="error">PIN is required</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            status.innerHTML = 'Getting options...';
+
+            try {
+                // 1. Get Registration Options
+                const resp = await fetch(`${serverUrl}/api/auth/webauthn/register-options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin })
+                });
+
+                // Improved Error Handling
+                const text = await resp.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (err) {
+                    console.error("Server Raw Response:", text);
+                    if (text.includes("<html") || text.includes("<!DOCTYPE")) {
+                        throw new Error("Server returned HTML page (likely 404/500). Is the server deployed?");
+                    }
+                    throw new Error("Invalid Server Response: " + text.substring(0, 50));
+                }
+
+                if (!resp.ok) throw new Error(data.message || "Failed to get options");
+
+                // 2. Browser Action
+                status.innerHTML = 'Scan your Fingerprint/FaceID now...';
+                const attResp = await SimpleWebAuthnBrowser.startRegistration(data);
+
+                // 3. Verify
+                status.innerHTML = 'Verifying...';
+                const verifyResp = await fetch(`${serverUrl}/api/auth/webauthn/register-verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: attResp })
+                });
+
+                const verifyData = await verifyResp.json();
+
+                if (verifyData.success) {
+                    status.innerHTML = '<span class="success">✅ Device Registered Successfully!</span>';
+                    document.getElementById('pin').value = '';
+                } else {
+                    status.innerHTML = `<span class="error">❌ ${verifyData.message || 'Verification Failed'}</span>`;
+                }
+
+            } catch (e) {
+                status.innerHTML = `<span class="error">❌ Error: ${e.message}</span>`;
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Register This Device";
+            }
+        }
+    </script>
+
+</body>
+
+</html>

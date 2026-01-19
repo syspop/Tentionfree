@@ -434,8 +434,8 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             if (!systemData.adminPasskeys) systemData.adminPasskeys = [];
 
             const newValues = {
-                id: verification.registrationInfo.credentialID,
-                publicKey: verification.registrationInfo.credentialPublicKey,
+                id: Buffer.from(verification.registrationInfo.credentialID).toString('base64url'),
+                publicKey: Buffer.from(verification.registrationInfo.credentialPublicKey).toString('base64url'),
                 counter: verification.registrationInfo.counter,
                 transports: verification.registrationInfo.credentialTransports,
                 device: req.headers['user-agent'] || 'Unknown Device',
@@ -470,7 +470,9 @@ router.get('/auth/webauthn/login-options', async (req, res) => {
             rpID: RP_ID,
             allowCredentials: adminPasskeys.map(key => {
                 let id = key.id;
-                if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
+                if (typeof id === 'string') {
+                    id = base64urlToBuffer(id);
+                } else if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
                     id = new Uint8Array(id.data);
                 }
                 return {
@@ -501,15 +503,17 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         const systemData = await readDB('system_data.json') || {};
         const adminPasskeys = systemData.adminPasskeys || [];
 
+        if (!response.id) throw new Error("Invalid Passkey Response: Missing ID");
         const credentialID = response.id;
-        // Find matching key. NOTE: stored ID might be serialized Buffer, need careful comparison.
-        // SimpleWebAuthn usually expects stored Authenticator with credentialID as Buffer or Base64URL.
-        // Lets try to match loosely.
+
+        // Find matching key.
         const dbAuthenticator = adminPasskeys.find(key => {
-            // key.id might be {type:'Buffer', data:..} from JSON
+            if (typeof key.id === 'string') {
+                return key.id === credentialID;
+            }
+            // Legacy JSON Buffer support
             if (key.id.type === 'Buffer') {
                 const buf = Buffer.from(key.id.data);
-                // response.id is Base64URL string
                 return base64urlToBuffer(credentialID).equals(buf);
             }
             return key.id === credentialID;
@@ -519,10 +523,20 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             return res.status(400).json({ success: false, message: "Authenticator not found" });
         }
 
-        // Convert stored public key back to Uint8Array/Buffer for verification
+        // Convert stored public key back to Uint8Array/Buffer
         let storedPublicKey = dbAuthenticator.publicKey;
-        if (storedPublicKey.type === 'Buffer') {
+        if (typeof storedPublicKey === 'string') {
+            storedPublicKey = base64urlToBuffer(storedPublicKey);
+        } else if (storedPublicKey.type === 'Buffer') {
             storedPublicKey = Buffer.from(storedPublicKey.data);
+        }
+
+        // Convert stored ID back to Buffer
+        let storedCredentialID = dbAuthenticator.id;
+        if (typeof storedCredentialID === 'string') {
+            storedCredentialID = base64urlToBuffer(storedCredentialID);
+        } else if (storedCredentialID.type === 'Buffer') {
+            storedCredentialID = Buffer.from(storedCredentialID.data);
         }
 
         const verification = await verifyAuthenticationResponse({
@@ -531,7 +545,7 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             expectedOrigin: ORIGIN,
             expectedRPID: RP_ID,
             authenticator: {
-                credentialID: dbAuthenticator.id,
+                credentialID: storedCredentialID,
                 credentialPublicKey: storedPublicKey,
                 counter: dbAuthenticator.counter,
             },
