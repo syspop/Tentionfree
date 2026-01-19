@@ -312,6 +312,64 @@ app.get('/', (req, res) => {
 // Static Files
 app.use(express.static(__dirname, { extensions: ['html'] }));
 
+// 404 HANDLER (Styled Page)
+app.use((req, res, next) => {
+    res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Page Not Found - Tention Free</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+            <style>
+                @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+                .float-anim { animation: float 6s ease-in-out infinite; }
+            </style>
+        </head>
+        <body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4 font-sans overflow-hidden relative">
+            
+            <!-- Background Elements -->
+            <div class="absolute top-0 left-0 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+
+            <div class="max-w-2xl w-full text-center relative z-10">
+                <div class="float-anim mb-8">
+                    <h1 class="text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 drop-shadow-2xl">404</h1>
+                </div>
+                
+                <h2 class="text-4xl font-bold mb-4">Ooops! Page Not Found</h2>
+                <p class="text-slate-400 text-lg mb-10 max-w-lg mx-auto leading-relaxed">
+                    The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="/" class="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg shadow-blue-600/25 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        Go Home
+                    </a>
+                    
+                    <a href="#" onclick="history.back()" class="px-8 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-semibold transition-all duration-300 border border-slate-700 hover:border-slate-600 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Go Back
+                    </a>
+                </div>
+
+                <div class="mt-12 pt-8 border-t border-slate-800/50">
+                    <p class="text-slate-500 text-sm">Error Code: 404_NOT_FOUND | Path: <span class="font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded inline-block max-w-[200px] truncate align-bottom">${req.path}</span></p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
