@@ -412,182 +412,183 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
         console.error("WebAuthn Register Error:", err);
         res.status(500).json({ success: false, message: "Server Error: " + err.message });
     }
+});
 
-    // 2. Verify Registration (Setup)
-    router.post('/auth/webauthn/register-verify', async (req, res) => {
-        const { response } = req.body;
-        const expectedChallenge = challengeStore['admin-register'];
+// 2. Verify Registration (Setup)
+router.post('/auth/webauthn/register-verify', async (req, res) => {
+    const { response } = req.body;
+    const expectedChallenge = challengeStore['admin-register'];
 
-        if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
+    if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
 
-        try {
-            const verification = await verifyRegistrationResponse({
-                response,
-                expectedChallenge,
-                expectedOrigin: ORIGIN,
-                expectedRPID: RP_ID,
-            });
+    try {
+        const verification = await verifyRegistrationResponse({
+            response,
+            expectedChallenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+        });
 
-            if (verification.verified && verification.registrationInfo) {
-                const systemData = await readDB('system_data.json') || {};
-                if (!systemData.adminPasskeys) systemData.adminPasskeys = [];
+        if (verification.verified && verification.registrationInfo) {
+            const systemData = await readDB('system_data.json') || {};
+            if (!systemData.adminPasskeys) systemData.adminPasskeys = [];
 
-                const newValues = {
-                    id: verification.registrationInfo.credentialID,
-                    publicKey: verification.registrationInfo.credentialPublicKey,
-                    counter: verification.registrationInfo.counter,
-                    transports: verification.registrationInfo.credentialTransports,
-                    device: req.headers['user-agent'] || 'Unknown Device',
-                    created: new Date().toISOString()
-                };
+            const newValues = {
+                id: verification.registrationInfo.credentialID,
+                publicKey: verification.registrationInfo.credentialPublicKey,
+                counter: verification.registrationInfo.counter,
+                transports: verification.registrationInfo.credentialTransports,
+                device: req.headers['user-agent'] || 'Unknown Device',
+                created: new Date().toISOString()
+            };
 
-                systemData.adminPasskeys.push(newValues);
-                await writeDB('system_data.json', systemData);
+            systemData.adminPasskeys.push(newValues);
+            await writeDB('system_data.json', systemData);
 
-                delete challengeStore['admin-register'];
-                res.json({ success: true, verified: true });
-            } else {
-                res.status(400).json({ success: false, verified: false });
-            }
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ success: false, message: error.message });
+            delete challengeStore['admin-register'];
+            res.json({ success: true, verified: true });
+        } else {
+            res.status(400).json({ success: false, verified: false });
         }
-    });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
-    // 3. Generate Login Options
-    router.get('/auth/webauthn/login-options', async (req, res) => {
+// 3. Generate Login Options
+router.get('/auth/webauthn/login-options', async (req, res) => {
+    const systemData = await readDB('system_data.json') || {};
+    const adminPasskeys = systemData.adminPasskeys || [];
+
+    if (adminPasskeys.length === 0) {
+        return res.status(400).json({ success: false, message: "No Passkeys Registered" });
+    }
+
+    if (adminPasskeys.length === 0) {
+        return res.status(400).json({ success: false, message: "No Passkeys Registered" });
+    }
+
+    try {
+        const options = await generateAuthenticationOptions({
+            rpID: RP_ID,
+            allowCredentials: adminPasskeys.map(key => {
+                let id = key.id;
+                if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
+                    id = new Uint8Array(id.data);
+                }
+                return {
+                    id: id,
+                    type: 'public-key',
+                    transports: key.transports,
+                };
+            }),
+            userVerification: 'preferred',
+        });
+
+        challengeStore['admin-login'] = options.challenge;
+        res.json(options);
+    } catch (err) {
+        console.error("WebAuthn Login Options Error:", err);
+        res.status(500).json({ success: false, message: "Server Error: " + err.message });
+    }
+});
+
+// 4. Verify Login
+router.post('/auth/webauthn/login-verify', async (req, res) => {
+    const { response } = req.body;
+    const expectedChallenge = challengeStore['admin-login'];
+
+    if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
+
+    try {
         const systemData = await readDB('system_data.json') || {};
         const adminPasskeys = systemData.adminPasskeys || [];
 
-        if (adminPasskeys.length === 0) {
-            return res.status(400).json({ success: false, message: "No Passkeys Registered" });
-        }
-
-        if (adminPasskeys.length === 0) {
-            return res.status(400).json({ success: false, message: "No Passkeys Registered" });
-        }
-
-        try {
-            const options = await generateAuthenticationOptions({
-                rpID: RP_ID,
-                allowCredentials: adminPasskeys.map(key => {
-                    let id = key.id;
-                    if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
-                        id = new Uint8Array(id.data);
-                    }
-                    return {
-                        id: id,
-                        type: 'public-key',
-                        transports: key.transports,
-                    };
-                }),
-                userVerification: 'preferred',
-            });
-
-            challengeStore['admin-login'] = options.challenge;
-            res.json(options);
-        } catch (err) {
-            console.error("WebAuthn Login Options Error:", err);
-            res.status(500).json({ success: false, message: "Server Error: " + err.message });
-        }
-    });
-
-    // 4. Verify Login
-    router.post('/auth/webauthn/login-verify', async (req, res) => {
-        const { response } = req.body;
-        const expectedChallenge = challengeStore['admin-login'];
-
-        if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
-
-        try {
-            const systemData = await readDB('system_data.json') || {};
-            const adminPasskeys = systemData.adminPasskeys || [];
-
-            const credentialID = response.id;
-            // Find matching key. NOTE: stored ID might be serialized Buffer, need careful comparison.
-            // SimpleWebAuthn usually expects stored Authenticator with credentialID as Buffer or Base64URL.
-            // Lets try to match loosely.
-            const dbAuthenticator = adminPasskeys.find(key => {
-                // key.id might be {type:'Buffer', data:..} from JSON
-                if (key.id.type === 'Buffer') {
-                    const buf = Buffer.from(key.id.data);
-                    // response.id is Base64URL string
-                    return base64urlToBuffer(credentialID).equals(buf);
-                }
-                return key.id === credentialID;
-            });
-
-            if (!dbAuthenticator) {
-                return res.status(400).json({ success: false, message: "Authenticator not found" });
+        const credentialID = response.id;
+        // Find matching key. NOTE: stored ID might be serialized Buffer, need careful comparison.
+        // SimpleWebAuthn usually expects stored Authenticator with credentialID as Buffer or Base64URL.
+        // Lets try to match loosely.
+        const dbAuthenticator = adminPasskeys.find(key => {
+            // key.id might be {type:'Buffer', data:..} from JSON
+            if (key.id.type === 'Buffer') {
+                const buf = Buffer.from(key.id.data);
+                // response.id is Base64URL string
+                return base64urlToBuffer(credentialID).equals(buf);
             }
+            return key.id === credentialID;
+        });
 
-            // Convert stored public key back to Uint8Array/Buffer for verification
-            let storedPublicKey = dbAuthenticator.publicKey;
-            if (storedPublicKey.type === 'Buffer') {
-                storedPublicKey = Buffer.from(storedPublicKey.data);
-            }
-
-            const verification = await verifyAuthenticationResponse({
-                response,
-                expectedChallenge,
-                expectedOrigin: ORIGIN,
-                expectedRPID: RP_ID,
-                authenticator: {
-                    credentialID: dbAuthenticator.id,
-                    credentialPublicKey: storedPublicKey,
-                    counter: dbAuthenticator.counter,
-                },
-            });
-
-            if (verification.verified) {
-                // Update counter
-                dbAuthenticator.counter = verification.authenticationInfo.newCounter;
-                await writeDB('system_data.json', systemData);
-
-                delete challengeStore['admin-login'];
-
-                // Log in successful - Issue JWT
-                const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-                res.json({ success: true, verified: true, token: sessionToken });
-            } else {
-                res.status(400).json({ success: false, verified: false });
-            }
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ success: false, message: error.message });
+        if (!dbAuthenticator) {
+            return res.status(400).json({ success: false, message: "Authenticator not found" });
         }
-    });
 
-    // Helper for Base64URL to Buffer (since simplewebauthn might not export it directly or we need it)
-    function base64urlToBuffer(base64url) {
-        const padding = '='.repeat((4 - base64url.length % 4) % 4);
-        const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        return Buffer.from(base64, 'base64');
+        // Convert stored public key back to Uint8Array/Buffer for verification
+        let storedPublicKey = dbAuthenticator.publicKey;
+        if (storedPublicKey.type === 'Buffer') {
+            storedPublicKey = Buffer.from(storedPublicKey.data);
+        }
+
+        const verification = await verifyAuthenticationResponse({
+            response,
+            expectedChallenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+            authenticator: {
+                credentialID: dbAuthenticator.id,
+                credentialPublicKey: storedPublicKey,
+                counter: dbAuthenticator.counter,
+            },
+        });
+
+        if (verification.verified) {
+            // Update counter
+            dbAuthenticator.counter = verification.authenticationInfo.newCounter;
+            await writeDB('system_data.json', systemData);
+
+            delete challengeStore['admin-login'];
+
+            // Log in successful - Issue JWT
+            const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+            res.json({ success: true, verified: true, token: sessionToken });
+        } else {
+            res.status(400).json({ success: false, verified: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Helper for Base64URL to Buffer (since simplewebauthn might not export it directly or we need it)
+function base64urlToBuffer(base64url) {
+    const padding = '='.repeat((4 - base64url.length % 4) % 4);
+    const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    return Buffer.from(base64, 'base64');
+}
+
+// --- UPDATE PASSKEY (Protected) ---
+router.post('/admin/update-passkey', async (req, res) => {
+    const { currentPin, newPasskey } = req.body;
+
+    // Auth Check: Must provide Backup PIN to set/change Passkey
+    const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
+    if (currentPin !== BACKUP_PIN) {
+        return res.status(403).json({ success: false, message: "Invalid Authorization PIN" });
     }
 
-    // --- UPDATE PASSKEY (Protected) ---
-    router.post('/admin/update-passkey', async (req, res) => {
-        const { currentPin, newPasskey } = req.body;
+    if (!newPasskey || newPasskey.length < 4) {
+        return res.status(400).json({ success: false, message: "Passkey too weak (min 4 chars)" });
+    }
 
-        // Auth Check: Must provide Backup PIN to set/change Passkey
-        const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
-        if (currentPin !== BACKUP_PIN) {
-            return res.status(403).json({ success: false, message: "Invalid Authorization PIN" });
-        }
+    try {
+        const systemData = await readDB('system_data.json') || {};
+        systemData.adminPasskey = newPasskey.trim();
+        await writeDB('system_data.json', systemData);
+        res.json({ success: true, message: "Passkey updated successfully" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to save passkey" });
+    }
+});
 
-        if (!newPasskey || newPasskey.length < 4) {
-            return res.status(400).json({ success: false, message: "Passkey too weak (min 4 chars)" });
-        }
-
-        try {
-            const systemData = await readDB('system_data.json') || {};
-            systemData.adminPasskey = newPasskey.trim();
-            await writeDB('system_data.json', systemData);
-            res.json({ success: true, message: "Passkey updated successfully" });
-        } catch (err) {
-            res.status(500).json({ success: false, message: "Failed to save passkey" });
-        }
-    });
-
-    module.exports = router;
+module.exports = router;
