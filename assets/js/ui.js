@@ -229,7 +229,22 @@ async function loadProductDetailsPage() {
     const product = window.products.find(p => p.id == productId);
     if (!product) {
         console.error("Product not found for ID:", productId);
-        container.innerHTML = `<div class="text-center text-red-500 py-20">Product not found</div>`;
+        container.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+                <div class="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mb-6 relative">
+                    <div class="absolute inset-0 bg-red-500/20 blur-xl rounded-full"></div>
+                    <i class="fa-solid fa-box-open text-4xl text-slate-500"></i>
+                    <i class="fa-solid fa-circle-exclamation text-xl text-red-500 absolute -top-1 -right-1 bg-slate-900 rounded-full border border-slate-800"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-3">Product Not Found</h2>
+                <p class="text-slate-400 max-w-md mx-auto mb-8">
+                    The product you are looking for might have been removed or is temporarily unavailable.
+                </p>
+                <a href="products" class="px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-500/20 flex items-center gap-2 transform hover:-translate-y-1">
+                    <i class="fa-solid fa-layer-group"></i> Browse All Products
+                </a>
+            </div>
+        `;
         return;
     }
 
