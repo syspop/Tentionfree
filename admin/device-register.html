@@ -12,6 +12,11 @@
         // Security Check: Redirect if not logged in
         if (!localStorage.getItem('adminToken')) {
             window.location.href = '/chodir-vai';
+        } else {
+            // Show content only if token exists
+            document.addEventListener("DOMContentLoaded", () => {
+                document.body.style.display = 'flex';
+            });
         }
     </script>
     <style>
@@ -19,7 +24,10 @@
             font-family: system-ui, -apple-system, sans-serif;
             background: #0f172a;
             color: #e2e8f0;
-            display: flex;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: none;
+            /* Hidden by default for security */
             align-items: center;
             justify-content: center;
             min-height: 100vh;
