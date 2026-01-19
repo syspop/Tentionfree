@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { writeLocalJSON: writeDB, readLocalJSON: readDB } = require('../data/db');
 const { sendOtpEmail } = require('../backend_services/emailService');
 const { JWT_SECRET } = require('../middleware/auth');
+const speakeasy = require('speakeasy');
 
 // --- PENDING REGISTRATION STORE ---
 const pendingUsers = {}; // { email: { userData, otp, expires, attempts } }
@@ -203,16 +204,50 @@ router.post('/login', async (req, res) => {
 });
 
 // POST Admin Login
-router.post('/admin-login', (req, res) => {
-    const { username, password } = req.body;
+router.post('/admin-login', async (req, res) => {
+    const { username, password, token } = req.body;
 
     const ADMIN_USER = process.env.ADMIN_USER || "kazi@12MW";
     const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
+    const MASTER_PIN = process.env.BACKUP_PIN || "105090";
 
     if (username === ADMIN_USER && password === ADMIN_PASS) {
-        // Sign Admin Token
-        const token = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ success: true, token });
+        // Step 1: Credentials OK. Check 2FA.
+        if (!token) {
+            return res.json({ success: false, require2fa: true });
+        }
+
+        // Step 2: Verify 2FA (TOTP or PIN)
+        const systemData = await readDB('system_data.json');
+
+        // Allow Master PIN
+        if (token.trim() === MASTER_PIN) {
+            const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+            return res.json({ success: true, token: sessionToken });
+        }
+
+        // Verify App Code
+        if (systemData && systemData.admin2faSecret) {
+            const verified = speakeasy.totp.verify({
+                secret: systemData.admin2faSecret,
+                encoding: 'base32',
+                token: token.trim(),
+                window: 2
+            });
+
+            if (verified) {
+                const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+                return res.json({ success: true, token: sessionToken });
+            }
+        } else {
+            console.warn("⚠️ Admin 2FA Secret not set! Allowing login with credentials only (Security Risk)");
+            // Fallback if no secret set (should not happen based on check)
+            const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+            return res.json({ success: true, token: sessionToken });
+        }
+
+        return res.json({ success: false, message: "Invalid 2FA Code" });
+
     } else {
         res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
     }
