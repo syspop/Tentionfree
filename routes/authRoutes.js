@@ -221,53 +221,48 @@ router.post('/admin-login', async (req, res) => {
     const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
     const MASTER_PIN = process.env.BACKUP_PIN || "105090";
 
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-        // Step 1: Credentials OK. Check 2FA.
-        if (!token) {
-            return res.json({ success: false, require2fa: true });
-        }
+    try {
+        if (username === ADMIN_USER && password === ADMIN_PASS) {
+            // Step 1: Credentials OK. Check 2FA.
+            if (!token) {
+                return res.json({ success: false, require2fa: true });
+            }
 
-        // Step 2: Verify 2FA (TOTP or PIN or PASSKEY)
-        const systemData = await readDB('system_data.json');
+            // Step 2: Verify 2FA (TOTP or PIN or PASSKEY)
+            const systemData = await readDB('system_data.json') || {};
 
-        // Check for Passkey Method (WebAuthn)
-        if (req.body.loginMethod === 'passkey') {
-            // For WebAuthn, the verification happens in a separate route (/auth/webauthn/login-verify).
-            // The client should have already called that route and obtained a verification token
-            // OR this route is just for the final JWT issuance after verification.
-            // HOWEVER, to keep it simple:
-            // 1. Client calls /login-verify with the WebAuthn response.
-            // 2. Server verifies and returns the JWT directly there.
-            // 3. THIS block might not be needed if we move the logic there, OR
-            // we can accept a "passkeyToken" here that was issued by /login-verify?
-            // Let's stick to the /login-verify returning the final JWT for the admin.
-            return res.status(400).json({ success: false, message: "Use /auth/webauthn/login-verify for Passkey login" });
-        }
+            // Check for Passkey Method (WebAuthn)
+            if (req.body.loginMethod === 'passkey') {
+                return res.status(400).json({ success: false, message: "Use /auth/webauthn/login-verify for Passkey login" });
+            }
 
-        // Verify App Code
-        if (systemData && systemData.admin2faSecret) {
-            const verified = speakeasy.totp.verify({
-                secret: systemData.admin2faSecret,
-                encoding: 'base32',
-                token: token.trim(),
-                window: 2
-            });
+            // Verify App Code
+            if (systemData && systemData.admin2faSecret) {
+                const verified = speakeasy.totp.verify({
+                    secret: systemData.admin2faSecret,
+                    encoding: 'base32',
+                    token: token.trim(),
+                    window: 2
+                });
 
-            if (verified) {
+                if (verified) {
+                    const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+                    return res.json({ success: true, token: sessionToken });
+                }
+            } else {
+                console.warn("⚠️ Admin 2FA Secret not set! Allowing login with credentials only (Security Risk)");
                 const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
                 return res.json({ success: true, token: sessionToken });
             }
+
+            return res.json({ success: false, message: "Invalid 2FA Code" });
+
         } else {
-            console.warn("⚠️ Admin 2FA Secret not set! Allowing login with credentials only (Security Risk)");
-            // Fallback if no secret set (should not happen based on check)
-            const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-            return res.json({ success: true, token: sessionToken });
+            res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
         }
-
-        return res.json({ success: false, message: "Invalid 2FA Code" });
-
-    } else {
-        res.status(401).json({ success: false, message: "Invalid Admin Credentials" });
+    } catch (error) {
+        console.error("Admin Login Error:", error);
+        res.status(500).json({ success: false, message: "Server Error: " + error.message });
     }
 });
 
