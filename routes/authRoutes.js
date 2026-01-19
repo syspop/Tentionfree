@@ -465,10 +465,6 @@ router.get('/auth/webauthn/login-options', async (req, res) => {
         return res.status(400).json({ success: false, message: "No Passkeys Registered" });
     }
 
-    if (adminPasskeys.length === 0) {
-        return res.status(400).json({ success: false, message: "No Passkeys Registered" });
-    }
-
     try {
         const options = await generateAuthenticationOptions({
             rpID: RP_ID,
