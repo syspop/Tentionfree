@@ -387,7 +387,7 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
         const options = await generateRegistrationOptions({
             rpName: 'Tention Free Admin',
             rpID: RP_ID,
-            userID: 'admin-user-id',
+            userID: new Uint8Array(Buffer.from('admin-user-id')),
             userName: 'admin@tentionfree.store',
             attestationType: 'none',
             excludeCredentials: adminPasskeys.map(passkey => {
