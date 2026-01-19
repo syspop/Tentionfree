@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "unsafe_fallback_secret_change_me_in_prod";
 
-if (!JWT_SECRET) {
-    throw new Error("FATAL ERROR: JWT_SECRET is not defined in environment variables.");
+if (!process.env.JWT_SECRET) {
+    console.warn("⚠️  WARNING: JWT_SECRET is not defined. Using unsafe fallback.");
 }
 
 const authenticateAdmin = (req, res, next) => {
