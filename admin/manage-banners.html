@@ -127,7 +127,9 @@
 
         async function fetchBanners() {
             try {
-                const res = await fetch('/api/banners');
+                const res = await fetch('/api/banners', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
                 const banners = await res.json();
                 renderBanners(banners);
             } catch (err) {

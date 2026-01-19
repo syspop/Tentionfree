@@ -74,6 +74,12 @@ router.post('/backup-login', async (req, res) => {
             return res.json({ success: false, require2fa: true });
         }
 
+        // Allow PIN to bypass 2FA
+        const SECURE_PIN = process.env.BACKUP_PIN || "105090";
+        if (token.trim() === SECURE_PIN) {
+            return res.json({ success: true });
+        }
+
         const systemData = await readDB('system_data.json');
         if (!systemData || !systemData.backup2faSecret) {
             console.error("Backup 2FA Secret Missing!");
@@ -90,7 +96,7 @@ router.post('/backup-login', async (req, res) => {
         if (verified) {
             return res.json({ success: true });
         } else {
-            return res.json({ success: false, message: "Invalid 2FA Code" });
+            return res.json({ success: false, message: "Invalid 2FA Code (Use PIN or App)" });
         }
     }
 

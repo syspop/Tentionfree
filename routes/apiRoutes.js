@@ -309,4 +309,96 @@ router.delete('/categories/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- REVIEWS ROUTES (Admin) ---
+// GET All Reviews
+router.get('/all-reviews', authenticateAdmin, async (req, res) => {
+    try {
+        const reviews = await readDB('reviews.json');
+        res.json(reviews || []);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to load reviews" });
+    }
+});
+
+// REPLY to Review
+router.put('/reviews/:id/reply', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { reply } = req.body;
+
+    try {
+        const reviews = await readDB('reviews.json');
+        const index = reviews.findIndex(r => r.id === id);
+
+        if (index === -1) return res.status(404).json({ success: false, message: "Review not found" });
+
+        reviews[index].reply = reply;
+        reviews[index].replyDate = new Date().toISOString();
+
+        await writeDB('reviews.json', reviews);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to save reply" });
+    }
+});
+
+// DELETE Review
+router.delete('/reviews/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        let reviews = await readDB('reviews.json');
+        reviews = reviews.filter(r => r.id !== id);
+        await writeDB('reviews.json', reviews);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to delete review" });
+    }
+});
+
+// --- BANNERS ROUTES ---
+// GET Banners
+router.get('/banners', async (req, res) => {
+    try {
+        const banners = await readDB('banners.json') || [];
+        res.json(banners);
+    } catch (err) {
+        // If file missing, return empty array
+        res.json([]);
+    }
+});
+
+// ADD Banner
+router.post('/banners', authenticateAdmin, async (req, res) => {
+    const { image, link } = req.body;
+    if (!image) return res.status(400).json({ success: false, message: "Image URL required" });
+
+    try {
+        const banners = await readDB('banners.json') || [];
+        const newBanner = {
+            id: Date.now(),
+            image,
+            link: link || '',
+            date: new Date().toISOString()
+        };
+        banners.push(newBanner);
+        await writeDB('banners.json', banners);
+        res.json({ success: true, banner: newBanner });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to save banner" });
+    }
+});
+
+// DELETE Banner
+router.delete('/banners/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        let banners = await readDB('banners.json') || [];
+        banners = banners.filter(b => b.id !== id);
+        await writeDB('banners.json', banners);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to delete banner" });
+    }
+});
+
 module.exports = router;
