@@ -15,6 +15,7 @@ const {
 const challengeStore = {};
 const RP_ID = 'tentionfree.store'; // MUST match your domain
 const ORIGIN = ['https://tentionfree.store', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
 
 
 // --- PENDING REGISTRATION STORE ---
