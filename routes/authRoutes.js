@@ -383,7 +383,7 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
         authenticatorSelection: {
             residentKey: 'preferred',
             userVerification: 'preferred',
-            authenticatorAttachment: 'platform', // Force TouchID/FaceID/Windows Hello
+            // authenticatorAttachment: 'platform', // Relaxed to allow any available authenticator (fixes "Application failed to respond")
         },
     });
 
