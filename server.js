@@ -56,6 +56,26 @@ const allowedOrigins = [
     'http://127.0.0.1:3000'
 ];
 
+// 🔒 HOTLINK PROTECTION (Block Direct Image Access)
+app.use('/assets', (req, res, next) => {
+    const referer = req.headers.referer;
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(req.path);
+
+    // If it's an image and has NO referer (Direct Access) or Wrong Referer
+    if (isImage) {
+        if (!referer) {
+            // Block Direct Access (Type URL in browser)
+            return res.status(403).send('Access Denied: Direct link access is not allowed.');
+        }
+
+        const origin = new URL(referer).origin;
+        if (!allowedOrigins.includes(origin) && !origin.includes('tentionfree.store')) {
+            return res.status(403).send('Access Denied: Hotlinking is not allowed.');
+        }
+    }
+    next();
+});
+
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
