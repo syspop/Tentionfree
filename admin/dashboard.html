@@ -5,357 +5,435 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - TentionFree</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/admin/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#2563eb', 600: '#1d4ed8' },
+                    },
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="admin-box">
-        <nav id="admin-nav"></nav>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden selection:bg-brand-500/30">
 
-        <!-- Dashboard Content -->
-        <h3>&#x1F4CA; Business Overview</h3>
+    <div class="admin-box transition-all duration-300">
+        <nav id="admin-nav" class="hidden"></nav> <!-- Legacy Placeholder -->
 
-        <div class="dash-grid">
-            <div class="stat-card">
-                <i class="fa-solid fa-bangladeshi-taka-sign stat-icon" style="color:#00b894;"></i>
-                <div class="stat-label">Total Revenue</div>
-                <div class="stat-value" id="dash-revenue">&#x09F3;0</div>
-                <div style="color:#00b894; font-size:12px;">Lifetime Earnings</div>
+        <!-- Header Section -->
+        <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-3xl font-bold text-white tracking-tight">Dashboard Overview</h2>
+                <p class="text-slate-400 text-sm mt-1">Welcome back, Admin. Here's what's happening today.</p>
             </div>
-            <div class="stat-card">
-                <i class="fa-solid fa-cart-shopping stat-icon" style="color:#6c5ce7;"></i>
-                <div class="stat-label">Total Orders</div>
-                <div class="stat-value" id="dash-orders">0</div>
-                <div style="color:#6c5ce7; font-size:12px;">Successful Transactions</div>
-            </div>
-            <div class="stat-card">
-                <i class="fa-solid fa-users stat-icon" style="color:#ff7675;"></i>
-                <div class="stat-label">Customers</div>
-                <div class="stat-value" id="dash-users">0</div>
-                <div style="color:#ff7675; font-size:12px;">Registered Users</div>
+            <div class="flex items-center gap-3 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+                <span class="text-xs font-semibold text-slate-400 px-3">Filter:</span>
+                <select id="chart-filter" onchange="updateChart()"
+                    class="bg-slate-800 text-white text-sm font-medium px-3 py-1.5 rounded-lg border-none focus:ring-0 cursor-pointer hover:bg-slate-700 transition">
+                    <option value="7">Last 7 Days</option>
+                    <option value="30">Last 30 Days</option>
+                </select>
             </div>
         </div>
 
-        <!-- Settings Section -->
-        <h3 style="margin-top: 30px;">&#x2699; Quick Settings</h3>
-        <div class="dash-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-            <div class="stat-card"
-                style="flex-direction: row; justify-content: space-between; align-items: center; padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <!-- Revenue Card -->
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300">
+                <div
+                    class="absolute right-0 top-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-emerald-500/10">
+                </div>
+                <div class="flex items-center gap-4 mb-4">
                     <div
-                        style="width: 40px; height: 40px; background: rgba(37, 211, 102, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fa-brands fa-whatsapp" style="color:#25D366; font-size: 20px;"></i>
+                        class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-bangladeshi-taka-sign text-xl"></i>
                     </div>
                     <div>
-                        <div class="stat-label" style="text-align: left; margin-bottom: 2px;">Pay Later (WhatsApp)</div>
-                        <div style="font-size: 11px; color: #888;">Enable offline orders via WhatsApp</div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Revenue</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="dash-revenue">৳0</h3>
                     </div>
                 </div>
-                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                    <input type="checkbox" id="payLaterToggle" onchange="togglePayLater(this)">
-                    <span
-                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"
-                        class="slider round"></span>
+                <div class="w-full bg-slate-800/50 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full" style="width: 70%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-trend-up text-emerald-500"></i> Lifetime Earnings
+                </p>
+            </div>
+
+            <!-- Orders Card -->
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
+                <div
+                    class="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-blue-500/10">
+                </div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cart-shopping text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Orders</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="dash-orders">0</h3>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800/50 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full" style="width: 55%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+                    <i class="fa-solid fa-check-circle text-blue-500"></i> Successful Transactions
+                </p>
+            </div>
+
+            <!-- Customers Card -->
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-300">
+                <div
+                    class="absolute right-0 top-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-purple-500/10">
+                </div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div
+                        class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-users text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Users</p>
+                        <h3 class="text-2xl font-black text-white mt-0.5" id="dash-users">0</h3>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-800/50 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div class="bg-purple-500 h-full rounded-full" style="width: 40%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+                    <i class="fa-solid fa-user-plus text-purple-500"></i> Registered Accounts
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Settings Section -->
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-slate-400"></i> Quick Controls
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            <!-- Pay Later Toggle -->
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between group hover:border-slate-700 transition">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
+                        <i class="fa-brands fa-whatsapp text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-200 text-sm">Pay Later</h4>
+                        <p class="text-[10px] text-slate-500">Allow orders via WhatsApp</p>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="payLaterToggle" class="sr-only peer" onchange="togglePayLater(this)">
+                    <div
+                        class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500">
+                    </div>
                 </label>
             </div>
 
-            <!-- Show All on Home -->
-            <div class="stat-card"
-                style="flex-direction: row; justify-content: space-between; align-items: center; padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div
-                        style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fa-solid fa-home" style="color:#3b82f6; font-size: 20px;"></i>
+            <!-- Show Home Toggle -->
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between group hover:border-slate-700 transition">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                        <i class="fa-solid fa-house text-lg"></i>
                     </div>
                     <div>
-                        <div class="stat-label" style="text-align: left; margin-bottom: 2px;">Show All on Home</div>
-                        <div style="font-size: 11px; color: #888;">Show/Hide all products on index page</div>
+                        <h4 class="font-bold text-slate-200 text-sm">Show All on Home</h4>
+                        <p class="text-[10px] text-slate-500">Display all products</p>
                     </div>
                 </div>
-                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                    <input type="checkbox" id="showHomeToggle" onchange="toggleBulkProductOption('viewInIndex', this)">
-                    <span
-                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"
-                        class="slider round"></span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="showHomeToggle" class="sr-only peer"
+                        onchange="toggleBulkProductOption('viewInIndex', this)">
+                    <div
+                        class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500">
+                    </div>
                 </label>
             </div>
 
-            <!-- Auto Stockout -->
-            <div class="stat-card"
-                style="flex-direction: row; justify-content: space-between; align-items: center; padding: 20px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div
-                        style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fa-solid fa-ban" style="color:#ef4444; font-size: 20px;"></i>
+            <!-- Auto Stockout Toggle -->
+            <div
+                class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between group hover:border-slate-700 transition">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                        <i class="fa-solid fa-ban text-lg"></i>
                     </div>
                     <div>
-                        <div class="stat-label" style="text-align: left; margin-bottom: 2px;">Auto Stockout</div>
-                        <div style="font-size: 11px; color: #888;">Enable/Disable Auto Stockout for ALL</div>
+                        <h4 class="font-bold text-slate-200 text-sm">Auto Stockout</h4>
+                        <p class="text-[10px] text-slate-500">Disable OOS Products</p>
                     </div>
                 </div>
-                <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                    <input type="checkbox" id="autoStockToggle"
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="autoStockToggle" class="sr-only peer"
                         onchange="toggleBulkProductOption('autoStockOut', this)">
-                    <span
-                        style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"
-                        class="slider round"></span>
+                    <div
+                        class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500">
+                    </div>
                 </label>
-            </div>
-
-            <style>
-                .slider:before {
-                    position: absolute;
-                    content: "";
-                    height: 18px;
-                    width: 18px;
-                    left: 3px;
-                    bottom: 3px;
-                    background-color: white;
-                    transition: .4s;
-                    border-radius: 50%;
-                }
-
-                input:checked+.slider {
-                    background-color: #25D366;
-                }
-
-                /* Use dynamic color for others? Or just stick to green for active */
-                #showHomeToggle:checked+.slider {
-                    background-color: #3b82f6;
-                }
-
-                #autoStockToggle:checked+.slider {
-                    background-color: #ef4444;
-                }
-
-                input:checked+.slider:before {
-                    transform: translateX(20px);
-                }
-            </style>
-
-            <div class="chart-container">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h4 style="margin:0; color:white;">Sales Activity (Last 7 Days)</h4>
-                    <select id="chart-filter" class="input-box" style="width:auto; margin:0; padding:5px 15px;"
-                        onchange="updateChart()">
-                        <option value="7">Last 7 Days</option>
-                        <option value="30">Last 30 Days</option>
-                    </select>
-                </div>
-                <canvas id="salesChart" height="100"></canvas>
             </div>
         </div>
 
-        <script src="/admin/script.js?v=7"></script>
-        <script>
-            // --- DASHBOARD LOGIC ---
-            let salesChartInstance = null;
+        <!-- Chart Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-white text-lg">Revenue Analytics</h3>
+                <span
+                    class="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">Real-time
+                    Data</span>
+            </div>
+            <div class="relative h-64 w-full">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
 
-            document.addEventListener('DOMContentLoaded', loadDashboard);
+    </div>
 
-            async function loadDashboard() {
-                try {
-                    // Fetch Data concurrently
-                    // Note: API path adjusted to ../api/
-                    const [ordersRes, usersRes] = await Promise.all([
-                        fetch('../api/orders?t=' + Date.now()),
-                        fetch('../api/customers')
-                    ]);
+    <script src="/admin/script.js?v=8"></script>
+    <script>
+        // --- DASHBOARD LOGIC ---
+        let salesChartInstance = null;
 
-                    const orders = await ordersRes.json();
-                    const users = await usersRes.json();
+        document.addEventListener('DOMContentLoaded', loadDashboard);
 
-                    // 1. Calculate Stats
-                    const validOrders = Array.isArray(orders) ? orders.filter(o => o.status !== 'Cancelled' && o.status !== 'Deleted' && !o.isDeleted) : [];
-                    const totalRevenue = validOrders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
-                    const totalOrders = validOrders.length;
-                    const totalUsers = Array.isArray(users) ? users.length : 0;
+        async function loadDashboard() {
+            try {
+                // Fetch Data concurrently
+                const [ordersRes, usersRes] = await Promise.all([
+                    fetch('../api/orders?t=' + Date.now()),
+                    fetch('../api/customers')
+                ]);
 
-                    // 2. Update Cards
-                    // Animate Numbers
-                    animateValue("dash-revenue", 0, totalRevenue, 1000, "৳");
-                    animateValue("dash-orders", 0, totalOrders, 1000, "");
-                    animateValue("dash-users", 0, totalUsers, 1000, "");
+                const orders = await ordersRes.json();
+                const users = await usersRes.json();
 
-                    // 3. Render Chart
-                    updateChartData(validOrders);
+                // 1. Calculate Stats
+                const validOrders = Array.isArray(orders) ? orders.filter(o => o.status !== 'Cancelled' && o.status !== 'Deleted' && !o.isDeleted) : [];
+                const totalRevenue = validOrders.reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
+                const totalOrders = validOrders.length;
+                const totalUsers = Array.isArray(users) ? users.length : 0;
 
-                } catch (e) {
-                    console.error("Dashboard Load Error:", e);
+                // 2. Update Cards
+                // Animate Numbers
+                animateValue("dash-revenue", 0, totalRevenue, 1000, "৳");
+                animateValue("dash-orders", 0, totalOrders, 1000, "");
+                animateValue("dash-users", 0, totalUsers, 1000, "");
+
+                // 3. Render Chart
+                updateChartData(validOrders);
+
+            } catch (e) {
+                console.error("Dashboard Load Error:", e);
+            }
+            fetchConfig(); // Call fetchConfig 
+        }
+
+        async function fetchConfig() {
+            try {
+                const res = await fetch('../api/config/pay-later');
+                const data = await res.json();
+                if (data.success) {
+                    const toggle = document.getElementById('payLaterToggle');
+                    if (toggle) toggle.checked = data.enabled;
                 }
-                fetchConfig(); // Call fetchConfig after dashboard data is loaded
+            } catch (err) {
+                console.error("Config Load Error:", err);
             }
+        }
 
-            async function fetchConfig() {
-                try {
-                    const res = await fetch('../api/config/pay-later');
-                    const data = await res.json();
-                    if (data.success) {
-                        const toggle = document.getElementById('payLaterToggle');
-                        if (toggle) toggle.checked = data.enabled;
-                    }
-                } catch (err) {
-                    console.error("Config Load Error:", err);
-                }
-            }
-
-            async function togglePayLater(input) {
-                const enabled = input.checked;
-                try {
-                    // Optimistic UI update? No, let's wait or handle error
-                    const res = await fetch('../api/admin/config/pay-later', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                        },
-                        body: JSON.stringify({ enabled })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        showToast(`Pay Later is now ${enabled ? 'ON' : 'OFF'}`);
-                    } else {
-                        input.checked = !enabled; // Revert
-                        showToast(data.message || "Failed to update", 'error');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    input.checked = !enabled; // Revert
-                    showToast("Network Error", 'error');
-                }
-            }
-
-            async function toggleBulkProductOption(key, input) {
-                const value = input.checked;
-                const label = key === 'viewInIndex' ? "Show All on Home" : "Auto Stockout";
-
-                // Prevent immediate change visual (wait for confirm)
-                input.checked = !value;
-
-                showConfirm(
-                    "Confirm Action",
-                    `Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`,
-                    async () => {
-                        // Optimistic Update
-                        input.checked = value;
-
-                        try {
-                            const res = await fetch('../api/products/bulk-update', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                                },
-                                body: JSON.stringify({ key, value })
-                            });
-
-                            const data = await res.json();
-                            if (data.success) {
-                                showToast(`${label} Updated Successfully!`);
-                            } else {
-                                input.checked = !value; // Revert
-                                showToast(data.message || "Failed to update", "error");
-                            }
-                        } catch (e) {
-                            console.error(e);
-                            input.checked = !value; // Revert
-                            showToast("Network Error", "error");
-                        }
-                    }
-                );
-            }
-
-            function animateValue(id, start, end, duration, prefix) {
-                const obj = document.getElementById(id);
-                if (!obj) return;
-                let startTimestamp = null;
-                const step = (timestamp) => {
-                    if (!startTimestamp) startTimestamp = timestamp;
-                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                    obj.innerHTML = prefix + Math.floor(progress * (end - start) + start).toLocaleString();
-                    if (progress < 1) {
-                        window.requestAnimationFrame(step);
-                    }
-                };
-                window.requestAnimationFrame(step);
-            }
-
-            function updateChartData(orders) {
-                const days = parseInt(document.getElementById('chart-filter').value) || 7;
-                const labels = [];
-                const data = [];
-
-                for (let i = days - 1; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const dateStr = d.toISOString().split('T')[0];
-                    labels.push(d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
-
-                    // Sum revenue for this day
-                    const dayRevenue = orders
-                        .filter(o => o.date && o.date.startsWith(dateStr) && o.status !== 'Cancelled' && o.status !== 'Deleted')
-                        .reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
-
-                    data.push(dayRevenue);
-                }
-
-                const ctx = document.getElementById('salesChart').getContext('2d');
-
-                if (salesChartInstance) salesChartInstance.destroy();
-
-                salesChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Revenue (৳)',
-                            data: data,
-                            borderColor: '#6c5ce7',
-                            backgroundColor: 'rgba(108, 92, 231, 0.1)',
-                            borderWidth: 3,
-                            tension: 0.4,
-                            fill: true,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: '#6c5ce7',
-                            pointHoverRadius: 6
-                        }]
+        async function togglePayLater(input) {
+            const enabled = input.checked;
+            try {
+                const res = await fetch('../api/admin/config/pay-later', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
                     },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                backgroundColor: '#1e293b',
-                                titleColor: '#fff',
-                                bodyColor: '#cbd5e1',
-                                borderColor: 'rgba(255,255,255,0.1)',
-                                borderWidth: 1
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                ticks: { color: '#94a3b8' }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: '#94a3b8' }
-                            }
-                        }
-                    }
+                    body: JSON.stringify({ enabled })
                 });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Pay Later is now ${enabled ? 'ON' : 'OFF'}`);
+                } else {
+                    input.checked = !enabled; // Revert
+                    showToast(data.message || "Failed to update", 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                input.checked = !enabled; // Revert
+                showToast("Network Error", 'error');
+            }
+        }
+
+        async function toggleBulkProductOption(key, input) {
+            const value = input.checked;
+            const label = key === 'viewInIndex' ? "Show All on Home" : "Auto Stockout";
+
+            input.checked = !value; // Wait for confirm
+
+            showConfirm(
+                "Confirm Action",
+                `Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`,
+                async () => {
+                    input.checked = value; // Optimistic
+                    try {
+                        const res = await fetch('../api/products/bulk-update', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                            },
+                            body: JSON.stringify({ key, value })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            showToast(`${label} Updated Successfully!`);
+                        } else {
+                            input.checked = !value;
+                            showToast(data.message || "Failed to update", "error");
+                        }
+                    } catch (e) {
+                        input.checked = !value;
+                        showToast("Network Error", "error");
+                    }
+                }
+            );
+        }
+
+        function animateValue(id, start, end, duration, prefix) {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = prefix + Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function updateChartData(orders) {
+            const days = parseInt(document.getElementById('chart-filter').value) || 7;
+            const labels = [];
+            const data = [];
+
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                labels.push(d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
+
+                const dayRevenue = orders
+                    .filter(o => o.date && o.date.startsWith(dateStr) && o.status !== 'Cancelled' && o.status !== 'Deleted')
+                    .reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
+
+                data.push(dayRevenue);
             }
 
-            function updateChart() {
-                loadDashboard(); // Re-fetch and re-render
-            }
-        </script>
+            const ctx = document.getElementById('salesChart').getContext('2d');
+
+            if (salesChartInstance) salesChartInstance.destroy();
+
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue (৳)',
+                        data: data,
+                        borderColor: '#3b82f6',
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                            return gradient;
+                        },
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#1d4ed8',
+                        pointBorderColor: '#fff',
+                        pointHoverRadius: 6,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#1e293b',
+                            titleColor: '#fff',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(51, 65, 85, 0.3)', borderDash: [4, 4] },
+                            ticks: { color: '#64748b', font: { family: 'Outfit' } },
+                            border: { display: false }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { family: 'Outfit' } },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            loadDashboard();
+        }
+    </script>
 </body>
 
 </html>
