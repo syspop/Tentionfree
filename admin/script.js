@@ -1,5 +1,5 @@
 // Auth Check
-if (sessionStorage.getItem('adminAuth') !== 'true' || !localStorage.getItem('adminToken')) {
+if (!localStorage.getItem('adminToken')) {
     window.location.href = '/chodir-vai'; // Redirect to login
 } else {
     // Auth OK - Reveal Content
@@ -10,7 +10,6 @@ if (sessionStorage.getItem('adminAuth') !== 'true' || !localStorage.getItem('adm
 }
 
 function logout() {
-    sessionStorage.removeItem('adminAuth');
     localStorage.removeItem('adminToken'); // Clear Token
     window.location.href = '../chodir-vai';
 }

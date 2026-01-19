@@ -187,8 +187,8 @@
 
     <script>
         // Check if already logged in
-        if (sessionStorage.getItem('adminAuth') === 'true') {
-            window.location.href = 'admin/dashboard';
+        if (localStorage.getItem('adminToken')) {
+            window.location.href = 'admin/dashboard.html';
         }
 
         let is2FAMode = false;
