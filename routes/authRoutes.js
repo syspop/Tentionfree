@@ -384,7 +384,8 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
     }
 
     const systemData = await readDB('system_data.json') || {};
-    // const adminPasskeys = systemData.adminPasskeys || []; // Not used here directly
+    // Get existing passkeys to prevent duplicates on same device
+    const adminPasskeys = systemData.adminPasskeys || [];
 
     const options = await generateRegistrationOptions({
         rpName: 'Tention Free Admin',
@@ -392,10 +393,13 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
         userID: 'admin-user-id',
         userName: 'admin@tentionfree.store',
         attestationType: 'none',
+        excludeCredentials: adminPasskeys.map(passkey => ({
+            id: passkey.id,
+            transports: passkey.transports,
+        })),
         authenticatorSelection: {
-            residentKey: 'preferred',
+            residentKey: 'required', // Prefer discovering this key
             userVerification: 'preferred',
-            // Relaxed to allow any available authenticator (Platform, Cross-Platform)
         },
     });
 

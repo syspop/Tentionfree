@@ -125,8 +125,15 @@
                 }
 
             } catch (e) {
-                status.innerHTML = `<span class="text-red-400">❌ ${e.message}</span>`;
+                // Detailed Error for User
                 console.error(e);
+                let msg = e.message;
+                if (e.name === 'NotAllowedError') {
+                    msg = "Operation cancelled or timed out. Please try again.";
+                } else if (e.name === 'InvalidStateError') {
+                    msg = "This device is already registered!";
+                }
+                status.innerHTML = `<span class="text-red-400 block text-xs">❌ ${e.name}: ${msg}</span>`;
                 btn.innerText = "Try Again";
             } finally {
                 btn.disabled = false;
