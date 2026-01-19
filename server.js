@@ -31,6 +31,23 @@ app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 3000;
 
+// 🔒 SECURITY: Block Sensitive Files (MUST BE FIRST)
+app.use((req, res, next) => {
+    const blockedPaths = [
+        '/data', '/backend_services', '/node_modules', '/.git', '/.env',
+        '/package.json', '/package-lock.json', '/server.js', '/README.md',
+        '/.gitignore', '/.env.example', '/Procfile', '/server.js.bak',
+        '/profile.html.bak', '/start_server.bat', '/seed_db.js',
+        '/admin/admin_backup.html'
+    ];
+    const normalizedPath = req.path.toLowerCase();
+    if (blockedPaths.some(p => normalizedPath.startsWith(p) || normalizedPath === p)) {
+        console.log(`[BLOCKED] Access to sensitive file: ${req.path}`);
+        return res.status(403).send('Access Denied');
+    }
+    next();
+});
+
 // Middleware
 const allowedOrigins = [
     'https://tentionfree.store',
@@ -192,20 +209,7 @@ app.get(['/services', '/services/'], (req, res) => {
     res.sendFile(__dirname + '/services.html');
 });
 
-// 🔒 SECURITY: Block Sensitive Files
-app.use((req, res, next) => {
-    const blockedPaths = [
-        '/data', '/backend_services', '/node_modules', '/.git', '/.env',
-        '/package.json', '/package-lock.json', '/server.js', '/README.md',
-        '/.gitignore', '/.env.example', '/Procfile', '/server.js.bak',
-        '/profile.html.bak', '/start_server.bat', '/seed_db.js'
-    ];
-    const normalizedPath = req.path.toLowerCase();
-    if (blockedPaths.some(p => normalizedPath.startsWith(p) || normalizedPath === p)) {
-        return res.status(403).send('Access Denied');
-    }
-    next();
-});
+
 
 // Clean URL Handler
 app.use((req, res, next) => {
