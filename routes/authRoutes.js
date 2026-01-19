@@ -217,8 +217,22 @@ router.post('/admin-login', async (req, res) => {
             return res.json({ success: false, require2fa: true });
         }
 
-        // Step 2: Verify 2FA (TOTP or PIN)
+        // Step 2: Verify 2FA (TOTP or PIN or PASSKEY)
         const systemData = await readDB('system_data.json');
+
+        // Check for Passkey Method
+        if (req.body.loginMethod === 'passkey') {
+            const storedPasskey = systemData.adminPasskey;
+            if (!storedPasskey) {
+                return res.json({ success: false, message: "Passkey not configured. Use Authenticator." });
+            }
+            if (token.trim() === storedPasskey) {
+                const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+                return res.json({ success: true, token: sessionToken });
+            } else {
+                return res.json({ success: false, message: "Invalid Passkey" });
+            }
+        }
 
         // Verify App Code
         if (systemData && systemData.admin2faSecret) {
@@ -332,6 +346,30 @@ async function handleSocialLogin(req, res, provider) {
 
 router.post('/auth/google', async (req, res) => {
     await handleSocialLogin(req, res, 'google');
+});
+
+// --- UPDATE PASSKEY (Protected) ---
+router.post('/admin/update-passkey', async (req, res) => {
+    const { currentPin, newPasskey } = req.body;
+
+    // Auth Check: Must provide Backup PIN to set/change Passkey
+    const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
+    if (currentPin !== BACKUP_PIN) {
+        return res.status(403).json({ success: false, message: "Invalid Authorization PIN" });
+    }
+
+    if (!newPasskey || newPasskey.length < 4) {
+        return res.status(400).json({ success: false, message: "Passkey too weak (min 4 chars)" });
+    }
+
+    try {
+        const systemData = await readDB('system_data.json') || {};
+        systemData.adminPasskey = newPasskey.trim();
+        await writeDB('system_data.json', systemData);
+        res.json({ success: true, message: "Passkey updated successfully" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to save passkey" });
+    }
 });
 
 module.exports = router;

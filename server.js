@@ -137,7 +137,8 @@ app.use('/assets', (req, res, next) => {
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin || origin === 'null') return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
             return callback(new Error(msg), false);

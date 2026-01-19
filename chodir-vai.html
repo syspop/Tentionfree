@@ -134,20 +134,36 @@
                 </div>
             </div>
 
-            <!-- OTP Section (Hidden Initially) -->
-            <div id="otp-section" class="hidden animate-enter">
-                <label
-                    class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">Authenticator
-                    Code</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-key text-indigo-400"></i>
-                    </span>
-                    <input type="text" id="admin-otp" maxlength="6"
-                        class="input-modern w-full pl-10 pr-4 py-3 rounded-xl text-lg tracking-[0.5em] font-mono text-center placeholder-slate-600 text-white bg-slate-900/50 focus:bg-slate-900/80"
-                        placeholder="000000" autocomplete="off">
+            <!-- 2FA Input (Hidden initially) -->
+            <div id="otp-input-container" class="hidden animate-fade-in-up mt-4">
+
+                <!-- Auth Method Selection -->
+                <div class="flex gap-4 mb-4 justify-center">
+                    <label
+                        class="cursor-pointer flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-700/50 transition-all">
+                        <input type="radio" name="authMethod" value="2fa" checked onchange="toggleAuthMethod()"
+                            class="accent-brand-500">
+                        <span><i class="fa-solid fa-mobile-screen"></i> 2FA App</span>
+                    </label>
+                    <label
+                        class="cursor-pointer flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-700/50 transition-all">
+                        <input type="radio" name="authMethod" value="passkey" onchange="toggleAuthMethod()"
+                            class="accent-brand-500">
+                        <span><i class="fa-solid fa-key"></i> Passkey</span>
+                    </label>
                 </div>
-                <p class="text-xs text-center text-slate-500 mt-3">Enter the 6-digit code from your app.</p>
+
+                <label for="admin-otp" class="block text-sm font-medium text-slate-400 mb-2"
+                    id="otp-label">Authenticator Code</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-shield-halved text-brand-500"></i>
+                    </div>
+                    <input type="text" id="admin-otp" placeholder="123456"
+                        class="pl-10 w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-center tracking-widest text-lg font-mono">
+                </div>
+                <p class="text-xs text-slate-500 mt-2 text-center" id="otp-hint">Enter the 6-digit code from your app
+                </p>
             </div>
 
             <div id="login-error"
@@ -198,7 +214,14 @@
                 // Determine Payload
                 const payload = { username: inputUser, password: inputPass };
                 if (is2FAMode) {
-                    if (inputOtp.length !== 6) throw new Error("Please enter a valid 6-digit code.");
+                    const method = document.querySelector('input[name="authMethod"]:checked').value;
+                    payload.loginMethod = method;
+
+                    if (method === '2fa') {
+                        if (inputOtp.length !== 6) throw new Error("Please enter a valid 6-digit code.");
+                    } else {
+                        if (inputOtp.length < 4) throw new Error("Please enter a valid Passkey.");
+                    }
                     payload.token = inputOtp;
                 }
 
@@ -240,6 +263,24 @@
                 errorDiv.classList.remove('hidden');
                 btn.innerText = is2FAMode ? "Verify Login" : "Unlock Dashboard";
                 btn.disabled = false;
+            }
+        }
+        function toggleAuthMethod() {
+            const method = document.querySelector('input[name="authMethod"]:checked').value;
+            const label = document.getElementById('otp-label');
+            const hint = document.getElementById('otp-hint');
+            const input = document.getElementById('admin-otp');
+
+            if (method === '2fa') {
+                label.innerText = 'Authenticator Code';
+                hint.innerText = 'Enter the 6-digit code from your app';
+                input.placeholder = '123456';
+                input.type = 'text'; // or number
+            } else {
+                label.innerText = 'Secret Passkey';
+                hint.innerText = 'Enter your custom secret passkey';
+                input.placeholder = '••••••••';
+                input.type = 'password';
             }
         }
     </script>
