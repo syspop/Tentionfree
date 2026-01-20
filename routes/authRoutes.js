@@ -725,27 +725,110 @@ router.delete('/auth/webauthn/delete/:id', async (req, res) => {
     res.json({ success: true, message: "Device Removed" });
 });
 
-// --- UPDATE PASSKEY (Protected) ---
-router.post('/admin/update-passkey', async (req, res) => {
-    const { currentPin, newPasskey } = req.body;
+// --- ADMIN SECURITY SETTINGS ---
 
-    // Auth Check: Must provide Backup PIN to set/change Passkey
-    const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
-    if (currentPin !== BACKUP_PIN) {
+// Update Authorization PIN
+router.post('/auth/admin/update-pin', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const { newPin, twoFaCode } = req.body;
+
+    if (!newPin || newPin.length < 4) return res.status(400).json({ success: false, message: "PIN must be at least 4 digits" });
+    if (!twoFaCode) return res.status(400).json({ success: false, message: "2FA Code Required" });
+
+    // Verify 2FA
+    const systemData = await readDB('system_data.json') || {};
+    if (!systemData.admin2faSecret) return res.status(400).json({ success: false, message: "2FA not set up. Cannot change PIN." });
+
+    const verified = speakeasy.totp.verify({
+        secret: systemData.admin2faSecret,
+        encoding: 'base32',
+        token: twoFaCode.trim(),
+        window: 2
+    });
+
+    if (!verified) return res.status(400).json({ success: false, message: "Invalid 2FA Code" });
+
+    // Update PIN
+    systemData.backupPin = newPin;
+    await writeDB('system_data.json', systemData);
+
+    // Also update env var in memory if possible, but process.env is read-only usually. 
+    // We will update the REGISTER route to check systemData.backupPin FIRST.
+
+    res.json({ success: true, message: "Authorization PIN Updated" });
+});
+
+
+// Setup / Reset 2FA
+const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
+
+router.post('/auth/admin/setup-2fa', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const { pin } = req.body;
+    const systemData = await readDB('system_data.json') || {};
+    const CURRENT_PIN = systemData.backupPin || process.env.BACKUP_PIN || "105090";
+
+    if (pin !== CURRENT_PIN) {
         return res.status(403).json({ success: false, message: "Invalid Authorization PIN" });
     }
 
-    if (!newPasskey || newPasskey.length < 4) {
-        return res.status(400).json({ success: false, message: "Passkey too weak (min 4 chars)" });
-    }
+    // Generate New Secret
+    const secret = speakeasy.generateSecret({ name: "TentionFree Admin" });
 
+    // Generate QR
     try {
-        const systemData = await readDB('system_data.json') || {};
-        systemData.adminPasskey = newPasskey.trim();
+        const qrDataURL = await QRCode.toDataURL(secret.otpauth_url);
+
+        // Save to Desktop
+        const desktopPath = path.join(require('os').homedir(), 'OneDrive - hlwz', 'Desktop', '2FA_QR_CODES');
+        if (!fs.existsSync(desktopPath)) {
+            fs.mkdirSync(desktopPath, { recursive: true });
+        }
+
+        const filename = `Admin_2FA_${Date.now()}.png`;
+        const filePath = path.join(desktopPath, filename);
+
+        // Remove header from data URL to get base64
+        const base64Data = qrDataURL.replace(/^data:image\/png;base64,/, "");
+        fs.writeFileSync(filePath, base64Data, 'base64');
+
+        // Verify it was saved
+        if (fs.existsSync(filePath)) {
+            console.log("QR Code Saved:", filePath);
+        }
+
+        // Save SECRET to DB (Preliminary - normally verify first, but simplifying for user request)
+        // User asked to "Add to file".
+        systemData.admin2faSecret = secret.base32;
         await writeDB('system_data.json', systemData);
-        res.json({ success: true, message: "Passkey updated successfully" });
+
+        res.json({ success: true, message: "2FA Reset. Scan QR.", qr: qrDataURL, savedPath: filePath });
+
     } catch (err) {
-        res.status(500).json({ success: false, message: "Failed to save passkey" });
+        console.error("2FA Setup Error:", err);
+        res.status(500).json({ success: false, message: "Failed to generate 2FA" });
     }
 });
 

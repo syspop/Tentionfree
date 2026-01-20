@@ -33,31 +33,45 @@
                 </div>
                 <div class="p-6 space-y-6">
 
-                    <!-- Admin Password (Mock) -->
+                    <!-- Admin Password (Read Only) -->
                     <div
                         class="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800">
                         <div>
                             <h4 class="font-medium text-white">Admin Password</h4>
-                            <p class="text-sm text-slate-400">Change your master login password.</p>
+                            <p class="text-sm text-slate-400">Password is currently managed via server environment.</p>
                         </div>
-                        <button
-                            onclick="window.showToast('Password change is managed via env variables currently.', 'info')"
-                            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm transition-colors border border-slate-700">
-                            Change Password
+                        <button disabled
+                            class="px-4 py-2 bg-slate-800 text-slate-500 rounded-lg text-sm border border-slate-700 cursor-not-allowed">
+                            Managed by Server
                         </button>
                     </div>
 
-                    <!-- Passkey Management Link -->
+                    <!-- Authorization PIN Management -->
                     <div
-                        class="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+                        class="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 border-l-4 border-l-blue-500">
                         <div>
-                            <h4 class="font-medium text-white">Passkeys & Biometrics</h4>
-                            <p class="text-sm text-slate-400">Manage registered devices (FaceID, Fingerprint).</p>
+                            <h4 class="font-bold text-white">Authorization PIN</h4>
+                            <p class="text-sm text-slate-400">The PIN used to authorize sensitive actions (like adding
+                                new devices).</p>
                         </div>
-                        <a href="passkey-manager.html"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors shadow-lg shadow-blue-600/20">
-                            Manage Keys
-                        </a>
+                        <button onclick="openPinModal()"
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-600/20">
+                            Change PIN
+                        </button>
+                    </div>
+
+                    <!-- 2FA Setup -->
+                    <div
+                        class="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800 border-l-4 border-l-purple-500">
+                        <div>
+                            <h4 class="font-bold text-white">Two-Factor Authentication (2FA)</h4>
+                            <p class="text-sm text-slate-400">Required for high-security changes. Scan QR to setup
+                                Google Authenticator.</p>
+                        </div>
+                        <button onclick="open2FAModal()"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-purple-600/20">
+                            Reset / Setup 2FA
+                        </button>
                     </div>
 
                 </div>
@@ -68,22 +82,181 @@
                 <div class="p-6 border-b border-slate-800">
                     <h3 class="text-lg font-semibold text-white"><i
                             class="fa-solid fa-server mr-2 text-blue-400"></i>System Info</h3>
+                    <p class="text-xs text-slate-500 mt-1">Passkey Manager is available in the sidebar.</p>
                 </div>
                 <div class="p-6 text-sm text-slate-400 space-y-2">
-                    <p><strong class="text-slate-300">Node Version:</strong> <span id="node-ver">Loading...</span></p>
-                    <p><strong class="text-slate-300">Server Time:</strong> <span id="server-time">Loading...</span></p>
-                    <p><strong class="text-slate-300">Environment:</strong> Production</p>
+                    <p><strong class="text-slate-300">Node Version:</strong> <span id="node-ver">Wait...</span></p>
+                    <p><strong class="text-slate-300">Server Time:</strong> <span id="server-time">Wait...</span></p>
                 </div>
             </div>
 
         </div>
     </main>
 
+    <!-- Change PIN Modal -->
+    <div id="pin-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onclick="closePinModal()">
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div
+                class="inline-block align-bottom bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-slate-700">
+                <div class="bg-slate-850 p-6 border-b border-slate-700">
+                    <h3 class="text-xl font-bold text-white">Change Authorization PIN</h3>
+                    <p class="text-sm text-slate-400">Requires 2FA verification.</p>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">New PIN</label>
+                        <input type="number" id="new-pin"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none text-center text-lg tracking-widest placeholder-slate-600"
+                            placeholder="••••">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Authenticator Code
+                            (2FA)</label>
+                        <input type="text" id="pin-2fa"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none text-center text-lg tracking-widest placeholder-slate-600"
+                            placeholder="000 000">
+                        <p class="text-xs text-slate-500 mt-2">Enter the code from your Authenticator App.</p>
+                    </div>
+                </div>
+                <div class="bg-slate-900/50 px-6 py-4 flex flex-row-reverse gap-2">
+                    <button onclick="submitPinChange()"
+                        class="w-full sm:w-auto inline-flex justify-center rounded-xl px-6 py-2 bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all">Update</button>
+                    <button onclick="closePinModal()"
+                        class="w-full sm:w-auto inline-flex justify-center rounded-xl px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2FA Setup Modal -->
+    <div id="2fa-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" onclick="close2FAModal()">
+            </div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div
+                class="inline-block align-bottom bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-slate-700">
+                <div class="bg-slate-850 p-6 border-b border-slate-700">
+                    <h3 class="text-xl font-bold text-white">Setup / Reset 2FA</h3>
+                    <p class="text-sm text-slate-400">Authorization PIN required to generate new secret.</p>
+                </div>
+
+                <div id="2fa-step-1" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Current Authorization
+                            PIN</label>
+                        <input type="password" id="auth-pin-2fa"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500 outline-none text-center text-lg tracking-widest placeholder-slate-600"
+                            placeholder="••••••">
+                    </div>
+                </div>
+
+                <div id="2fa-step-2" class="p-6 hidden text-center space-y-4">
+                    <div class="bg-white p-2 rounded-xl inline-block">
+                        <img id="qr-img" src="" alt="QR Code" class="w-48 h-48 object-contain">
+                    </div>
+                    <p class="text-sm text-green-400 font-bold"><i class="fa-solid fa-check-circle"></i> Saved to
+                        Desktop/2FA_QR_CODES</p>
+                    <p class="text-xs text-slate-400">Scan this with Google Authenticator.</p>
+                    <p class="text-xs text-yellow-500">Note: This resets your previous 2FA secret immediately.</p>
+                </div>
+
+                <div class="bg-slate-900/50 px-6 py-4 flex flex-row-reverse gap-2">
+                    <button id="btn-2fa-next" onclick="generate2FA()"
+                        class="w-full sm:w-auto inline-flex justify-center rounded-xl px-6 py-2 bg-purple-600 text-white font-bold hover:bg-purple-500 transition-all">Generate
+                        New Secret</button>
+                    <button onclick="close2FAModal()"
+                        class="w-full sm:w-auto inline-flex justify-center rounded-xl px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script>
-        // Simple mock for system info
-        document.getElementById('node-ver').innerText = 'v' + (Math.random() > 0.5 ? '18.16.0' : '20.5.0');
+        document.getElementById('node-ver').innerText = 'v18.x';
         document.getElementById('server-time').innerText = new Date().toLocaleString();
+
+        // PIN MODAL
+        function openPinModal() {
+            document.getElementById('pin-modal').classList.remove('hidden');
+        }
+        function closePinModal() {
+            document.getElementById('pin-modal').classList.add('hidden');
+        }
+        async function submitPinChange() {
+            const newPin = document.getElementById('new-pin').value;
+            const twoFaCode = document.getElementById('pin-2fa').value;
+            const token = localStorage.getItem('adminToken');
+
+            if (!newPin || !twoFaCode) return window.showToast("All fields required", 'error');
+
+            try {
+                const res = await fetch('/api/auth/admin/update-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ newPin, twoFaCode })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.showToast("PIN Updated Successfully");
+                    closePinModal();
+                } else {
+                    window.showToast(data.message, 'error');
+                }
+            } catch (e) {
+                window.showToast("Server Error", 'error');
+            }
+        }
+
+        // 2FA MODAL
+        function open2FAModal() {
+            document.getElementById('2fa-modal').classList.remove('hidden');
+            document.getElementById('2fa-step-1').classList.remove('hidden');
+            document.getElementById('2fa-step-2').classList.add('hidden');
+            document.getElementById('btn-2fa-next').classList.remove('hidden');
+        }
+        function close2FAModal() {
+            document.getElementById('2fa-modal').classList.add('hidden');
+        }
+        async function generate2FA() {
+            const pin = document.getElementById('auth-pin-2fa').value;
+            const token = localStorage.getItem('adminToken');
+
+            if (!pin) return window.showToast("Authorization PIN Required", 'error');
+
+            try {
+                const res = await fetch('/api/auth/admin/setup-2fa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Show QR
+                    document.getElementById('qr-img').src = data.qr;
+                    document.getElementById('2fa-step-1').classList.add('hidden');
+                    document.getElementById('2fa-step-2').classList.remove('hidden');
+                    document.getElementById('btn-2fa-next').classList.add('hidden');
+                    window.showToast("New 2FA Secret Generated!");
+                } else {
+                    window.showToast(data.message, 'error');
+                }
+            } catch (e) {
+                window.showToast("Server Error", 'error');
+            }
+        }
     </script>
 </body>
 
