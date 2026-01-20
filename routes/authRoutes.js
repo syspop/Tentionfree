@@ -407,6 +407,9 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
                 // Handle legacy format if exists
                 if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
                     id = new Uint8Array(id.data);
+                } else if (Array.isArray(id)) {
+                    // Handle plain array (corrupted save?)
+                    id = new Uint8Array(id);
                 } else if (typeof id === 'string') {
                     id = base64urlToBuffer(id);
                 }
@@ -532,6 +535,8 @@ router.get('/auth/webauthn/login-options', async (req, res) => {
                     id = base64urlToBuffer(id);
                 } else if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
                     id = new Uint8Array(id.data);
+                } else if (Array.isArray(id)) {
+                    id = new Uint8Array(id);
                 }
                 return {
                     id: id,
