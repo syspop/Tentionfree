@@ -600,6 +600,17 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         } else if (storedCredentialID.type === 'Buffer') {
             storedCredentialID = Buffer.from(storedCredentialID.data);
         }
+        if (!storedCredentialID || storedCredentialID.length === 0) throw new Error("Invalid Stored Credential ID");
+        if (!storedPublicKey || storedPublicKey.length === 0) throw new Error("Invalid Stored Public Key");
+
+        console.log("DEBUG Verify:", {
+            storedIDType: typeof storedCredentialID,
+            storedIDLen: storedCredentialID.length,
+            storedKeyType: typeof storedPublicKey,
+            storedKeyLen: storedPublicKey.length,
+            isBufferID: Buffer.isBuffer(storedCredentialID),
+            isBufferKey: Buffer.isBuffer(storedPublicKey)
+        });
 
         const verification = await verifyAuthenticationResponse({
             response,
