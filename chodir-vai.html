@@ -331,17 +331,30 @@
                     document.getElementById('auth-status').innerHTML = '<span class="text-green-400"><i class="fa-solid fa-check"></i> Verified!</span>';
                     setTimeout(() => window.location.href = 'admin/dashboard.html', 500);
                 } else {
-                    throw new Error(verifyData.message || 'Passkey Verification Failed');
+                    let errMsg = verifyData.message || 'Passkey Verification Failed';
+                    if (verifyData.stack) {
+                        console.error("Server Stack:", verifyData.stack);
+                        // Simplify stack for UI
+                        const line = verifyData.stack.split('\n')[1] || '';
+                        errMsg += ` | ${line.trim()}`;
+                    }
+                    throw new Error(errMsg);
                 }
 
             } catch (err) {
                 console.error("Passkey Fail:", err);
-                // Fallback to OTP if passkey fails
-                document.getElementById('auth-status').innerHTML = `<span class="text-yellow-400 text-xs"><i class="fa-solid fa-triangle-exclamation"></i> ${err.message || 'Passkey Failed'}</span>`;
+
+                let msg = err.message || 'Passkey Failed';
+                // If server sent a stack (via json in err object?), we can't easily access it unless we parsed it above.
+                // But fetch throws Error(message). 
+                // Let's rely on the previous logic: if verifyData.success is false, we try to grab the message.
+                // We need to update the verify block to include stack in the thrown error text if possible.
+
+                document.getElementById('auth-status').innerHTML = `<span class="text-yellow-400 text-xs text-left block whitespace-pre-wrap"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</span>`;
 
                 setTimeout(() => {
-                    switchToOTPMode(err.message || "Passkey Failed. Use App Code.");
-                }, 3000); // Give user time to read error
+                    switchToOTPMode(msg);
+                }, 5000); // 5s to read
             }
         }
 
