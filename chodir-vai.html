@@ -337,11 +337,11 @@
             } catch (err) {
                 console.error("Passkey Fail:", err);
                 // Fallback to OTP if passkey fails
-                document.getElementById('auth-status').innerHTML = '<span class="text-yellow-400"><i class="fa-solid fa-triangle-exclamation"></i> Passkey Failed. Using 2FA.</span>';
+                document.getElementById('auth-status').innerHTML = `<span class="text-yellow-400 text-xs"><i class="fa-solid fa-triangle-exclamation"></i> ${err.message || 'Passkey Failed'}</span>`;
 
                 setTimeout(() => {
-                    switchToOTPMode("Passkey Failed. Use App Code.");
-                }, 1500);
+                    switchToOTPMode(err.message || "Passkey Failed. Use App Code.");
+                }, 3000); // Give user time to read error
             }
         }
 

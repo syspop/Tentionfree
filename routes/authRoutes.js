@@ -561,7 +561,10 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         const systemData = await readDB('system_data.json') || {};
         const adminPasskeys = systemData.adminPasskeys || [];
 
-        if (!response.id) throw new Error("Invalid Passkey Response: Missing ID");
+        if (!response.id) {
+            console.error("[WebAuthn] Login Response missing ID. Keys:", Object.keys(response));
+            throw new Error("Invalid Passkey Response: Missing ID");
+        }
         const credentialID = response.id;
 
         // Find matching key.
@@ -578,6 +581,7 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         });
 
         if (!dbAuthenticator) {
+            console.error("[WebAuthn] No Authenticator found for ID:", credentialID);
             return res.status(400).json({ success: false, message: "Authenticator not found" });
         }
 
