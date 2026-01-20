@@ -4,16 +4,17 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname);
 
 // --- GLOBAL IN-MEMORY CACHE ---
+// --- GLOBAL IN-MEMORY CACHE ---
 const CACHE = {
     products: null,
     orders: [],
     customers: [],
     tickets: [],
     banners: [],
-    coupons: []
+    coupons: [],
+    system_data: null // Added system_data
 };
 
-// Helper to write data to JSON file (and update Cache)
 // Helper to write data to JSON file (Atomic Write)
 async function writeLocalJSON(filename, data) {
     // 1. Write to Temp File, then Rename (Atomic)
@@ -24,11 +25,10 @@ async function writeLocalJSON(filename, data) {
         await fs.writeFile(tempPath, JSON.stringify(data, null, 2));
         await fs.rename(tempPath, filePath);
 
-        // 2. Update Cache ONLY after successful write
+        // 2. Update Cache
         const key = filename.replace('.json', '');
-        if (CACHE.hasOwnProperty(key)) {
-            CACHE[key] = data;
-        }
+        CACHE[key] = data; // Always update cache, don't check hasOwnProperty
+
     } catch (err) {
         console.error(`❌ Error writing ${filename}:`, err);
         try { await fs.unlink(tempPath); } catch (e) { }
@@ -51,7 +51,9 @@ async function readLocalJSON(filename) {
         try {
             await fs.access(filePath);
         } catch {
-            return []; // Return empty array if file doesn't exist
+            // Default return based on file type guess
+            if (filename.includes('data') || filename.includes('system')) return {};
+            return []; // Default to array for others
         }
         const data = await fs.readFile(filePath, 'utf8');
         const parsed = JSON.parse(data);
@@ -61,6 +63,7 @@ async function readLocalJSON(filename) {
         return parsed;
     } catch (err) {
         console.error(`❌ Error reading ${filename}:`, err);
+        if (filename.includes('data') || filename.includes('system')) return {};
         return [];
     }
 }
