@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { writeLocalJSON: writeDB, readLocalJSON: readDB } = require('../data/db');
 const speakeasy = require('speakeasy');
+const { Buffer } = require('buffer'); // Explicit import for safety
 const {
     generateRegistrationOptions,
     verifyRegistrationResponse,
@@ -397,26 +398,38 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
     const adminPasskeys = Array.isArray(systemData.adminPasskeys) ? systemData.adminPasskeys : [];
 
     try {
-        const options = await generateRegistrationOptions({
-            rpName: 'Tention Free Admin',
-            rpID: RP_ID,
-            userID: new Uint8Array(Buffer.from('admin-user-id')),
-            userName: 'admin@tentionfree.store',
-            attestationType: 'none',
-            excludeCredentials: adminPasskeys.map(passkey => {
-                let id = passkey.id;
+        console.log("[WebAuthn] Register Options Requested. Passkeys:", adminPasskeys.length);
+
+        // Filter out any potential garbage passkeys to prevent crashes
+        const validExcludeList = adminPasskeys.filter(pk => pk.id).map(passkey => {
+            let id = passkey.id;
+            try {
                 // Handle legacy format if exists
                 if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
                     id = new Uint8Array(id.data);
                 } else if (typeof id === 'string') {
                     id = base64urlToBuffer(id);
                 }
+            } catch (bufErr) {
+                console.warn("[WebAuthn] Failed to convert passkey ID:", bufErr);
+                return null;
+            }
 
-                return {
-                    id: id,
-                    transports: passkey.transports,
-                };
-            }),
+            if (!id) return null;
+
+            return {
+                id: id,
+                transports: passkey.transports,
+            };
+        }).filter(item => item !== null);
+
+        const options = await generateRegistrationOptions({
+            rpName: 'Tention Free Admin',
+            rpID: RP_ID,
+            userID: new Uint8Array(Buffer.from('admin-user-id')),
+            userName: 'admin@tentionfree.store',
+            attestationType: 'none',
+            excludeCredentials: validExcludeList, // Use filtered list
             authenticatorSelection: {
                 residentKey: 'required',
                 userVerification: 'preferred',
