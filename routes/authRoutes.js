@@ -614,8 +614,9 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         });
 
         if (verification.verified) {
-            // Update counter
+            // Update counter and last used
             dbAuthenticator.counter = verification.authenticationInfo.newCounter;
+            dbAuthenticator.lastUsed = new Date().toISOString();
             await writeDB('system_data.json', systemData);
 
             delete challengeStore['admin-login'];
@@ -632,12 +633,82 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
     }
 });
 
-// Helper for Base64URL to Buffer (since simplewebauthn might not export it directly or we need it)
+// Helper for Base64URL to Buffer (Safe version)
 function base64urlToBuffer(base64url) {
+    if (typeof base64url !== 'string') {
+        console.warn("base64urlToBuffer received non-string:", typeof base64url, base64url);
+        return Buffer.from([]);
+    }
     const padding = '='.repeat((4 - base64url.length % 4) % 4);
     const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
     return Buffer.from(base64, 'base64');
 }
+
+// --- PASSKEY MANAGEMENT ---
+
+// GET List of Registered Devices
+router.get('/auth/webauthn/list', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const systemData = await readDB('system_data.json') || {};
+    const adminPasskeys = systemData.adminPasskeys || [];
+
+    // Return safe data (no public keys needed for list)
+    const list = adminPasskeys.map(pk => ({
+        id: typeof pk.id === 'string' ? pk.id : 'Legacy-ID', // Should be string now
+        device: pk.device || 'Unknown',
+        created: pk.created || 'Unknown Date',
+        lastUsed: pk.lastUsed || 'Never'
+    }));
+
+    res.json({ success: true, devices: list });
+});
+
+// DELETE Remove a Device
+router.delete('/auth/webauthn/delete/:id', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const targetId = req.params.id;
+    const systemData = await readDB('system_data.json') || {};
+    let adminPasskeys = systemData.adminPasskeys || [];
+
+    const initialLength = adminPasskeys.length;
+
+    // Filter out the target ID
+    adminPasskeys = adminPasskeys.filter(pk => {
+        const pkId = typeof pk.id === 'string' ? pk.id : Buffer.from(pk.id.data).toString('base64url');
+        return pkId !== targetId;
+    });
+
+    if (adminPasskeys.length === initialLength) {
+        return res.status(404).json({ success: false, message: "Device not found" });
+    }
+
+    systemData.adminPasskeys = adminPasskeys;
+    await writeDB('system_data.json', systemData);
+
+    res.json({ success: true, message: "Device Removed" });
+});
 
 // --- UPDATE PASSKEY (Protected) ---
 router.post('/admin/update-passkey', async (req, res) => {

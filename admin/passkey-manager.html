@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passkey Manager - TentionFree Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <!-- Common Admin Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans antialiased opacity-0 transition-opacity duration-300">
+
+    <!-- Sidebar injected by script.js -->
+
+    <!-- Main Content -->
+    <main class="transition-all duration-300">
+        <div class="admin-box max-w-7xl mx-auto">
+
+            <header class="flex justify-between items-center mb-8">
+                <div>
+                    <h1
+                        class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                        Passkey Manager
+                    </h1>
+                    <p class="text-slate-400 mt-1">Manage your secure biometric/device access keys</p>
+                </div>
+            </header>
+
+            <!-- Registered Devices Card -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden mb-8">
+                <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-white"><i
+                            class="fa-solid fa-fingerprint mr-2 text-blue-400"></i>Registered Devices</h3>
+                    <button onclick="openRegisterModal()"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-600/20">
+                        <i class="fa-solid fa-plus mr-2"></i>Register New Device
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-400">
+                        <thead class="bg-slate-950/50 uppercase font-bold text-xs">
+                            <tr>
+                                <th class="px-6 py-4">Device Name</th>
+                                <th class="px-6 py-4">Added On</th>
+                                <th class="px-6 py-4">Last Used</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-list" class="divide-y divide-slate-800/50">
+                            <!-- JS Injected Rows -->
+                            <tr>
+                                <td colspan="4" class="px-6 py-8 text-center text-slate-500">
+                                    <i class="fa-solid fa-circle-notch fa-spin text-xl"></i> Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Hint/Instructions -->
+            <div
+                class="p-4 bg-blue-900/10 border border-blue-500/20 rounded-xl flex gap-3 text-sm text-blue-300 max-w-3xl">
+                <i class="fa-solid fa-circle-info text-lg shrink-0 mt-0.5"></i>
+                <p>Registering multiple devices (Phone, Laptop, Tablet) ensures you can access the admin panel securely
+                    from anywhere without relying on 2FA codes. If you lose a device, you can delete its access key
+                    here.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity"
+                onclick="closeRegisterModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div
+                class="inline-block align-bottom bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-slate-700">
+                <div class="bg-slate-850 p-6 border-b border-slate-700">
+                    <h3 class="text-xl font-bold text-white mb-1"><i
+                            class="fa-solid fa-user-shield mr-2 text-emerald-400"></i>Register Passkey</h3>
+                    <p class="text-slate-400 text-sm">Use your device's biometrics (Fingerprint, FaceID) or PIN.</p>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Authorization PIN</label>
+                        <input type="password" id="reg-pin"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-600 transition-all font-mono tracking-widest text-center text-lg"
+                            placeholder="••••••">
+                        <p class="text-xs text-slate-500 mt-2">Enter the Master/Backup PIN to authorize this new device.
+                        </p>
+                    </div>
+
+                    <div id="reg-status" class="bg-slate-900/50 p-3 rounded-lg text-center hidden">
+                        <!-- Status Messages -->
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/50 px-6 py-4 flex flex-row-reverse gap-2">
+                    <button onclick="startRegistration()" id="btn-register-confirm"
+                        class="w-full sm:w-auto inline-flex justify-center rounded-xl border border-transparent shadow-sm px-6 py-2 bg-blue-600 text-base font-bold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm transition-all shadow-lg shadow-blue-600/20">
+                        Start Setup
+                    </button>
+                    <button onclick="closeRegisterModal()"
+                        class="mt-3 w-full sm:w-auto inline-flex justify-center rounded-xl border border-slate-600 shadow-sm px-4 py-2 bg-slate-800 text-base font-medium text-slate-300 hover:bg-slate-700 focus:outline-none sm:mt-0 sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Load List on Start
+        document.addEventListener('DOMContentLoaded', loadDevices);
+
+        async function loadDevices() {
+            const tableBody = document.getElementById('devices-list');
+            const token = localStorage.getItem('adminToken');
+
+            try {
+                const res = await fetch('/api/auth/webauthn/list', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.devices.length === 0) {
+                        tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-500">No devices registered.</td></tr>`;
+                        return;
+                    }
+
+                    tableBody.innerHTML = data.devices.map(dev => `
+                        <tr class="hover:bg-slate-800/30 transition-colors group">
+                            <td class="px-6 py-4 font-medium text-white flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                                    <i class="fa-solid fa-mobile-screen"></i>
+                                </div>
+                                ${dev.device}
+                            </td>
+                            <td class="px-6 py-4">${new Date(dev.created).toLocaleDateString()}</td>
+                            <td class="px-6 py-4 text-xs">
+                                <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                                    ${dev.lastUsed === 'Never' ? 'Never' : new Date(dev.lastUsed).toLocaleString()}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="deleteDevice('${dev.id}')" class="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Remove Device">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-400">Failed to load devices.</td></tr>`;
+                }
+            } catch (e) {
+                console.error(e);
+                tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-400">Server Error</td></tr>`;
+            }
+        }
+
+        async function deleteDevice(id) {
+            window.showConfirm("Remove Device?", "Are you sure you want to revoke access for this device?", async () => {
+                const token = localStorage.getItem('adminToken');
+                try {
+                    const res = await fetch(`/api/auth/webauthn/delete/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.showToast("Device removed successfully");
+                        loadDevices();
+                    } else {
+                        window.showToast(data.message, 'error');
+                    }
+                } catch (e) {
+                    window.showToast("Server Error", 'error');
+                }
+            });
+        }
+
+        // --- Register Modal Logic ---
+        function openRegisterModal() {
+            document.getElementById('register-modal').classList.remove('hidden');
+            document.getElementById('reg-pin').value = '';
+            document.getElementById('reg-status').classList.add('hidden');
+            document.getElementById('btn-register-confirm').disabled = false;
+            document.getElementById('btn-register-confirm').innerHTML = 'Start Setup';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('register-modal').classList.add('hidden');
+        }
+
+        async function startRegistration() {
+            const pin = document.getElementById('reg-pin').value;
+            const statusDiv = document.getElementById('reg-status');
+            const btn = document.getElementById('btn-register-confirm');
+
+            if (!pin) {
+                statusDiv.classList.remove('hidden');
+                statusDiv.innerHTML = '<span class="text-red-400 text-sm">Enter PIN</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerHTML = '<span class="text-blue-400 text-sm">Requesting options...</span>';
+
+            try {
+                const token = localStorage.getItem('adminToken');
+
+                // 1. Get Options
+                const resp = await fetch('/api/auth/webauthn/register-options', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ pin })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || "Failed to get options");
+
+                statusDiv.innerHTML = '<span class="text-yellow-400 text-sm"><i class="fa-solid fa-fingerprint"></i> Scan now...</span>';
+
+                // 2. Start WebAuthn
+                const attResp = await SimpleWebAuthnBrowser.startRegistration(data);
+
+                // 3. Verify
+                statusDiv.innerHTML = '<span class="text-blue-400 text-sm">Verifying...</span>';
+                const verifyResp = await fetch('/api/auth/webauthn/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: attResp })
+                });
+
+                const verifyData = await verifyResp.json();
+
+                if (verifyData.success) {
+                    statusDiv.innerHTML = '<span class="text-emerald-400 text-sm"><i class="fa-solid fa-check"></i> Success!</span>';
+                    window.showToast("Device Registered Successfully");
+                    setTimeout(() => {
+                        closeRegisterModal();
+                        loadDevices();
+                    }, 1000);
+                } else {
+                    throw new Error(verifyData.message || "Verification Failed");
+                }
+
+            } catch (e) {
+                console.error(e);
+                statusDiv.innerHTML = `<span class="text-red-400 text-sm">${e.message}</span>`;
+                btn.disabled = false;
+                btn.innerHTML = 'Try Again';
+            }
+        }
+    </script>
+</body>
+
+</html>

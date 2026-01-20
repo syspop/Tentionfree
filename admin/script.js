@@ -69,6 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ${renderNavLink('manage-coupons', 'fa-ticket', 'Coupons')}
             ${renderNavLink('manage-reviews', 'fa-star', 'Reviews')}
             ${renderNavLink('tickets', 'fa-headset', 'Tickets')}
+            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6">System & Security</p>
+            ${renderNavLink('passkey-manager', 'fa-fingerprint', 'Passkeys')}
+            ${renderNavLink('settings', 'fa-gear', 'Settings')}
         </nav>
 
         <div class="p-4 border-t border-slate-800 mt-auto">
