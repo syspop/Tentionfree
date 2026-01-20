@@ -800,31 +800,47 @@ router.post('/auth/admin/setup-2fa', async (req, res) => {
     // Generate QR
     try {
         const qrDataURL = await QRCode.toDataURL(secret.otpauth_url);
+        let savedPath = "Not Saved (Server Side)";
 
-        // Save to Desktop
-        const desktopPath = path.join(require('os').homedir(), 'OneDrive - hlwz', 'Desktop', '2FA_QR_CODES');
-        if (!fs.existsSync(desktopPath)) {
-            fs.mkdirSync(desktopPath, { recursive: true });
+        // Try to save to Desktop (Only works if running locally)
+        try {
+            const isWindows = process.platform === 'win32';
+            if (isWindows) {
+                const desktopPath = path.join(require('os').homedir(), 'OneDrive - hlwz', 'Desktop', '2FA_QR_CODES');
+
+                // Fallback attempt logic
+                if (!fs.existsSync(desktopPath)) {
+                    // Check if base exists
+                    if (fs.existsSync(path.join(require('os').homedir(), 'OneDrive - hlwz'))) {
+                        fs.mkdirSync(desktopPath, { recursive: true });
+                    } else {
+                        // Fallback to standard Desktop
+                        const stdPath = path.join(require('os').homedir(), 'Desktop', '2FA_QR_CODES');
+                        fs.mkdirSync(stdPath, { recursive: true });
+                    }
+                }
+
+                // Try saving if any path logic worked above
+                const targetDir = fs.existsSync(desktopPath) ? desktopPath : path.join(require('os').homedir(), 'Desktop', '2FA_QR_CODES');
+
+                if (fs.existsSync(targetDir)) {
+                    const filename = `Admin_2FA_${Date.now()}.png`;
+                    const filePath = path.join(targetDir, filename);
+                    const base64Data = qrDataURL.replace(/^data:image\/png;base64,/, "");
+                    fs.writeFileSync(filePath, base64Data, 'base64');
+                    savedPath = filePath;
+                    console.log("QR Local Save Success:", filePath);
+                }
+            }
+        } catch (saveErr) {
+            console.warn("Could not save QR to local filesystem (ignoring):", saveErr.message);
         }
 
-        const filename = `Admin_2FA_${Date.now()}.png`;
-        const filePath = path.join(desktopPath, filename);
-
-        // Remove header from data URL to get base64
-        const base64Data = qrDataURL.replace(/^data:image\/png;base64,/, "");
-        fs.writeFileSync(filePath, base64Data, 'base64');
-
-        // Verify it was saved
-        if (fs.existsSync(filePath)) {
-            console.log("QR Code Saved:", filePath);
-        }
-
-        // Save SECRET to DB (Preliminary - normally verify first, but simplifying for user request)
-        // User asked to "Add to file".
+        // Save SECRET to DB
         systemData.admin2faSecret = secret.base32;
         await writeDB('system_data.json', systemData);
 
-        res.json({ success: true, message: "2FA Reset. Scan QR.", qr: qrDataURL, savedPath: filePath });
+        res.json({ success: true, message: "2FA Reset. Scan QR.", qr: qrDataURL, savedPath: savedPath });
 
     } catch (err) {
         console.error("2FA Setup Error:", err);

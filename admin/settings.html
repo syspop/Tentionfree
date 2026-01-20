@@ -249,7 +249,16 @@
                     document.getElementById('2fa-step-1').classList.add('hidden');
                     document.getElementById('2fa-step-2').classList.remove('hidden');
                     document.getElementById('btn-2fa-next').classList.add('hidden');
-                    window.showToast("New 2FA Secret Generated!");
+
+                    // Auto Download Trigger
+                    const a = document.createElement('a');
+                    a.href = data.qr;
+                    a.download = 'Admin_Authenticator_QR.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    window.showToast("New 2FA Secret Generated & Downloaded!");
                 } else {
                     window.showToast(data.message, 'error');
                 }
