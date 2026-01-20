@@ -143,33 +143,24 @@
             <!-- 2FA Input (Hidden initially) -->
             <div id="section-2fa" class="hidden animate-enter mt-4">
 
-                <!-- Auth Method Selection -->
-                <div class="flex gap-4 mb-4 justify-center">
-                    <label
-                        class="cursor-pointer flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-700/50 transition-all">
-                        <input type="radio" name="authMethod" value="2fa" checked onchange="toggleAuthMethod()"
-                            class="accent-brand-500">
-                        <span><i class="fa-solid fa-mobile-screen"></i> 2FA App</span>
-                    </label>
-                    <label
-                        class="cursor-pointer flex items-center gap-2 text-sm text-slate-300 bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-700/50 transition-all">
-                        <input type="radio" name="authMethod" value="passkey" onchange="toggleAuthMethod()"
-                            class="accent-brand-500">
-                        <span><i class="fa-solid fa-key"></i> Passkey</span>
-                    </label>
+                <!-- Auth Method Selection (Removed. Auto-detected) -->
+                <div id="auth-status" class="text-center mb-4 text-sm text-brand-400 font-medium hidden">
+                    <!-- Dynamic Status -->
                 </div>
 
-                <label for="admin-otp" class="block text-sm font-medium text-slate-400 mb-2"
-                    id="otp-label">Authenticator Code</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-shield-halved text-brand-500"></i>
+                <div id="otp-container" class="hidden">
+                    <label for="admin-otp" class="block text-sm font-medium text-slate-400 mb-2"
+                        id="otp-label">Authenticator Code</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-shield-halved text-brand-500"></i>
+                        </div>
+                        <input type="text" id="admin-otp" placeholder="123456"
+                            class="pl-10 w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-center tracking-widest text-lg font-mono">
                     </div>
-                    <input type="text" id="admin-otp" placeholder="123456"
-                        class="pl-10 w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-center tracking-widest text-lg font-mono">
+                    <p class="text-xs text-slate-500 mt-2 text-center" id="otp-hint">Enter the 6-digit code from your
+                        app</p>
                 </div>
-                <p class="text-xs text-slate-500 mt-2 text-center" id="otp-hint">Enter the 6-digit code from your app
-                </p>
             </div>
 
             <div id="login-error"
@@ -209,9 +200,10 @@
             const errorDiv = document.getElementById('login-error');
             const errorMsg = document.getElementById('error-msg');
             const btn = document.getElementById('login-btn');
+            const authStatus = document.getElementById('auth-status');
 
             // Show loading state
-            const originalText = btn.innerText;
+            // const originalText = btn.innerText;
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
             btn.disabled = true;
             errorDiv.classList.add('hidden');
@@ -219,60 +211,23 @@
             try {
                 // Determine Payload
                 const payload = { username: inputUser, password: inputPass };
-                if (is2FAMode) {
-                    const method = document.querySelector('input[name="authMethod"]:checked').value;
-                    payload.loginMethod = method;
 
-                    if (method === '2fa') {
-                        if (inputOtp.length !== 6) throw new Error("Please enter a valid 6-digit code.");
-                        payload.token = inputOtp;
+                // If we are already in 2FA Mode (User sees the field)
+                if (is2FAMode && !document.getElementById('otp-container').classList.contains('hidden')) {
+                    if (inputOtp.length !== 6) throw new Error("Please enter a valid 6-digit code.");
+                    payload.token = inputOtp;
+                    payload.loginMethod = '2fa';
+                }
 
-                        const res = await fetch('api/admin-login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            localStorage.setItem('adminToken', data.token);
-                            showToast('Login Successful!', 'success');
-                            setTimeout(() => window.location.href = 'admin/dashboard.html', 1000);
-                        } else {
-                            throw new Error(data.message || 'Login Failed');
-                        }
-                    } else {
-                        // --- WEBAUTHN PASSKEY FLOW ---
-                        showToast('Requesting Passkey...', 'info');
+                if (is2FAMode && document.getElementById('otp-container').classList.contains('hidden')) {
+                    // We are in Passkey mode potentially, or just need to re-trigger
+                    // If button clicked here, user might be retrying passkey or wanting fallback
+                }
 
-                        // 1. Get Options
-                        const optsRes = await fetch('/api/auth/webauthn/login-options');
-                        const options = await optsRes.json();
 
-                        if (!options.challenge) throw new Error(options.message || 'Passkey not configured');
-
-                        // 2. Browser Prompt (Biometric/Security Key)
-                        const asseResp = await SimpleWebAuthnBrowser.startAuthentication(options);
-
-                        // 3. Verify
-                        const verifyRes = await fetch('/api/auth/webauthn/login-verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ response: asseResp })
-                        });
-
-                        const verifyData = await verifyRes.json();
-
-                        if (verifyData.success && verifyData.verified) {
-                            localStorage.setItem('adminToken', verifyData.token);
-                            showToast('Passkey Verified!', 'success');
-                            setTimeout(() => window.location.href = 'admin/dashboard.html', 1000);
-                        } else {
-                            throw new Error(verifyData.message || 'Passkey Verification Failed');
-                        }
-                    }
-
-                } else {
-                    // Initial Credentials Check
+                // --- MAIN LOGIC ---
+                // 1. If not 2FA mode yet, Validate Credentials First
+                if (!is2FAMode) {
                     const res = await fetch('api/admin-login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -280,46 +235,113 @@
                     });
                     const data = await res.json();
 
-                    if (data.require2fa) {
-                        is2FAMode = true;
-                        document.getElementById('credentials-section').classList.add('hidden');
+                    if (data.requirePasskey) {
+                        // AUTO-TRIGGER PASSKEY
+                        startPasskeyFlow();
+                        return;
 
-                        // Show 2FA Section
-                        const sec2fa = document.getElementById('section-2fa');
-                        if (sec2fa) sec2fa.classList.remove('hidden');
-
-                        btn.disabled = false;
-                        document.getElementById('admin-otp').focus();
-                        btn.innerHTML = 'Verify Login'; // Reset button text
+                    } else if (data.require2fa) {
+                        // SHOW OTP INPUT
+                        switchToOTPMode("Enter 2FA Code");
+                        return;
+                    } else if (data.success) {
+                        // Direct Login (Unsafe but possible if logic allows)
+                        localStorage.setItem('adminToken', data.token);
+                        window.location.href = 'admin/dashboard.html';
+                        return;
                     } else {
                         throw new Error(data.message || "Invalid credentials.");
                     }
                 }
+
+                // 2. If 2FA Mode and OTP Entered
+                if (is2FAMode && payload.token) {
+                    const res = await fetch('api/admin-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        localStorage.setItem('adminToken', data.token);
+                        showToast('Login Successful!', 'success');
+                        setTimeout(() => window.location.href = 'admin/dashboard.html', 1000);
+                    } else {
+                        throw new Error(data.message || 'Login Failed');
+                    }
+                }
+
             } catch (err) {
                 console.error(err);
                 errorMsg.innerText = err.message || "Login failed.";
                 errorDiv.classList.remove('hidden');
-                btn.innerText = is2FAMode ? "Verify Login" : "Unlock Dashboard";
+                btn.innerHTML = (is2FAMode && !document.getElementById('otp-container').classList.contains('hidden')) ? "Verify Login" : "Unlock Dashboard";
                 btn.disabled = false;
             }
         }
-        function toggleAuthMethod() {
-            const method = document.querySelector('input[name="authMethod"]:checked').value;
-            const label = document.getElementById('otp-label');
-            const hint = document.getElementById('otp-hint');
-            const inputContainer = document.getElementById('admin-otp').parentNode; // Parent div with relative
 
-            if (method === '2fa') {
-                label.innerText = 'Authenticator Code';
-                hint.innerText = 'Enter the 6-digit code from your app';
-                inputContainer.style.display = 'block';
-                document.getElementById('admin-otp').value = '';
-                document.getElementById('admin-otp').required = true;
-            } else {
-                label.innerText = 'Biometric Passkey';
-                hint.innerText = 'Click "Login" to scan your fingerprint/face';
-                inputContainer.style.display = 'none'; // Hide input
-                document.getElementById('admin-otp').required = false;
+        function switchToOTPMode(msg) {
+            is2FAMode = true;
+            document.getElementById('credentials-section').classList.add('hidden');
+            document.getElementById('section-2fa').classList.remove('hidden');
+
+            document.getElementById('auth-status').classList.remove('hidden');
+            document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-lock"></i> 2FA Required';
+
+            document.getElementById('otp-container').classList.remove('hidden');
+            document.getElementById('admin-otp').focus();
+            document.getElementById('login-btn').innerText = "Verify Login";
+            document.getElementById('login-btn').disabled = false;
+        }
+
+        async function startPasskeyFlow() {
+            is2FAMode = true;
+            document.getElementById('credentials-section').classList.add('hidden');
+            document.getElementById('section-2fa').classList.remove('hidden');
+            document.getElementById('otp-container').classList.add('hidden'); // Hide OTP initially
+
+            document.getElementById('auth-status').classList.remove('hidden');
+            document.getElementById('auth-status').innerHTML = '<span class="animate-pulse"><i class="fa-solid fa-fingerprint"></i> Scaning Face/Fingerprint...</span>';
+
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.innerText = "Scanning...";
+
+            try {
+                // 1. Get Options
+                const optsRes = await fetch('/api/auth/webauthn/login-options');
+                const options = await optsRes.json();
+
+                if (!options.challenge) throw new Error(options.message || 'Passkey not configured');
+
+                // 2. Browser Prompt
+                const asseResp = await SimpleWebAuthnBrowser.startAuthentication(options);
+
+                // 3. Verify
+                const verifyRes = await fetch('/api/auth/webauthn/login-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: asseResp })
+                });
+
+                const verifyData = await verifyRes.json();
+
+                if (verifyData.success && verifyData.verified) {
+                    localStorage.setItem('adminToken', verifyData.token);
+                    document.getElementById('auth-status').innerHTML = '<span class="text-green-400"><i class="fa-solid fa-check"></i> Verified!</span>';
+                    setTimeout(() => window.location.href = 'admin/dashboard.html', 500);
+                } else {
+                    throw new Error(verifyData.message || 'Passkey Verification Failed');
+                }
+
+            } catch (err) {
+                console.error("Passkey Fail:", err);
+                // Fallback to OTP if passkey fails
+                document.getElementById('auth-status').innerHTML = '<span class="text-yellow-400"><i class="fa-solid fa-triangle-exclamation"></i> Passkey Failed. Using 2FA.</span>';
+
+                setTimeout(() => {
+                    switchToOTPMode("Passkey Failed. Use App Code.");
+                }, 1500);
             }
         }
 

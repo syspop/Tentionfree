@@ -220,24 +220,38 @@ router.post('/admin-login', async (req, res) => {
 
     const ADMIN_USER = process.env.ADMIN_USER || "kazi@12MW";
     const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
-    const MASTER_PIN = process.env.BACKUP_PIN || "105090";
+    // const MASTER_PIN = process.env.BACKUP_PIN || "105090"; // Not used here
 
     try {
         if (username === ADMIN_USER && password === ADMIN_PASS) {
-            // Step 1: Credentials OK. Check 2FA.
-            if (!token) {
-                return res.json({ success: false, require2fa: true });
+            // Step 1: Credentials OK.
+
+            // Check for Smart 2FA/Passkey Logic
+            if (!req.body.loginMethod && !token) {
+                // Determine next step based on cookie and available passkeys
+                const systemData = await readDB('system_data.json') || {};
+                const hasPasskeys = Array.isArray(systemData.adminPasskeys) && systemData.adminPasskeys.length > 0;
+
+                // We check if the "admin_device_registered" cookie was sent
+                const isDeviceRegistered = req.headers.cookie && req.headers.cookie.includes('admin_device_registered=true');
+
+                if (hasPasskeys && isDeviceRegistered) {
+                    return res.json({ success: false, requirePasskey: true });
+                } else {
+                    return res.json({ success: false, require2fa: true });
+                }
             }
 
             // Step 2: Verify 2FA (TOTP or PIN or PASSKEY)
             const systemData = await readDB('system_data.json') || {};
 
-            // Check for Passkey Method (WebAuthn)
+            // Check for Passkey Method (WebAuthn) - Handled separately by /auth/webauthn/login-verify
+            // BUT if somehow sent here with 'passkey' method, redirect them
             if (req.body.loginMethod === 'passkey') {
                 return res.status(400).json({ success: false, message: "Use /auth/webauthn/login-verify for Passkey login" });
             }
 
-            // Verify App Code
+            // Verify App Code (TOTP)
             if (systemData && systemData.admin2faSecret) {
                 const verified = speakeasy.totp.verify({
                     secret: systemData.admin2faSecret,
@@ -360,7 +374,6 @@ router.post('/auth/google', async (req, res) => {
 // 1. Generate Registration Options (Setup)
 router.post('/auth/webauthn/register-options', async (req, res) => {
     // 1. Security Check: Require Admin Token (Authorization Header)
-    // The user requested "login na kore access kora jay" -> implies we must prevent this.
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ success: false, message: "Unauthorized: Admin Login Required" });
@@ -381,7 +394,7 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
 
     const systemData = await readDB('system_data.json') || {};
     // Get existing passkeys to prevent duplicates on same device
-    const adminPasskeys = systemData.adminPasskeys || [];
+    const adminPasskeys = Array.isArray(systemData.adminPasskeys) ? systemData.adminPasskeys : [];
 
     try {
         const options = await generateRegistrationOptions({
@@ -392,9 +405,13 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
             attestationType: 'none',
             excludeCredentials: adminPasskeys.map(passkey => {
                 let id = passkey.id;
+                // Handle legacy format if exists
                 if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
                     id = new Uint8Array(id.data);
+                } else if (typeof id === 'string') {
+                    id = base64urlToBuffer(id);
                 }
+
                 return {
                     id: id,
                     transports: passkey.transports,
@@ -431,7 +448,7 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
 
         if (verification.verified && verification.registrationInfo) {
             const systemData = await readDB('system_data.json') || {};
-            if (!systemData.adminPasskeys) systemData.adminPasskeys = [];
+            if (!Array.isArray(systemData.adminPasskeys)) systemData.adminPasskeys = [];
 
             const newValues = {
                 id: Buffer.from(verification.registrationInfo.credentialID).toString('base64url'),
@@ -446,12 +463,19 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             await writeDB('system_data.json', systemData);
 
             delete challengeStore['admin-register'];
+
+            // Set Cookie to remember this device
+            res.cookie('admin_device_registered', 'true', {
+                maxAge: 365 * 24 * 60 * 60 * 1000,
+                httpOnly: false // Accessible by client JS to check existence
+            });
+
             res.json({ success: true, verified: true });
         } else {
             res.status(400).json({ success: false, verified: false });
         }
     } catch (error) {
-        console.error(error);
+        console.error("WebAuthn Verify Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
