@@ -467,8 +467,11 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             console.log("[WebAuthn] Verify Success. Info Keys:", Object.keys(regInfo));
 
             // SAFETY CHECKS
-            if (!regInfo.credentialID) throw new Error("Missing credentialID in verification result");
-            if (!regInfo.credentialPublicKey) throw new Error("Missing credentialPublicKey in verification result");
+            if (!regInfo.credentialID) {
+                console.error("RegInfo Keys:", Object.keys(regInfo));
+                throw new Error(`Missing credentialID. Available: ${Object.keys(regInfo).join(', ')}`);
+            }
+            if (!regInfo.credentialPublicKey) throw new Error("Missing credentialPublicKey");
 
             const newValues = {
                 id: Buffer.from(regInfo.credentialID).toString('base64url'),
