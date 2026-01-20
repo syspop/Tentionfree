@@ -639,10 +639,10 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             res.status(400).json({ success: false, verified: false });
         }
     } catch (error) {
-        console.error(error);
+        console.error("LOGIN-VERIFY-CRASH:", error);
         res.status(500).json({
             success: false,
-            message: error.message,
+            message: "DEBUG-FIX: " + error.message,
             stack: error.stack // DEBUG: Send stack to client
         });
     }
