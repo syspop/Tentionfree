@@ -463,11 +463,18 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             const systemData = await readDB('system_data.json') || {};
             if (!Array.isArray(systemData.adminPasskeys)) systemData.adminPasskeys = [];
 
+            const regInfo = verification.registrationInfo;
+            console.log("[WebAuthn] Verify Success. Info Keys:", Object.keys(regInfo));
+
+            // SAFETY CHECKS
+            if (!regInfo.credentialID) throw new Error("Missing credentialID in verification result");
+            if (!regInfo.credentialPublicKey) throw new Error("Missing credentialPublicKey in verification result");
+
             const newValues = {
-                id: Buffer.from(verification.registrationInfo.credentialID).toString('base64url'),
-                publicKey: Buffer.from(verification.registrationInfo.credentialPublicKey).toString('base64url'),
-                counter: verification.registrationInfo.counter,
-                transports: verification.registrationInfo.credentialTransports,
+                id: Buffer.from(regInfo.credentialID).toString('base64url'),
+                publicKey: Buffer.from(regInfo.credentialPublicKey).toString('base64url'),
+                counter: regInfo.counter,
+                transports: regInfo.credentialTransports,
                 device: req.headers['user-agent'] || 'Unknown Device',
                 created: new Date().toISOString()
             };
