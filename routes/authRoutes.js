@@ -466,16 +466,27 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             const regInfo = verification.registrationInfo;
             console.log("[WebAuthn] Verify Success. Info Keys:", Object.keys(regInfo));
 
-            // SAFETY CHECKS
-            if (!regInfo.credentialID) {
-                console.error("RegInfo Keys:", Object.keys(regInfo));
-                throw new Error(`Missing credentialID. Available: ${Object.keys(regInfo).join(', ')}`);
+            // SAFETY CHECKS & COMPATIBILITY
+            // SimpleWebAuthn v9+ vs v10+ structure difference
+            let credentialID = regInfo.credentialID;
+            let credentialPublicKey = regInfo.credentialPublicKey;
+
+            if (!credentialID && regInfo.credential) {
+                credentialID = regInfo.credential.id;
+                credentialPublicKey = regInfo.credential.publicKey;
             }
-            if (!regInfo.credentialPublicKey) throw new Error("Missing credentialPublicKey");
+
+            if (!credentialID) {
+                console.error("RegInfo Keys:", Object.keys(regInfo));
+                // Optional: check inside credential if it exists
+                if (regInfo.credential) console.error("Credential Keys:", Object.keys(regInfo.credential));
+                throw new Error("Missing credentialID in verification result");
+            }
+            if (!credentialPublicKey) throw new Error("Missing credentialPublicKey");
 
             const newValues = {
-                id: Buffer.from(regInfo.credentialID).toString('base64url'),
-                publicKey: Buffer.from(regInfo.credentialPublicKey).toString('base64url'),
+                id: Buffer.from(credentialID).toString('base64url'),
+                publicKey: Buffer.from(credentialPublicKey).toString('base64url'),
                 counter: regInfo.counter,
                 transports: regInfo.credentialTransports,
                 device: req.headers['user-agent'] || 'Unknown Device',
