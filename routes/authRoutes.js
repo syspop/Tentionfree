@@ -870,6 +870,14 @@ router.post('/auth/admin/devices/toggle-block', async (req, res) => {
 
     const { deviceId, block } = req.body; // block = true/false
 
+    // CHECK SELF-BLOCK: Prevent blocking the current session
+    let currentDeviceId = req.headers.cookie ? req.headers.cookie.split('; ').find(row => row.startsWith('admin_device_id=')) : null;
+    if (currentDeviceId) currentDeviceId = currentDeviceId.split('=')[1];
+
+    if (block && currentDeviceId && currentDeviceId === deviceId) {
+        return res.status(400).json({ success: false, message: "Safety Block: You cannot block your own current device!" });
+    }
+
     const systemData = await readDB('system_data.json') || {};
     if (!systemData.adminSessions) systemData.adminSessions = {};
 
