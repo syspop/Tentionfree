@@ -183,7 +183,7 @@
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="autoStockToggle" class="sr-only peer"
-                                onchange="toggleBulkProductOption('autoStockOut', this)">
+                                onchange="toggleAutoStockout(this)">
                             <div
                                 class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500">
                             </div>
@@ -408,8 +408,16 @@
                 const res = await fetch('/api/settings/pay-later');
                 const data = await res.json();
                 if (data.success) {
-                    const toggle = document.getElementById('payLaterToggle');
-                    if (toggle) toggle.checked = data.enabled;
+                    const payLaterToggle = document.getElementById('payLaterToggle');
+                    if (payLaterToggle) payLaterToggle.checked = data.enabled;
+                }
+
+                // Load Auto Stockout
+                const resStock = await fetch('/api/settings/auto-stockout');
+                const dataStock = await resStock.json();
+                if (dataStock.success) {
+                    const stockToggle = document.getElementById('autoStockToggle');
+                    if (stockToggle) stockToggle.checked = dataStock.enabled;
                 }
             } catch (err) {
                 console.error("Config Load Error:", err);
@@ -480,6 +488,42 @@
                         input.checked = !value;
                         window.showToast("Update Failed: " + (e.message || "Network Error"), "error");
                         console.error("Network Error:", e);
+                    }
+                }
+            );
+        }
+
+        async function toggleAutoStockout(input) {
+            const enabled = input.checked;
+            const token = localStorage.getItem('adminToken');
+
+            // Revert temporarily to confirm
+            input.checked = !enabled;
+
+            window.showConfirm(
+                "Update Auto-Stockout?",
+                `When enabled, products with 0 stock will be hidden from the website.\nCurrently: ${enabled ? 'ON' : 'OFF'}`,
+                async () => {
+                    input.checked = enabled; // Set back
+                    try {
+                        const res = await fetch('/api/settings/auto-stockout', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: JSON.stringify({ enabled })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.showToast(`Auto Stockout is now ${enabled ? 'ON' : 'OFF'}`);
+                        } else {
+                            input.checked = !enabled;
+                            window.showToast(data.message || "Failed to update", 'error');
+                        }
+                    } catch (e) {
+                        input.checked = !enabled;
+                        window.showToast("Network Error", 'error');
                     }
                 }
             );

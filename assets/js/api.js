@@ -76,3 +76,20 @@ async function loadCategoryFilters() {
         console.error("Failed to load category filters:", e);
     }
 }
+
+
+async function fetchSystemSettings() {
+    try {
+        const res = await fetch('/api/settings/auto-stockout');
+        const data = await res.json();
+        if (data.success) {
+            window.systemConfigs = window.systemConfigs || {};
+            window.systemConfigs.autoStockOut = data.enabled;
+            console.log("⚙️ System Configs Loaded:", window.systemConfigs);
+        }
+    } catch (e) {
+        console.warn("Using default system configs (server offline?)");
+        window.systemConfigs = window.systemConfigs || {};
+        window.systemConfigs.autoStockOut = false; // Default OFF
+    }
+}

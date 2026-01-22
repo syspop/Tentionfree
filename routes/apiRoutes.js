@@ -170,8 +170,8 @@ router.post('/products/bulk-update', authenticateAdmin, async (req, res) => {
 
         res.json({ success: true, message: `All products updated: ${key} = ${value}` });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Failed to bulk update products" });
+        console.error("Bulk Update Error:", err);
+        res.status(500).json({ success: false, message: "Failed to bulk update products", error: err.message, details: err });
     }
 });
 

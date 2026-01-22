@@ -57,12 +57,14 @@ function renderProducts() {
         if (product.badge) {
             badgeHtml = `<div class="absolute top-3 right-3 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg z-10 uppercase tracking-wide border border-brand-400/50">${product.badge}</div>`;
         }
-        // Check Auto Stockout Logic
+        // Check Auto Stockout Logic (GLOBAL)
         let isOutOfStock = product.inStock === false;
-        if (product.autoStockOut && product.variants) {
+        const autoStockOutEnabled = window.systemConfigs && window.systemConfigs.autoStockOut;
+
+        if (autoStockOutEnabled && product.variants) {
             const hasStock = product.variants.some(v => v.stock && Array.isArray(v.stock) && v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length > 0);
             if (!hasStock) isOutOfStock = true;
-        } else if (product.autoStockOut && !product.variants) {
+        } else if (autoStockOutEnabled && !product.variants) {
             // No variants but auto stockout ON -> Out of Stock
             isOutOfStock = true;
         }
@@ -79,7 +81,7 @@ function renderProducts() {
         if (product.variants && product.variants.length > 0) {
             const variantOptions = product.variants.map((v, i) => {
                 // Check Visibility
-                if (product.autoStockOut) {
+                if (window.systemConfigs && window.systemConfigs.autoStockOut) {
                     const hasStock = v.stock && Array.isArray(v.stock) && v.stock.some(s => (typeof s === 'string') || (s.status === 'available' || !s.status));
                     if (!hasStock) return ''; // Hide if no stock and autoStockOut is ON
                 }
@@ -328,7 +330,7 @@ async function loadProductDetailsPage() {
                     <select id="page-variant-select" onchange="updatePagePrice(${product.id})" 
                         class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl py-4 pl-4 pr-10 appearance-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all cursor-pointer hover:bg-slate-800">
                         ${product.variants.map((v, i) => {
-            if (product.autoStockOut) {
+            if (window.systemConfigs && window.systemConfigs.autoStockOut) {
                 const hasStock = v.stock && Array.isArray(v.stock) && v.stock.some(s => (typeof s === 'string') || (s.status === 'available' || !s.status));
                 if (!hasStock) return '';
             }
@@ -352,10 +354,12 @@ async function loadProductDetailsPage() {
 
     // Calculate Stock Status for Details Page
     let isDetailsOutOfStock = product.inStock === false;
-    if (product.autoStockOut && product.variants) {
+    const autoStockOutEnabledPage = window.systemConfigs && window.systemConfigs.autoStockOut;
+
+    if (autoStockOutEnabledPage && product.variants) {
         const hasStock = product.variants.some(v => v.stock && Array.isArray(v.stock) && v.stock.filter(s => typeof s === 'string' || (s.status === 'available' || !s.status)).length > 0);
         if (!hasStock) isDetailsOutOfStock = true;
-    } else if (product.autoStockOut && !product.variants) {
+    } else if (autoStockOutEnabledPage && !product.variants) {
         isDetailsOutOfStock = true;
     }
 

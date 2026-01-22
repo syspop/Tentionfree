@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateNavbar();
 
         // 2. Initialize Data
+        await fetchSystemSettings(); // Global Configs (including Auto Stockout)
         // Fetch and Render Products (if on home/shop page)
         if (document.getElementById('product-grid') || document.getElementById('home-product-grid') || document.getElementById('product-details-container')) {
             await fetchProducts(); // From api.js, stores in window.products

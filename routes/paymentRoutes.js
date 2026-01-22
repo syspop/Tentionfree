@@ -61,6 +61,33 @@ router.post('/settings/pay-later', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- AUTO STOCKOUT SETTINGS ---
+
+// GET Auto Stockout Status
+router.get('/settings/auto-stockout', async (req, res) => {
+    try {
+        const systemData = await readLocalJSON('system_data.json');
+        res.json({ success: true, enabled: systemData.autoStockOut === true });
+    } catch (err) {
+        res.status(500).json({ success: false, enabled: false });
+    }
+});
+
+// UPDATE Auto Stockout Status
+router.post('/settings/auto-stockout', authenticateAdmin, async (req, res) => {
+    const { enabled } = req.body; // boolean
+
+    try {
+        const systemData = await readLocalJSON('system_data.json');
+        systemData.autoStockOut = enabled === true;
+        await writeLocalJSON('system_data.json', systemData);
+        res.json({ success: true, message: `Auto Stockout ${enabled ? 'Enabled' : 'Disabled'}` });
+    } catch (err) {
+        console.error("Error updating auto stockout:", err);
+        res.status(500).json({ success: false, message: "Failed to update settings" });
+    }
+});
+
 // POST Create Payment
 router.post('/payment/create', async (req, res) => {
     const { orderId } = req.body;
