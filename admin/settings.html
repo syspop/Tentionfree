@@ -193,6 +193,40 @@
                 </div>
             </div>
 
+            <!-- Login Devices Management -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden mb-8">
+                <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold text-white"><i
+                                class="fa-solid fa-laptop-code mr-2 text-indigo-400"></i>Login Devices</h3>
+                        <p class="text-slate-400 text-xs mt-1">Manage devices that have logged into the Admin Panel.</p>
+                    </div>
+                    <button onclick="loadDevices()" class="text-slate-400 hover:text-white transition">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+                <div class="p-0">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-950 text-slate-400 text-xs uppercase font-bold">
+                                <tr>
+                                    <th class="p-4">Device / Browser</th>
+                                    <th class="p-4">IP Address</th>
+                                    <th class="p-4">Last Active</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="devices-table-body" class="text-sm divide-y divide-slate-800">
+                                <tr>
+                                    <td colspan="5" class="p-8 text-center text-slate-500">Loading devices...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- System Info -->
             <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
                 <div class="p-6 border-b border-slate-800">
@@ -451,9 +485,129 @@
             );
         }
 
+        // --- DEVICE MANAGEMENT LOGIC ---
+        async function loadDevices() {
+            const tbody = document.getElementById('devices-table-body');
+            const token = localStorage.getItem('adminToken');
+
+            try {
+                const res = await fetch('/api/auth/admin/devices', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (!data.success) throw new Error(data.message);
+
+                if (data.devices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-500">No login history found.</td></tr>';
+                    return;
+                }
+
+                // Get Current Device ID from Cookie
+                const currentId = document.cookie.split('; ').find(row => row.startsWith('admin_device_id='))?.split('=')[1];
+
+                tbody.innerHTML = data.devices.map(d => {
+                    const isCurrent = currentId && d.id === currentId;
+                    const isBlocked = d.isBlocked;
+                    const statusClass = isBlocked ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+                    const statusText = isBlocked ? 'Blocked' : (isCurrent ? 'Current Session' : 'Active');
+
+                    // Parse User Agent roughly
+                    let deviceName = "Unknown Device";
+                    if (d.userAgent.includes("Windows")) deviceName = "Windows PC";
+                    else if (d.userAgent.includes("Mac")) deviceName = "Mac";
+                    else if (d.userAgent.includes("Android")) deviceName = "Android Phone";
+                    else if (d.userAgent.includes("iPhone")) deviceName = "iPhone";
+
+                    if (d.userAgent.includes("Chrome")) deviceName += " (Chrome)";
+                    else if (d.userAgent.includes("Firefox")) deviceName += " (Firefox)";
+                    else if (d.userAgent.includes("Safari")) deviceName += " (Safari)";
+
+                    return `
+                        <tr class="hover:bg-slate-900/50 transition-colors">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
+                                        <i class="fa-solid fa-${d.userAgent.toLowerCase().includes('mobile') ? 'mobile-screen' : 'desktop'}"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-slate-200 text-sm">${deviceName} ${isCurrent ? '<span class="text-xs text-blue-400 font-bold ml-1">(You)</span>' : ''}</div>
+                                        <div class="text-[10px] text-slate-500 truncate max-w-[200px]" title="${d.userAgent}">${d.userAgent}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4 font-mono text-xs text-slate-400">${d.ip || 'N/A'}</td>
+                            <td class="p-4 text-xs text-slate-400">
+                                ${new Date(d.lastLogin).toLocaleString()}
+                                <div class="text-[10px] text-slate-600">${timeAgo(new Date(d.lastLogin))}</div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <span class="px-2 py-1 rounded text-[10px] font-bold border ${statusClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                            <td class="p-4 text-right">
+                                ${!isCurrent ? `
+                                <button onclick="toggleBlockDevice('${d.id}', ${!isBlocked})" 
+                                    class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${isBlocked ? 'bg-emerald-600 border-emerald-500 hover:bg-emerald-500 text-white' : 'bg-red-600 border-red-500 hover:bg-red-500 text-white'}">
+                                    ${isBlocked ? 'Unblock' : 'Block Access'}
+                                </button>
+                                ` : '<span class="text-xs text-slate-600 italic">Cannot block self</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-400">Failed to load devices.</td></tr>';
+            }
+        }
+
+        async function toggleBlockDevice(deviceId, block) {
+            const token = localStorage.getItem('adminToken');
+            if (!confirm(`Are you sure you want to ${block ? 'BLOCK' : 'UNBLOCK'} this device?`)) return;
+
+            try {
+                const res = await fetch('/api/auth/admin/devices/toggle-block', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ deviceId, block })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.showToast(data.message);
+                    loadDevices();
+                } else {
+                    window.showToast(data.message, 'error');
+                }
+            } catch (e) {
+                window.showToast("Network Error", 'error');
+            }
+        }
+
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " days ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " hours ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " minutes ago";
+            return Math.floor(seconds) + " seconds ago";
+        }
+
         // Init Load
         loadPaymentMode();
         fetchConfig();
+        loadDevices();
     </script>
 </body>
 

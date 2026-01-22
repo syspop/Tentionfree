@@ -227,10 +227,46 @@ router.post('/admin-login', async (req, res) => {
         if (username === ADMIN_USER && password === ADMIN_PASS) {
             // Step 1: Credentials OK.
 
+            // Step 1: Check if the DEVICE is blocked (using admin_device_id cookie)
+            // We use a long-lived cookie 'admin_device_id' to track browsers.
+            let deviceId = req.headers.cookie ? req.headers.cookie.split('; ').find(row => row.startsWith('admin_device_id=')) : null;
+            if (deviceId) {
+                deviceId = deviceId.split('=')[1];
+            } else {
+                // Generate new Device ID if none exists
+                deviceId = require('crypto').randomBytes(16).toString('hex');
+            }
+
+            const systemData = await readDB('system_data.json') || {};
+            if (!systemData.adminSessions) systemData.adminSessions = {};
+
+            const session = systemData.adminSessions[deviceId];
+            if (session && session.isBlocked) {
+                return res.status(403).json({ success: false, message: "Access Denied: This device has been blocked by Admin." });
+            }
+
+            // Update Session Info (Active)
+            systemData.adminSessions[deviceId] = {
+                id: deviceId,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+                lastLogin: new Date().toISOString(),
+                isBlocked: false,
+                status: 'Active'
+            };
+            await writeDB('system_data.json', systemData); // Async save, don't block too long
+
+            // Set/Refresh Cookie (1 Year)
+            res.cookie('admin_device_id', deviceId, {
+                maxAge: 365 * 24 * 60 * 60 * 1000,
+                httpOnly: true, // Secure, JS can't read
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax'
+            });
+
             // Check for Smart 2FA/Passkey Logic
             if (!req.body.loginMethod && !token) {
                 // Determine next step based on cookie and available passkeys
-                const systemData = await readDB('system_data.json') || {};
                 const hasPasskeys = Array.isArray(systemData.adminPasskeys) && systemData.adminPasskeys.length > 0;
 
                 // We check if the "admin_device_registered" cookie was sent
@@ -244,7 +280,6 @@ router.post('/admin-login', async (req, res) => {
             }
 
             // Step 2: Verify 2FA (TOTP or PIN or PASSKEY)
-            const systemData = await readDB('system_data.json') || {};
 
             // Check for Passkey Method (WebAuthn) - Handled separately by /auth/webauthn/login-verify
             // BUT if somehow sent here with 'passkey' method, redirect them
@@ -255,15 +290,8 @@ router.post('/admin-login', async (req, res) => {
             // Verify App Code (TOTP)
             if (systemData && systemData.admin2faSecret) {
                 console.log("[AdminLogin] Verifying 2FA...");
-                console.log("[AdminLogin] Secret:", systemData.admin2faSecret);
+                // console.log("[AdminLogin] Secret:", systemData.admin2faSecret); // Security Check
                 console.log("[AdminLogin] Input Token:", token.trim());
-
-                // Generate expected token for next 30s window to compare (DEBUG)
-                const expected = speakeasy.totp({
-                    secret: systemData.admin2faSecret,
-                    encoding: 'base32'
-                });
-                console.log("[AdminLogin] Expected Token (Server Time):", expected);
 
                 const verified = speakeasy.totp.verify({
                     secret: systemData.admin2faSecret,
@@ -284,10 +312,6 @@ router.post('/admin-login', async (req, res) => {
                     message: "Invalid 2FA Code",
                     debug: {
                         serverTime: new Date().toISOString(),
-                        checkWindow: 4,
-                        // CAUTION: Only for debugging, remove later!
-                        expectedFirst: speakeasy.totp({ secret: systemData.admin2faSecret, encoding: 'base32' }),
-                        input: token
                     }
                 });
             } else {
@@ -808,6 +832,59 @@ router.post('/auth/admin/update-pin', async (req, res) => {
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+
+// --- DEVICE MANAGEMENT API ---
+
+// GET All Sessions (Devices)
+router.get('/auth/admin/devices', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const systemData = await readDB('system_data.json') || {};
+    const sessions = systemData.adminSessions || {};
+
+    // Convert Object to Array
+    const sessionList = Object.values(sessions).sort((a, b) => new Date(b.lastLogin) - new Date(a.lastLogin));
+
+    res.json({ success: true, devices: sessionList });
+});
+
+// POST Toggle Block Device
+router.post('/auth/admin/devices/toggle-block', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+    try {
+        jwt.verify(token, JWT_SECRET);
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const { deviceId, block } = req.body; // block = true/false
+
+    const systemData = await readDB('system_data.json') || {};
+    if (!systemData.adminSessions) systemData.adminSessions = {};
+
+    if (!systemData.adminSessions[deviceId]) {
+        return res.status(404).json({ success: false, message: "Device not found" });
+    }
+
+    systemData.adminSessions[deviceId].isBlocked = block;
+    systemData.adminSessions[deviceId].status = block ? 'Blocked' : 'Active';
+
+    await writeDB('system_data.json', systemData);
+
+    res.json({ success: true, message: `Device ${block ? 'Blocked' : 'Unblocked'}` });
+});
+
 
 router.post('/auth/admin/setup-2fa', async (req, res) => {
     // Auth Check
