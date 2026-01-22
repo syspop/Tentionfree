@@ -732,7 +732,7 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             authenticator: {
                 credentialID: finalCredentialID, // Passed as String
                 credentialPublicKey: finalPublicKey,
-                counter: dbAuthenticator.counter,
+                counter: parseInt(dbAuthenticator.counter || 0), // Fix: Default to 0 if undefined to prevent library crash
                 transports: dbAuthenticator.transports,
             },
         });
