@@ -77,16 +77,11 @@ router.post('/payment/create', async (req, res) => {
             console.error("   Gateway Response:", err.response.data);
         }
 
-        // Fallback for Development/Testing so user isn't stuck if API fails
-        // Remove this in production!
-        // return res.json({ 
-        //     success: true, 
-        //     payment_url: `https://tentionfree.store/payment-success.html?oid=${orderId}&mock=true`,
-        //     message: "Mock Fallback (API Connection Failed)" 
-        // });
-
+        // Fallback removed. 
         return res.status(502).json({ success: false, message: "Payment Gateway Unreachable" });
     }
 });
+
+console.log("💳 Payment Routes Loaded (Live Mode)");
 
 module.exports = router;
