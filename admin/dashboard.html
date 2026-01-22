@@ -220,11 +220,17 @@
             for (let i = days - 1; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0];
-                labels.push(d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }));
+                const dateStr = d.toLocaleDateString(); // Matches 1/22/2026 format if server uses default
+                // Better approach: Parse both to objects
 
                 const dayRevenue = orders
-                    .filter(o => o.date && o.date.startsWith(dateStr) && o.status !== 'Cancelled' && o.status !== 'Deleted')
+                    .filter(o => {
+                        if (!o.date || o.status === 'Cancelled' || o.status === 'Deleted' || o.isDeleted) return false;
+                        const oDate = new Date(o.date); // Works for "1/22/2026, 6:00:00 PM"
+                        return oDate.getDate() === d.getDate() &&
+                            oDate.getMonth() === d.getMonth() &&
+                            oDate.getFullYear() === d.getFullYear();
+                    })
                     .reduce((sum, o) => sum + (parseFloat(o.price) || 0), 0);
 
                 data.push(dayRevenue);
