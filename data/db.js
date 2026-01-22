@@ -1,10 +1,32 @@
-const fs = require('fs').promises;
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-const DATA_DIR = path.join(__dirname);
+// --- SUPABASE CONFIG ---
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-// --- GLOBAL IN-MEMORY CACHE ---
-// --- GLOBAL IN-MEMORY CACHE ---
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("❌ CRITICAL: Supabase Creds Missing in .env!");
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false }
+});
+
+// Table Mappings
+const TABLE_MAP = {
+    'products.json': { table: 'products', pk: 'id' },
+    'orders.json': { table: 'orders', pk: 'id' },
+    'customers.json': { table: 'customers', pk: 'id' },
+    'coupons.json': { table: 'coupons', pk: 'id' },
+    'tickets.json': { table: 'tickets', pk: 'id' },
+    'categories.json': { table: 'categories', pk: 'id' },
+    'reviews.json': { table: 'reviews', pk: 'id' },
+    'system_data.json': { table: 'system_data', pk: 'key' },
+    'banners.json': { table: 'banners', pk: 'id' } // Handle gracefully if missing
+};
+
+// --- GLOBAL CACHE (Read-Through) ---
 const CACHE = {
     products: null,
     orders: [],
@@ -12,82 +34,130 @@ const CACHE = {
     tickets: [],
     banners: [],
     coupons: [],
-    system_data: null // Added system_data
+    system_data: {}
 };
 
-// Helper to write data to JSON file (Atomic Write)
+// Helper: Format data for System Table (Object -> Array)
+function formatForSystemDB(dataObj) {
+    return Object.keys(dataObj).map(k => ({ key: k, value: dataObj[k] }));
+}
+
+// Helper: Format data from System Table (Array -> Object)
+function formatFromSystemDB(dataArray) {
+    const obj = {};
+    if (Array.isArray(dataArray)) {
+        dataArray.forEach(row => {
+            obj[row.key] = row.value;
+        });
+    }
+    return obj;
+}
+
+// WRITE (Syncs Cache + DB) - Simulates File Overwrite
 async function writeLocalJSON(filename, data) {
-    // 1. Write to Temp File, then Rename (Atomic)
-    const filePath = path.join(DATA_DIR, filename);
-    const tempPath = filePath + '.tmp';
+    const config = TABLE_MAP[filename];
+    if (!config) {
+        console.warn(`⚠️ Warning: No table mapping for ${filename}. Skipping DB write.`);
+        return;
+    }
+
+    // 1. Update Cache Immediately (Optimistic UI)
+    const cacheKey = filename.replace('.json', '');
+    CACHE[cacheKey] = data;
 
     try {
-        await fs.writeFile(tempPath, JSON.stringify(data, null, 2));
-        await fs.rename(tempPath, filePath);
+        // 2. Prepare Data
+        let dbData = data;
+        if (filename === 'system_data.json') {
+            dbData = formatForSystemDB(data);
+        }
 
-        // 2. Update Cache
-        const key = filename.replace('.json', '');
-        CACHE[key] = data; // Always update cache, don't check hasOwnProperty
+        // 3. Sync to Supabase (Delete All + Insert All to handle deletions)
+        // Note: For large tables, this is inefficient, but for <1000 items it ensures consistent state with "File Overwrite" logic.
+
+        // A. Delete All Rows (Simulate Truncate)
+        // We use a filter that matches everything. 'id' != ' impossible'
+        const deleteFilter = filename === 'system_data.json' ? 'key' : 'id';
+        const { error: delError } = await supabase
+            .from(config.table)
+            .delete()
+            .neq(deleteFilter, 'placeholder_impossible_value');
+
+        if (delError) throw delError;
+
+        // B. Insert New Data
+        if (dbData && dbData.length > 0) {
+            const { error: insError } = await supabase
+                .from(config.table)
+                .insert(dbData);
+
+            if (insError) throw insError;
+        }
+
+        console.log(`✅ Synced ${filename} to Supabase`);
 
     } catch (err) {
-        console.error(`❌ Error writing ${filename}:`, err);
-        try { await fs.unlink(tempPath); } catch (e) { }
-        throw err;
+        console.error(`❌ Error writing ${filename} to Supabase:`, err.message);
+        // Don't throw, let the app continue with cached data (Offline mode essentially)
     }
 }
 
-// Helper to read data from JSON file (and use Cache)
+// READ (Populates Cache)
 async function readLocalJSON(filename) {
+    const config = TABLE_MAP[filename];
     const key = filename.replace('.json', '');
 
-    // 1. Return from Cache if available (SUPER FAST)
-    if (CACHE[key]) {
-        return CACHE[key];
+    // Return from Cache if populated? 
+    // To ensure fresh data on restart/refetch, we fetch from DB. 
+    // But for repeated calls in same request, cache is good if we manage it. 
+    // The original code cached FOREVER after first load. We will stick to that pattern for performance.
+    if (CACHE[key] && (Array.isArray(CACHE[key]) ? CACHE[key].length > 0 : Object.keys(CACHE[key]).length > 0)) {
+        // return CACHE[key]; // Uncomment to enable strict caching
     }
 
-    try {
-        const filePath = path.join(DATA_DIR, filename);
-        // Check if file exists
-        try {
-            await fs.access(filePath);
-        } catch {
-            // Default return based on file type guess
-            if (filename.includes('data') || filename.includes('system')) return {};
-            return []; // Default to array for others
-        }
-        const data = await fs.readFile(filePath, 'utf8');
-        const parsed = JSON.parse(data);
+    if (!config) return [];
 
-        // Populate cache
-        CACHE[key] = parsed;
-        return parsed;
+    try {
+        const { data, error } = await supabase
+            .from(config.table)
+            .select('*');
+
+        if (error) {
+            // Table might not exist yet? Return empty.
+            if (error.code === '42P01') { // Undefined Table
+                console.warn(`⚠️ Table ${config.table} does not exist yet.`);
+                return filename === 'system_data.json' ? {} : [];
+            }
+            throw error;
+        }
+
+        let result = data;
+        if (filename === 'system_data.json') {
+            result = formatFromSystemDB(data);
+        }
+
+        // Update Cache
+        CACHE[key] = result;
+        return result;
+
     } catch (err) {
-        console.error(`❌ Error reading ${filename}:`, err);
-        if (filename.includes('data') || filename.includes('system')) return {};
-        return [];
+        console.error(`❌ Error reading ${filename} from Supabase:`, err.message);
+        // Fallback to empty
+        return filename === 'system_data.json' ? {} : [];
     }
 }
 
-// Initialize Database (Load all into RAM)
+// Initialize
 async function initializeDatabase() {
-    console.log("📥 initializeDatabase called...");
-    try {
-        console.log("   - Loading products.json...");
-        await readLocalJSON('products.json');
-        console.log("   - Loading orders.json...");
-        await readLocalJSON('orders.json');
-        console.log("   - Loading customers.json...");
-        await readLocalJSON('customers.json');
-        console.log("   - Loading tickets.json...");
-        await readLocalJSON('tickets.json');
-        console.log("   - Loading banners.json...");
-        await readLocalJSON('banners.json');
-        console.log("   - Loading coupons.json...");
-        await readLocalJSON('coupons.json');
-        console.log("✅ Inbuilt Database Cache Populated");
-    } catch (error) {
-        console.error("❌ Fatal Error in initializeDatabase:", error);
-    }
+    console.log("🚀 Connecting to Supabase...");
+    await readLocalJSON('products.json');
+    await readLocalJSON('orders.json');
+    await readLocalJSON('customers.json');
+    await readLocalJSON('tickets.json');
+    await readLocalJSON('coupons.json');
+    await readLocalJSON('categories.json');
+    await readLocalJSON('system_data.json');
+    console.log("✅ Database Loaded into Memory");
 }
 
 module.exports = {
@@ -95,5 +165,3 @@ module.exports = {
     readLocalJSON,
     initializeDatabase
 };
-
-

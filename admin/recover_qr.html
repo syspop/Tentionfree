@@ -1,0 +1,26 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Recover 2FA - TentionFree</title>
+        <style>
+            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1e293b; color: white; }
+            .card { background: #334155; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+            img { border-radius: 10px; margin: 20px 0; border: 10px solid white; }
+            .code { background: #0f172a; padding: 15px; border-radius: 10px; font-family: monospace; letter-spacing: 2px; font-size: 1.2rem; color: #38bdf8; margin-top: 10px; }
+            h1 { margin-bottom: 5px; color: #38bdf8; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>Admin 2FA Recovery</h1>
+            <p>Scan this QR Code with Google Authenticator</p>
+            <img src="data:image/png;base64,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" alt="QR Code">
+            <p>Or duplicate manually:</p>
+            <div class="code">G5UUI4LLGFJDETTZMJFU2VTCHZNHO2ZFLZJG4QKWLVETE6SKLVCQ</div>
+        </div>
+    </body>
+    </html>
+    

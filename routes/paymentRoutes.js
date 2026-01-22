@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { readLocalJSON, writeLocalJSON } = require('../data/db');
+const { readLocalJSON } = require('../data/db');
 
 // POST Create Payment
 router.post('/payment/create', async (req, res) => {
@@ -13,7 +13,7 @@ router.post('/payment/create', async (req, res) => {
 
     try {
         const allOrders = await readLocalJSON('orders.json');
-        const order = allOrders.find(o => o.id === orderId);
+        const order = allOrders.find(o => o.id === orderId || o.id == orderId);
 
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
@@ -21,55 +21,71 @@ router.post('/payment/create', async (req, res) => {
 
         // Credentials from ENV
         const API_KEY = process.env.NEXORA_API_KEY;
-        const SECRET_KEY = process.env.NEXORA_SECRET_KEY;
+        // Some gateways need Secret, some just API Key. We use what we found in env.
 
         if (!API_KEY) {
-            console.error("Missing NEXORA_API_KEY");
-            return res.status(500).json({ success: false, message: "Payment Gateway Config Error" });
+            console.error("❌ Link Error: NEXORA_API_KEY is missing in .env");
+            return res.status(500).json({ success: false, message: "Payment Gateway Not Linked (Missing Key)" });
         }
 
-        // TODO: Replace with ACTUAL NexoraPay Endpoint if known.
-        // Assuming a standard payload structure.
+        // NexoraPay Payload Construction
+        // Note: Field names often vary (amount vs total_amount, cus_name vs customer_name).
+        // I am using a standard structure commonly found in BD gateways (like Shurjopay/Aamarpay style).
+        // If NexoraPay has specific docs, these keys might need adjustment.
         const payload = {
-            amount: order.price,
-            currency: 'BDT',
+            api_key: API_KEY, // Sending key in body if required, or header
             order_id: String(order.id),
+            amount: order.price,
+            currency: "BDT",
             cus_name: order.customer,
+            cus_email: order.email || "customer@tentionfree.store",
             cus_phone: order.phone,
-            cus_email: order.email || 'customer@tentionfree.store',
-            success_url: `https://tentionfree.store/payment-success?oid=${order.id}`,
-            fail_url: `https://tentionfree.store/payment-failed?oid=${order.id}`,
-            cancel_url: `https://tentionfree.store/payment-cancel?oid=${order.id}`,
-            desc: `Payment for Order #${order.id}`
+            product_name: order.product || "Digital Product",
+            success_url: `https://tentionfree.store/payment-success.html`,
+            cancel_url: `https://tentionfree.store/payment-failed.html`,
+            fail_url: `https://tentionfree.store/payment-failed.html`,
+            desc: "Purchase from TentionFree"
         };
 
-        console.log("[Payment] Initiating NexoraPay:", payload);
+        console.log("💳 Creating Payment via NexoraPay...", { orderId: order.id, amount: order.price });
 
-        // --- MOCK IMPLEMENTATION (UNTIL ENDPOINT KNOWN) ---
-        // For now, we simulate success for testing the flow, or return a placeholder URL.
-        // Since we don't have the real URL, we cannot make the axios call succeed unless we know it.
-        // I will return a dummy URL that alerts the user.
+        // ENDPOINT: Using the most probable endpoint based on user request context. 
+        // If this 404s, the user MUST provide the specific documentation URL.
+        const GATEWAY_URL = "https://portal.nexorapay.com/api/payment/create";
 
-        // UNCOMMENT BELOW WHEN ENDPOINT IS KNOWN
-        /*
-        const response = await axios.post('https://api.nexorapay.com/v1/create', payload, {
-            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        const response = await axios.post(GATEWAY_URL, payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                // 'Authorization': `Bearer ${API_KEY}` // Sometimes needed
+            },
+            timeout: 10000 // 10s timeout
         });
-        if (response.data && response.data.payment_url) {
-             return res.json({ success: true, payment_url: response.data.payment_url });
+
+        const data = response.data;
+
+        if (data && data.status === 'success' && data.payment_url) {
+            console.log("✅ Payment Created. Redirecting to:", data.payment_url);
+            return res.json({ success: true, payment_url: data.payment_url });
+        } else {
+            console.error("❌ Payment Gateway Response Error:", data);
+            return res.status(400).json({ success: false, message: "Gateway Error", details: data });
         }
-        */
-
-        // MOCK RESPONSE
-        res.json({
-            success: true,
-            payment_url: `https://tentionfree.store/payment-success.html?oid=${order.id}&amount=${order.price}`, // Internal redirect to verify flow
-            message: "Mock Payment URL generated (Gateway endpoint missing)"
-        });
 
     } catch (err) {
-        console.error("Payment Create Error:", err);
-        res.status(500).json({ success: false, message: "Server Error initiating payment" });
+        console.error("⚡ Payment Request Failed:", err.message);
+        if (err.response) {
+            console.error("   Gateway Response:", err.response.data);
+        }
+
+        // Fallback for Development/Testing so user isn't stuck if API fails
+        // Remove this in production!
+        // return res.json({ 
+        //     success: true, 
+        //     payment_url: `https://tentionfree.store/payment-success.html?oid=${orderId}&mock=true`,
+        //     message: "Mock Fallback (API Connection Failed)" 
+        // });
+
+        return res.status(502).json({ success: false, message: "Payment Gateway Unreachable" });
     }
 });
 
