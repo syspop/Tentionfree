@@ -16,7 +16,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 // Table Mappings
 // Table Mappings (Added idType)
 const TABLE_MAP = {
-    'products.json': { table: 'products', pk: 'id', idType: 'string' }, // Mixed, treat as string? Actually DB is likely numeric or string? Let's check schema/assumption. Safe to use string comparison IF db col is text. If DB col is BigInt, must use number.
+    'products.json': { table: 'products', pk: 'id', idType: 'number' }, // ID is numeric (e.g. 1, 2, 3)
     'orders.json': { table: 'orders', pk: 'id', idType: 'number' }, // Usually numeric from previous context
     'customers.json': { table: 'customers', pk: 'id', idType: 'string' }, // 'usr_...'
     'coupons.json': { table: 'coupons', pk: 'id', idType: 'number' }, // Date.now()
