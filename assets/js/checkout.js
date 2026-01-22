@@ -559,7 +559,7 @@ async function submitOrder(e) {
         });
         const saveData = await saveRes.json();
 
-        if (!saveData.success) throw new Error(saveData.message || "We could not save your order. Please try again.");
+        if (!saveData.success) throw new Error(saveData.message || saveData.error || (saveData.details ? JSON.stringify(saveData.details) : "We could not save your order."));
 
         if (isPayNow) {
             const payRes = await fetch('/api/payment/create', {
@@ -577,7 +577,7 @@ async function submitOrder(e) {
             } else {
                 console.error("Payment Init Failed:", payData);
                 // Extract detailed error if available
-                const detailMsg = payData.details ? (typeof payData.details === 'string' ? payData.details : JSON.stringify(payData.details)) : "";
+                const detailMsg = payData.details ? (typeof payData.details === 'string' ? payData.details : JSON.stringify(payData.details)) : (payData.error || "");
                 throw new Error((payData.message || "Failed to initiate payment gateway") + (detailMsg ? `\nDetails: ${detailMsg}` : ""));
             }
         } else if (isFree) {

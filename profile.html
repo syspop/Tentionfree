@@ -497,10 +497,10 @@
             // actually user said "customer profile e o". 
 
             document.getElementById('u-email-sec').innerHTML = user.email + verifiedBadge; // Security section
-            document.getElementById('u-phone-sec').innerText = user.phone; // Security section
+            document.getElementById('u-phone-sec').innerText = user.phone || 'N/A'; // Security section
             document.getElementById('u-dob-sec').innerText = user.dob ? new Date(user.dob).toLocaleDateString('en-GB') : 'N/A'; // Security section
 
-            document.getElementById('u-avatar').innerText = user.name.charAt(0).toUpperCase();
+            document.getElementById('u-avatar').innerText = (user.name || 'U').charAt(0).toUpperCase();
 
             loadHistory(user);
 
