@@ -94,7 +94,12 @@ router.put('/customers/:id', authenticateUser, async (req, res) => {
         const safeUpdates = {};
         for (const [key, value] of Object.entries(updates)) {
             if (allowedFields.includes(key) && value !== undefined) {
-                safeUpdates[key] = value;
+                // Sanitize Date
+                if (key === 'dob' && value === '') {
+                    safeUpdates[key] = null;
+                } else {
+                    safeUpdates[key] = value;
+                }
             }
         }
 
@@ -114,7 +119,7 @@ router.put('/customers/:id', authenticateUser, async (req, res) => {
 
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ success: false, message: "Save Error" });
+        return res.status(500).json({ success: false, message: "Save Error", error: err.message, details: err });
     }
 });
 

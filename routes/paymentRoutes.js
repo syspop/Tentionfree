@@ -171,7 +171,7 @@ router.post('/payment/manual-submit', async (req, res) => {
         order.paymentMethod = `Manual (${method.toUpperCase()})`;
         order.trx = trx;
         order.senderNumber = sender;
-        order.isHidden = false; // Show in Admin Panel
+        // order.isHidden = false; // Removed to fix Schema Error
         order.date = new Date().toISOString(); // Update timestamp
 
         // Save

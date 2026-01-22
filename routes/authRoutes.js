@@ -83,7 +83,7 @@ router.post('/register', async (req, res) => {
             name: name,
             email: email,
             phone: phone || '',
-            dob: req.body.dob || '',
+            dob: req.body.dob || null,
             password: bcrypt.hashSync(password, 10),
             joined: new Date().toISOString(),
             isBanned: false
