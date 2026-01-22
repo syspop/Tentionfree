@@ -93,6 +93,7 @@ router.post('/payment/create', async (req, res) => {
 
         // --- AUTO MODE (Gateway) ---
         const API_KEY = process.env.NEXORA_API_KEY;
+        console.log(`ℹ️ [Payment] Loaded API Key: ${API_KEY ? API_KEY.substring(0, 5) + '...' + API_KEY.substring(API_KEY.length - 4) : 'MISSING'}`);
 
         if (!API_KEY) {
             console.error("❌ Link Error: NEXORA_API_KEY is missing in .env");
