@@ -76,6 +76,8 @@ router.post('/payment/create', async (req, res) => {
         // NexoraPay Payload Construction
         const payload = {
             api_key: API_KEY,
+            secret_key: process.env.NEXORA_SECRET_KEY,
+            brand_key: process.env.NEXORA_BRAND_KEY,
             order_id: String(order.id),
             amount: order.price,
             currency: "BDT",
