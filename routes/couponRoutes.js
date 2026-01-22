@@ -82,7 +82,7 @@ router.post('/coupons/verify', async (req, res) => {
 
     } catch (err) {
         console.error("Coupon verify error:", err);
-        res.status(500).json({ success: false, message: "Server error" });
+        res.status(500).json({ success: false, message: "Server error", details: err.message });
     }
 });
 
@@ -152,7 +152,8 @@ router.post('/coupons', authenticateAdmin, async (req, res) => {
         await writeDB('coupons.json', coupons);
         res.json({ success: true, coupon: newCoupon });
     } catch (err) {
-        res.status(500).json({ error: "Failed to save coupon" });
+        console.error("Coupon Save Error:", err);
+        res.status(500).json({ error: "Failed to save coupon", details: err.message });
     }
 });
 

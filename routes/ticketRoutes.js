@@ -26,7 +26,7 @@ router.post('/tickets', async (req, res) => {
     const newTicket = {
         id: Date.now(),
         userId, userName, email, subject, desc, image,
-        date: new Date().toLocaleString()
+        date: new Date().toISOString()
     };
 
     try {
