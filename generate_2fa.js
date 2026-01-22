@@ -22,11 +22,11 @@ async function generate() {
     const adminSecret = speakeasy.generateSecret({ length: 20, name: "TentionFree Admin" });
     const backupSecret = speakeasy.generateSecret({ length: 20, name: "TentionFree Backup" });
 
-    // Save to System Data
-    const systemData = await getSystemData();
+    // Save to System Data using DB Module to Ensure Supabase Sync
+    const systemData = await readLocalJSON('system_data.json'); // Use db.js read
     systemData.admin2faSecret = adminSecret.base32;
     systemData.backup2faSecret = backupSecret.base32;
-    await saveSystemData(systemData);
+    await writeLocalJSON('system_data.json', systemData); // Use db.js write
 
     console.log("✅ Secrets Saved to system_data.json");
 
@@ -74,15 +74,8 @@ async function generate() {
     </html>
     `;
 
-    // Save to Desktop
-    const desktopPath = path.join(require('os').homedir(), 'OneDrive - hlwz', 'Desktop', '2FA_QR_CODES.html');
-    // NOTE: Hardcoding based on User context found in path properties, or using dynamic homedir.
-    // The user's metadata shows: c:\Users\Kazi Emdadul Haque\OneDrive - hlwz\Desktop...
-    // Let's rely on the absolute path constructed from known user structure if possible, or just os.homedir() + OneDrive... 
-    // Given the CWD is inside the project folder on Desktop, we can try to find Desktop relative to it or absolute.
-
-    // Safer to write to project root then move? Or just write absolute.
-    const targetFile = 'c:\\Users\\Kazi Emdadul Haque\\OneDrive - hlwz\\Desktop\\2FA_QR_CODES.html';
+    // Save to Project Root as requested
+    const targetFile = path.join(__dirname, 'hhqr.html');
 
     fs.writeFileSync(targetFile, htmlContent);
     console.log(`✅ QR Code HTML file created at: ${targetFile}`);
