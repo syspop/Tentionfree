@@ -13,7 +13,7 @@ console.log("🚀 Starting Server...");
 require('dotenv').config();
 
 // --- STRICT ENV VALIDATION ---
-const requiredEnv = ['JWT_SECRET', 'ADMIN_USER', 'BACKUP_PIN'];
+const requiredEnv = ['JWT_SECRET', 'ADMIN_USER', 'BACKUP_PIN', 'SUPABASE_URL', 'SUPABASE_KEY'];
 const missingEnv = requiredEnv.filter(key => !process.env[key]);
 
 if (missingEnv.length > 0) {

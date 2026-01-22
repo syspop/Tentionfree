@@ -269,7 +269,7 @@ router.post('/admin-login', async (req, res) => {
                     secret: systemData.admin2faSecret,
                     encoding: 'base32',
                     token: token.trim(),
-                    window: 4 // Relaxed window from 2 to 4 (approx +/- 2 mins)
+                    window: 10 // Increased to +/- 5 minutes to account for server/client time drift
                 });
                 console.log("[AdminLogin] Verified Result:", verified);
 
