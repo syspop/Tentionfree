@@ -92,10 +92,10 @@ router.post('/payment/create', async (req, res) => {
         }
 
         // --- AUTO MODE (Gateway) ---
-        const API_KEY = "VZ4rJE92yU95Rj9PW5WZDvsQHOWmVAjdsqxySVbEs6LZqAbIw9";
+        const API_KEY = process.env.NEXORA_API_KEY;
 
         if (!API_KEY) {
-            console.error("❌ Link Error: API_KEY is missing");
+            console.error("❌ Link Error: NEXORA_API_KEY is missing in .env");
             return res.status(500).json({ success: false, message: "Payment Gateway Error" });
         }
 
