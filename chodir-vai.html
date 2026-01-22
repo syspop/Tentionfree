@@ -348,10 +348,9 @@
                 console.error("Passkey Fail:", err);
 
                 let msg = err.message || 'Passkey Failed';
-                // If server sent a stack (via json in err object?), we can't easily access it unless we parsed it above.
-                // But fetch throws Error(message). 
-                // Let's rely on the previous logic: if verifyData.success is false, we try to grab the message.
-                // We need to update the verify block to include stack in the thrown error text if possible.
+
+                // FORCE SHOW ERROR TO USER
+                alert("Passkey Error:\n" + msg);
 
                 document.getElementById('auth-status').innerHTML = `<span class="text-yellow-400 text-xs text-left block whitespace-pre-wrap"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</span>`;
 

@@ -14,16 +14,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 // Table Mappings
+// Table Mappings (Added idType)
 const TABLE_MAP = {
-    'products.json': { table: 'products', pk: 'id' },
-    'orders.json': { table: 'orders', pk: 'id' },
-    'customers.json': { table: 'customers', pk: 'id' },
-    'coupons.json': { table: 'coupons', pk: 'id' },
-    'tickets.json': { table: 'tickets', pk: 'id' },
-    'categories.json': { table: 'categories', pk: 'id' },
-    'reviews.json': { table: 'reviews', pk: 'id' },
-    'system_data.json': { table: 'system_data', pk: 'key' },
-    'banners.json': { table: 'banners', pk: 'id' } // Handle gracefully if missing
+    'products.json': { table: 'products', pk: 'id', idType: 'string' }, // Mixed, treat as string? Actually DB is likely numeric or string? Let's check schema/assumption. Safe to use string comparison IF db col is text. If DB col is BigInt, must use number.
+    'orders.json': { table: 'orders', pk: 'id', idType: 'number' }, // Usually numeric from previous context
+    'customers.json': { table: 'customers', pk: 'id', idType: 'string' }, // 'usr_...'
+    'coupons.json': { table: 'coupons', pk: 'id', idType: 'number' }, // Date.now()
+    'tickets.json': { table: 'tickets', pk: 'id', idType: 'number' }, // Date.now()
+    'categories.json': { table: 'categories', pk: 'id', idType: 'string' }, // 'software'
+    'reviews.json': { table: 'reviews', pk: 'id', idType: 'number' }, // Date.now()
+    'system_data.json': { table: 'system_data', pk: 'key', idType: 'string' },
+    'banners.json': { table: 'banners', pk: 'id', idType: 'number' }
 };
 
 // --- GLOBAL CACHE (Read-Through) ---
@@ -72,16 +73,22 @@ async function writeLocalJSON(filename, data) {
             dbData = formatForSystemDB(data);
         }
 
-        // 3. Sync to Supabase (Delete All + Insert All to handle deletions)
-        // Note: For large tables, this is inefficient, but for <1000 items it ensures consistent state with "File Overwrite" logic.
+        // 3. Sync to Supabase (Delete All + Insert All)
 
-        // A. Delete All Rows (Simulate Truncate)
-        // We use a filter that matches everything. 'id' != ' impossible'
+        // A. Delete All Rows
+        // Logic: Delete everything that is NOT equal to a "safe impossible value"
         const deleteFilter = filename === 'system_data.json' ? 'key' : 'id';
+        let safeImpossibleValue = 'placeholder_impossible_value';
+
+        // If ID is numeric (BigInt), we must use a numeric impossible value
+        if (config.idType === 'number') {
+            safeImpossibleValue = -1;
+        }
+
         const { error: delError } = await supabase
             .from(config.table)
             .delete()
-            .neq(deleteFilter, 'placeholder_impossible_value');
+            .neq(deleteFilter, safeImpossibleValue);
 
         if (delError) throw delError;
 
