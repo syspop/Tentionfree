@@ -112,7 +112,7 @@ async function readLocalJSON(filename) {
     // But for repeated calls in same request, cache is good if we manage it. 
     // The original code cached FOREVER after first load. We will stick to that pattern for performance.
     if (CACHE[key] && (Array.isArray(CACHE[key]) ? CACHE[key].length > 0 : Object.keys(CACHE[key]).length > 0)) {
-        // return CACHE[key]; // Uncomment to enable strict caching
+        return CACHE[key]; // Uncomment to enable strict caching
     }
 
     if (!config) return [];
