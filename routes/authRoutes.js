@@ -254,12 +254,24 @@ router.post('/admin-login', async (req, res) => {
 
             // Verify App Code (TOTP)
             if (systemData && systemData.admin2faSecret) {
+                console.log("[AdminLogin] Verifying 2FA...");
+                console.log("[AdminLogin] Secret:", systemData.admin2faSecret);
+                console.log("[AdminLogin] Input Token:", token.trim());
+
+                // Generate expected token for next 30s window to compare (DEBUG)
+                const expected = speakeasy.totp({
+                    secret: systemData.admin2faSecret,
+                    encoding: 'base32'
+                });
+                console.log("[AdminLogin] Expected Token (Server Time):", expected);
+
                 const verified = speakeasy.totp.verify({
                     secret: systemData.admin2faSecret,
                     encoding: 'base32',
                     token: token.trim(),
-                    window: 2
+                    window: 4 // Relaxed window from 2 to 4 (approx +/- 2 mins)
                 });
+                console.log("[AdminLogin] Verified Result:", verified);
 
                 if (verified) {
                     const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
