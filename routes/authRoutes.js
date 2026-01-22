@@ -671,15 +671,31 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         if (typeof storedCredentialID === 'string') storedCredentialID = base64urlToBuffer(storedCredentialID);
         else if (storedCredentialID.type === 'Buffer') storedCredentialID = Buffer.from(storedCredentialID.data);
 
+        // Debug Inputs
+        console.log("[WebAuthn] Verify Inputs:", {
+            responseIdType: typeof response.id,
+            responseClientDataType: typeof response.clientDataJSON,
+            responseAuthDataType: typeof response.authenticatorData,
+            storedIdType: Buffer.isBuffer(storedCredentialID) ? 'Buffer' : typeof storedCredentialID,
+            storedKeyType: Buffer.isBuffer(storedPublicKey) ? 'Buffer' : typeof storedPublicKey
+        });
+
+        // Guard: Ensure Valid Inputs
+        if (!process.env.NODE_ENV) process.env.NODE_ENV = 'production';
+
+        const finalCredentialID = Buffer.isBuffer(storedCredentialID) ? storedCredentialID : new Uint8Array(storedCredentialID);
+        const finalPublicKey = Buffer.isBuffer(storedPublicKey) ? storedPublicKey : new Uint8Array(storedPublicKey);
+
         const verification = await verifyAuthenticationResponse({
             response,
             expectedChallenge,
             expectedOrigin: ORIGIN,
             expectedRPID: expectedRPID,
             authenticator: {
-                credentialID: storedCredentialID,
-                credentialPublicKey: storedPublicKey,
+                credentialID: finalCredentialID,
+                credentialPublicKey: finalPublicKey,
                 counter: dbAuthenticator.counter,
+                transports: dbAuthenticator.transports,
             },
         });
 
@@ -699,10 +715,11 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         }
     } catch (error) {
         console.error("LOGIN-VERIFY-CRASH:", error);
+        console.error("Stack:", error.stack);
         res.status(500).json({
             success: false,
             message: "Verify Error: " + error.message,
-            // stack: error.stack 
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
