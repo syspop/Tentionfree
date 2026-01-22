@@ -740,11 +740,20 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         }
     } catch (error) {
         console.error("LOGIN-VERIFY-CRASH:", error);
-        console.error("Stack:", error.stack);
+
+        // Re-construct Debug Info if available in scope, or just what we know
+        const errDebug = {
+            msg: error.message,
+            stackTop: error.stack ? error.stack.split('\n')[1] : 'No Stack',
+            // Simple generic debug info since we can't access local scope variables in catch block easily without wider refactor
+            // But usually the message + stack is enough now.
+            hint: "Check server logs for [WebAuthn] Verify Inputs"
+        };
+
         res.status(500).json({
             success: false,
             message: "Verify Error: " + error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            debug: errDebug
         });
     }
 });
