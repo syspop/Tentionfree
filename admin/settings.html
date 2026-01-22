@@ -409,36 +409,43 @@
             }
         }
 
-        async function toggleBulkProductOption(key, input) {
+        function toggleBulkProductOption(key, input) {
             const value = input.checked;
             const label = key === 'viewInIndex' ? "Show All on Home" : "Auto Stockout";
             const token = localStorage.getItem('adminToken');
 
-            if (!confirm(`Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`)) {
-                input.checked = !value;
-                return;
-            }
+            // Revert state initially until confirmed
+            input.checked = !value;
 
-            try {
-                const res = await fetch('/api/products/bulk-update', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: JSON.stringify({ key, value })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    window.showToast(`${label} Updated Successfully!`);
-                } else {
-                    input.checked = !value;
-                    window.showToast(data.message || "Failed to update", "error");
+            window.showConfirm(
+                `Update ${label}?`,
+                `Are you sure you want to turn ${value ? 'ON' : 'OFF'} "${label}" for ALL products?`,
+                async () => {
+                    // Confirmed - Apply Change
+                    input.checked = value;
+
+                    try {
+                        const res = await fetch('/api/products/bulk-update', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: JSON.stringify({ key, value })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            window.showToast(`${label} Updated Successfully!`);
+                        } else {
+                            input.checked = !value;
+                            window.showToast(data.message || "Failed to update", "error");
+                        }
+                    } catch (e) {
+                        input.checked = !value;
+                        window.showToast("Network Error", "error");
+                    }
                 }
-            } catch (e) {
-                input.checked = !value;
-                window.showToast("Network Error", "error");
-            }
+            );
         }
 
         // Init Load

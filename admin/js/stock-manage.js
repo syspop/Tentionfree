@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     if (!productId) {
-        alert("No Product ID Provided");
+        window.showAlert("Error", "No Product ID Provided", "error");
         window.close();
         return;
     }
@@ -68,7 +68,7 @@ async function loadProductData() {
 
     } catch (e) {
         console.error(e);
-        alert("Failed to load product: " + e.message);
+        window.showAlert("Error", "Failed to load product: " + e.message, "error");
     } finally {
         showLoader(false);
     }
