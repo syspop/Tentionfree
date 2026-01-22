@@ -1,7 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { readLocalJSON } = require('../data/db');
+const { readLocalJSON, writeLocalJSON } = require('../data/db');
+const { authenticateAdmin } = require('../middleware/auth');
+
+// --- PAYMENT SETTINGS ---
+
+// GET Payment Mode
+router.get('/settings/payment-mode', async (req, res) => {
+    try {
+        const systemData = await readLocalJSON('system_data.json');
+        res.json({ success: true, mode: systemData.payment_mode || 'auto' });
+    } catch (err) {
+        res.status(500).json({ success: false, mode: 'auto' });
+    }
+});
+
+// UPDATE Payment Mode
+router.post('/settings/payment-mode', authenticateAdmin, async (req, res) => {
+    const { mode } = req.body; // 'auto' or 'manual'
+    if (!['auto', 'manual'].includes(mode)) {
+        return res.status(400).json({ success: false, message: "Invalid mode" });
+    }
+
+    try {
+        const systemData = await readLocalJSON('system_data.json');
+        systemData.payment_mode = mode;
+        await writeLocalJSON('system_data.json', systemData);
+        res.json({ success: true, message: `Payment mode set to ${mode}` });
+    } catch (err) {
+        console.error("Error updating payment mode:", err);
+        res.status(500).json({ success: false, message: "Failed to update mode" });
+    }
+});
 
 // POST Create Payment
 router.post('/payment/create', async (req, res) => {
@@ -12,6 +43,10 @@ router.post('/payment/create', async (req, res) => {
     }
 
     try {
+        // Check Payment Mode First
+        const systemData = await readLocalJSON('system_data.json');
+        const paymentMode = systemData.payment_mode || 'auto';
+
         const allOrders = await readLocalJSON('orders.json');
         const order = allOrders.find(o => o.id === orderId || o.id == orderId);
 
@@ -19,9 +54,19 @@ router.post('/payment/create', async (req, res) => {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
+        // --- MANUAL MODE REDIRECT ---
+        if (paymentMode === 'manual') {
+            console.log(`ℹ️ Manual Payment Mode Active. Redirecting Order ${orderId}`);
+            // Return local manual payment page URL
+            return res.json({
+                success: true,
+                payment_url: `/manual-payment.html?orderId=${orderId}&amount=${order.price}`
+            });
+        }
+
+        // --- AUTO MODE (Gateway) ---
         // Credentials from ENV
         const API_KEY = process.env.NEXORA_API_KEY;
-        // Some gateways need Secret, some just API Key. We use what we found in env.
 
         if (!API_KEY) {
             console.error("❌ Link Error: NEXORA_API_KEY is missing in .env");
@@ -29,11 +74,8 @@ router.post('/payment/create', async (req, res) => {
         }
 
         // NexoraPay Payload Construction
-        // Note: Field names often vary (amount vs total_amount, cus_name vs customer_name).
-        // I am using a standard structure commonly found in BD gateways (like Shurjopay/Aamarpay style).
-        // If NexoraPay has specific docs, these keys might need adjustment.
         const payload = {
-            api_key: API_KEY, // Sending key in body if required, or header
+            api_key: API_KEY,
             order_id: String(order.id),
             amount: order.price,
             currency: "BDT",
@@ -49,14 +91,11 @@ router.post('/payment/create', async (req, res) => {
 
         console.log("💳 Creating Payment via NexoraPay...", { orderId: order.id, amount: order.price });
 
-        // ENDPOINT: Using the most probable endpoint based on user request context. 
-        // If this 404s, the user MUST provide the specific documentation URL.
         const GATEWAY_URL = "https://portal.nexorapay.com/api/payment/create";
 
         const response = await axios.post(GATEWAY_URL, payload, {
             headers: {
                 'Content-Type': 'application/json',
-                // 'Authorization': `Bearer ${API_KEY}` // Sometimes needed
             },
             timeout: 10000 // 10s timeout
         });
@@ -76,12 +115,10 @@ router.post('/payment/create', async (req, res) => {
         if (err.response) {
             console.error("   Gateway Response:", err.response.data);
         }
-
-        // Fallback removed. 
         return res.status(502).json({ success: false, message: "Payment Gateway Unreachable" });
     }
 });
 
-console.log("💳 Payment Routes Loaded (Live Mode)");
+console.log("💳 Payment Routes Loaded (Live + Manual Mode)");
 
 module.exports = router;
