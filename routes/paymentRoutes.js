@@ -63,7 +63,7 @@ router.post('/payment/create', async (req, res) => {
         // MOCK RESPONSE
         res.json({
             success: true,
-            payment_url: `https://tentionfree.store/payment-mock-success?oid=${order.id}&amount=${order.price}`, // Internal redirect to verify flow
+            payment_url: `https://tentionfree.store/payment-success.html?oid=${order.id}&amount=${order.price}`, // Internal redirect to verify flow
             message: "Mock Payment URL generated (Gateway endpoint missing)"
         });
 
