@@ -274,6 +274,9 @@
             } catch (err) {
                 console.error(err);
                 errorMsg.innerText = err.message || "Login failed.";
+                if (err.debug) {
+                    errorMsg.innerHTML += `<br><span class="text-[10px] font-mono mt-1 block bg-black/20 p-1 rounded">Exp: ${err.debug.expectedFirst} | Time: ${err.debug.serverTime.split('T')[1].split('.')[0]}</span>`;
+                }
                 errorDiv.classList.remove('hidden');
                 btn.innerHTML = (is2FAMode && !document.getElementById('otp-container').classList.contains('hidden')) ? "Verify Login" : "Unlock Dashboard";
                 btn.disabled = false;

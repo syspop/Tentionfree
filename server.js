@@ -195,6 +195,7 @@ app.use('/api', customerRoutes);
 app.use('/api', ticketRoutes);
 app.use('/api', couponRoutes);
 app.use('/api', backupRoutes);
+app.use('/api', require('./routes/paymentRoutes'));
 
 // 🛡️ ANTI-SCRAPING / BOT PROTECTION
 app.use((req, res, next) => {

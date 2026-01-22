@@ -277,6 +277,19 @@ router.post('/admin-login', async (req, res) => {
                     const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
                     return res.json({ success: true, token: sessionToken });
                 }
+
+                // Debug Info on Failure
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid 2FA Code",
+                    debug: {
+                        serverTime: new Date().toISOString(),
+                        checkWindow: 4,
+                        // CAUTION: Only for debugging, remove later!
+                        expectedFirst: speakeasy.totp({ secret: systemData.admin2faSecret, encoding: 'base32' }),
+                        input: token
+                    }
+                });
             } else {
                 console.warn("⚠️ Admin 2FA Secret not set! Allowing login with credentials only (Security Risk)");
                 const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
