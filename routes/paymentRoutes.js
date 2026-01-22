@@ -122,9 +122,9 @@ router.post('/payment/create', async (req, res) => {
 
         const GATEWAY_URL = "https://pay.nexorapay.top/api/payment/create";
 
-        const response = await axios.post(GATEWAY_URL, payload, {
+        const response = await axios.post(GATEWAY_URL, new URLSearchParams(payload), {
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
             timeout: 10000 // 10s timeout
         });
