@@ -158,13 +158,22 @@ router.post('/coupons', authenticateAdmin, async (req, res) => {
 
 // Admin: Delete Coupon
 router.delete('/coupons/:id', authenticateAdmin, async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     try {
         let coupons = await readDB('coupons.json') || [];
-        coupons = coupons.filter(c => c.id !== id);
+        const initialLength = coupons.length;
+
+        // Use loose comparison or string conversion for robust ID matching
+        coupons = coupons.filter(c => String(c.id) !== String(id));
+
+        if (coupons.length === initialLength) {
+            return res.status(404).json({ success: false, message: "Coupon not found" });
+        }
+
         await writeDB('coupons.json', coupons);
         res.json({ success: true });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: "Failed to delete coupon" });
     }
 });

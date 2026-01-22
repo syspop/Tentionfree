@@ -93,7 +93,7 @@
 
             try {
                 // Adjusted path to ../api/tickets
-                const res = await fetch('../api/tickets?t=' + Date.now(), {
+                const res = await fetch('/api/tickets?t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
                 const tickets = await res.json();
@@ -174,7 +174,7 @@
         async function performDeleteTicket(id) {
             try {
                 // Adjusted path to ../api/tickets
-                const res = await fetch('../api/tickets/' + id, {
+                const res = await fetch('/api/tickets/' + id, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });

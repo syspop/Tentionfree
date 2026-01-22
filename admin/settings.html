@@ -451,7 +451,8 @@
         // --- QUICK CONTROLS LOGIC ---
         async function fetchConfig() {
             try {
-                const res = await fetch('../api/config/pay-later');
+                // Fixed Route
+                const res = await fetch('/api/settings/pay-later');
                 const data = await res.json();
                 if (data.success) {
                     const toggle = document.getElementById('payLaterToggle');
@@ -466,7 +467,8 @@
             const enabled = input.checked;
             const token = localStorage.getItem('adminToken');
             try {
-                const res = await fetch('../api/admin/config/pay-later', {
+                // Fixed Route
+                const res = await fetch('/api/settings/pay-later', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -499,7 +501,7 @@
             }
 
             try {
-                const res = await fetch('../api/products/bulk-update', {
+                const res = await fetch('/api/products/bulk-update', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

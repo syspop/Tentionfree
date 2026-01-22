@@ -114,7 +114,7 @@
             list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Customers...</td></tr>";
 
             try {
-                const res = await fetch('../api/customers?t=' + Date.now(), {
+                const res = await fetch('/api/customers?t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
                 const users = await res.json();
@@ -187,7 +187,7 @@
             const action = shouldBan ? "Ban" : "Unban";
             showConfirm(`${action} Customer?`, `Are you sure you want to ${action.toLowerCase()} this customer?`, async () => {
                 try {
-                    const res = await fetch(`../api/customers/${id}/ban`, {
+                    const res = await fetch(`/api/customers/${id}/ban`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -233,7 +233,7 @@
             container.innerHTML = "<div style='text-align:center; color:var(--gray)'>Loading history...</div>";
 
             try {
-                let url = '../api/orders?limit=100&t=' + Date.now();
+                let url = '/api/orders?limit=100&t=' + Date.now();
                 if (user.email) url += `& email=${encodeURIComponent(user.email)
                     }`;
                 else url += '&limit=1000'; // Fallback for no-email users to scan everything
@@ -343,7 +343,7 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch('../api/customers/' + editUserId, {
+                const res = await fetch('/api/customers/' + editUserId, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -393,7 +393,7 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch('../api/customers/' + deleteUserId, {
+                const res = await fetch('/api/customers/' + deleteUserId, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',

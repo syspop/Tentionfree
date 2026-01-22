@@ -167,8 +167,8 @@
             try {
                 // Fetch Data concurrently
                 const [ordersRes, usersRes] = await Promise.all([
-                    fetch('../api/orders?t=' + Date.now()),
-                    fetch('../api/customers')
+                    fetch('/api/orders?t=' + Date.now()),
+                    fetch('/api/customers')
                 ]);
 
                 const orders = await ordersRes.json();

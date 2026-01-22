@@ -34,6 +34,33 @@ router.post('/settings/payment-mode', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- PAY LATER SETTINGS ---
+
+// GET Pay Later Status
+router.get('/settings/pay-later', async (req, res) => {
+    try {
+        const systemData = await readLocalJSON('system_data.json');
+        res.json({ success: true, enabled: systemData.payLater === true });
+    } catch (err) {
+        res.status(500).json({ success: false, enabled: false });
+    }
+});
+
+// UPDATE Pay Later Status
+router.post('/settings/pay-later', authenticateAdmin, async (req, res) => {
+    const { enabled } = req.body; // boolean
+
+    try {
+        const systemData = await readLocalJSON('system_data.json');
+        systemData.payLater = enabled === true;
+        await writeLocalJSON('system_data.json', systemData);
+        res.json({ success: true, message: `Pay Later ${enabled ? 'Enabled' : 'Disabled'}` });
+    } catch (err) {
+        console.error("Error updating pay later:", err);
+        res.status(500).json({ success: false, message: "Failed to update settings" });
+    }
+});
+
 // POST Create Payment
 router.post('/payment/create', async (req, res) => {
     const { orderId } = req.body;

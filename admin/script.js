@@ -11,7 +11,7 @@ if (!localStorage.getItem('adminToken')) {
 
 function logout() {
     localStorage.removeItem('adminToken'); // Clear Token
-    window.location.href = '../chodir-vai';
+    window.location.href = '/chodir-vai';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
