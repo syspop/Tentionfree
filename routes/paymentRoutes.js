@@ -121,6 +121,47 @@ router.post('/payment/create', async (req, res) => {
     }
 });
 
+// POST Manual Payment Submit
+router.post('/payment/manual-submit', async (req, res) => {
+    const { orderId, method, sender, trx } = req.body;
+
+    if (!orderId || !method || !sender || !trx) {
+        return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    try {
+        const allOrders = await readLocalJSON('orders.json');
+        const orderIndex = allOrders.findIndex(o => String(o.id) === String(orderId));
+
+        if (orderIndex === -1) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        const order = allOrders[orderIndex];
+
+        // Update Order
+        order.status = 'Pending'; // Admin needs to approve
+        order.paymentMethod = `Manual (${method.toUpperCase()})`;
+        order.trx = trx;
+        order.senderNumber = sender;
+        order.isHidden = false; // Show in Admin Panel
+        order.date = new Date().toISOString(); // Update timestamp
+
+        // Save
+        allOrders[orderIndex] = order;
+        await writeLocalJSON('orders.json', allOrders);
+
+        // Notify Admin (Optional: Add email notification here if needed)
+        console.log(`📝 Manual Payment Submitted: Order #${orderId} | Trx: ${trx}`);
+
+        res.json({ success: true, message: "Payment submitted successfully" });
+
+    } catch (err) {
+        console.error("Manual Payment Error:", err);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+});
+
 console.log("💳 Payment Routes Loaded (Live + Manual Mode)");
 
 module.exports = router;
