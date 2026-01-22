@@ -677,6 +677,42 @@ function ensureGlobalModals() {
         </div>`;
         document.body.insertAdjacentHTML('beforeend', loginModalHtml);
     }
+
+    // 4. Confirm Modal (New)
+    if (!document.getElementById('global-confirm-modal')) {
+        const confirmModalHtml = `
+        <div id="global-confirm-modal" class="fixed inset-0 z-[999999] overflow-y-auto hidden" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-900/80 transition-opacity backdrop-blur-sm" aria-hidden="true" onclick="closeConfirmModal()"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div class="inline-block align-bottom bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-700">
+                    <div class="bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                             <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-slate-700/50 sm:mx-0 sm:h-10 sm:w-10 border border-slate-600" id="confirm-icon-container">
+                                <i class="fa-solid fa-question text-white text-xl"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-bold text-white" id="confirm-modal-title">Confirm</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-300" id="confirm-modal-message">Are you sure?</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-800 gap-2" id="confirm-modal-actions">
+                        <!-- Buttons injected dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', confirmModalHtml);
+    }
+
+    // 5. Toast Container
+    if (!document.getElementById('toast-container')) {
+        const toastContainer = `<div id="toast-container" class="fixed top-5 right-5 z-[9999999] space-y-3 pointer-events-none"></div>`;
+        document.body.insertAdjacentHTML('beforeend', toastContainer);
+    }
 }
 
 // Ensure modals are ready on load
@@ -721,6 +757,76 @@ window.closeLoginModal = function () {
     const m = document.getElementById('global-login-modal');
     if (m) m.classList.add('hidden');
 }
+
+// --- CONFIRM MODAL ---
+window.closeConfirmModal = function () {
+    const m = document.getElementById('global-confirm-modal');
+    if (m) m.classList.add('hidden');
+}
+
+window.showConfirm = function (title, msg, onConfirm) {
+    ensureGlobalModals();
+    const m = document.getElementById('global-confirm-modal');
+    if (m) {
+        document.getElementById('confirm-modal-title').innerText = title;
+        document.getElementById('confirm-modal-message').innerText = msg;
+
+        // Reset Icon/Color default
+        const iconContainer = document.getElementById('confirm-icon-container');
+        iconContainer.className = "mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-slate-700/50 sm:mx-0 sm:h-10 sm:w-10 border border-slate-600";
+        iconContainer.innerHTML = '<i class="fa-solid fa-question text-white text-xl"></i>';
+
+        const actions = document.getElementById('confirm-modal-actions');
+        actions.innerHTML = `
+            <button id="global-confirm-btn" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-bold text-white hover:bg-brand-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-all transform active:scale-95">Yes</button>
+            <button onclick="closeConfirmModal()" class="mt-3 w-full inline-flex justify-center rounded-xl border border-slate-700 shadow-sm px-4 py-2 bg-slate-800 text-base font-medium text-slate-300 hover:bg-slate-700 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">No, Cancel</button>
+        `;
+
+        document.getElementById('global-confirm-btn').onclick = function () {
+            onConfirm();
+            closeConfirmModal();
+        };
+
+        m.classList.remove('hidden');
+    } else {
+        if (confirm(`${title}\n\n${msg}`)) onConfirm();
+    }
+}
+
+// --- TOAST NOTIFICATIONS ---
+window.showToast = function (msg, type = 'success') {
+    ensureGlobalModals(); // Ensure container exists
+    const container = document.getElementById('toast-container');
+    if (!container) return; // Should not happen
+
+    const toast = document.createElement('div');
+
+    // Tailwind Toast Classes
+    let colorClass = type === 'error' ? 'bg-red-600 border-red-500' : 'bg-emerald-600 border-emerald-500';
+    let icon = type === 'error' ? '<i class="fa-solid fa-circle-xmark text-lg"></i>' : '<i class="fa-solid fa-check-circle text-lg"></i>';
+
+    if (type === 'info') {
+        colorClass = 'bg-blue-600 border-blue-500';
+        icon = '<i class="fa-solid fa-circle-info text-lg"></i>';
+    }
+
+    toast.className = `pointer-events-auto flex items-center gap-4 px-5 py-4 rounded-xl shadow-2xl transform transition-all duration-300 translate-x-10 opacity-0 text-white font-semibold text-sm ${colorClass} min-w-[320px] border border-white/10 backdrop-blur-md`;
+    toast.innerHTML = `${icon} <span>${msg}</span>`;
+
+    container.appendChild(toast);
+
+    // Animate In
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-x-10', 'opacity-0');
+    });
+
+    // Remove after 3s
+    setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
 
 window.showLoginRequiredModal = function () {
     ensureGlobalModals();

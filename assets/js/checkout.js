@@ -591,10 +591,8 @@ async function submitOrder(e) {
         if (typeof showErrorModal === 'function') {
             showErrorModal("Order Failed", err.message);
         } else {
-            alert("Order Failed: " + err.message);
+            console.error("Order Failed: " + err.message);
         }
-        // Fallback: If modal didn't appear for some reason (rare z-index issue?)
-        // setTimeout(() => alert("Order Error: " + err.message), 1000); 
     }
 }
 

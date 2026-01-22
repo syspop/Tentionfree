@@ -350,13 +350,14 @@
                 let msg = err.message || 'Passkey Failed';
 
                 // FORCE SHOW ERROR TO USER
-                alert("Passkey Error:\n" + msg);
+                // alert("Passkey Error:\n" + msg);
+                showToast("Passkey Error: " + msg, 'error');
 
                 document.getElementById('auth-status').innerHTML = `<span class="text-yellow-400 text-xs text-left block whitespace-pre-wrap"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</span>`;
 
                 setTimeout(() => {
                     switchToOTPMode(msg);
-                }, 5000); // 5s to read
+                }, 3000);
             }
         }
 
