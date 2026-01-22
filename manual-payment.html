@@ -9,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="/assets/js/ui.js"></script>
 
     <style>
         body {
@@ -198,7 +199,7 @@
             const trx = document.getElementById('trx-id').value.trim();
 
             if (!orderId) {
-                alert("Invalid Order ID");
+                showToast("Invalid Order ID", 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
                 return;
@@ -221,13 +222,13 @@
                 if (data.success) {
                     window.location.href = '/payment-success.html';
                 } else {
-                    alert(data.message || "Submission failed. Please try again.");
+                    showToast(data.message || "Submission failed. Please try again.", 'error');
                     submitBtn.disabled = false;
                     submitBtn.innerText = originalText;
                 }
             } catch (err) {
                 console.error(err);
-                alert("Network error. Please check your connection.");
+                showToast("Network error. Please check your connection.", 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerText = originalText;
             }
