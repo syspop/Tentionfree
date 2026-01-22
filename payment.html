@@ -281,7 +281,7 @@
                 });
                 const saveData = await saveRes.json();
 
-                if (!saveData.success) throw new Error(saveData.message || saveData.error || "Failed to init order");
+                if (!saveData.success) throw new Error(saveData.details || saveData.message || saveData.error || "Failed to init order");
 
                 // 2. Init Payment
                 showToast("Redirecting to Gateway...");

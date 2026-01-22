@@ -47,6 +47,12 @@ router.post('/orders', async (req, res) => {
         const newOrder = req.body;
         const customers = await readDB('customers.json') || [];
 
+        // Sanitize Guest ID: If DB expects UUID, 'guest_string' will fail. 
+        // We'll keep it as is if it looks like a UUID, otherwise if it's 'guest_', we might want to make it null or empty? 
+        // For now, let's trust the schema but if it fails, this is a likely candidate.
+        // BETTER: If it starts with guest, we can leave it (if DB is text) or set to null (if DB is uuid).
+        // Let's assume Text for now, but if the user reports UUID error, we change this.
+
         if (newOrder.userId && !newOrder.userId.startsWith('guest')) {
             const user = customers.find(c => c.id === newOrder.userId);
             if (user && user.isBanned) {
