@@ -92,19 +92,16 @@ router.post('/payment/create', async (req, res) => {
         }
 
         // --- AUTO MODE (Gateway) ---
-        // Credentials from ENV
-        const API_KEY = process.env.NEXORA_API_KEY;
+        const API_KEY = "VZ4rJE92yU95Rj9PW5WZDvsQHOWmVAjdsqxySVbEs6LZqAbIw9";
 
         if (!API_KEY) {
-            console.error("❌ Link Error: NEXORA_API_KEY is missing in .env");
-            return res.status(500).json({ success: false, message: "Payment Gateway Not Linked (Missing Key)" });
+            console.error("❌ Link Error: API_KEY is missing");
+            return res.status(500).json({ success: false, message: "Payment Gateway Error" });
         }
 
         // NexoraPay Payload Construction
         const payload = {
             api_key: API_KEY,
-            secret_key: process.env.NEXORA_SECRET_KEY,
-            brand_key: process.env.NEXORA_BRAND_KEY,
             order_id: String(order.id),
             amount: order.price,
             currency: "BDT",
