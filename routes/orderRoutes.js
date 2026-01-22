@@ -135,9 +135,9 @@ router.post('/orders', async (req, res) => {
             }
         }
 
-        if (newOrder.paymentMethod !== 'Free / Auto-Delivery' && newOrder.paymentMethod !== 'Pay Later') {
-            newOrder.isHidden = true;
-        }
+        // if (newOrder.paymentMethod !== 'Free / Auto-Delivery' && newOrder.paymentMethod !== 'Pay Later') {
+        //    newOrder.isHidden = true;
+        // }
 
         allOrders.push(newOrder);
         await writeDB('orders.json', allOrders);
