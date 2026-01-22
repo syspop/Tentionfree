@@ -98,7 +98,7 @@ async function writeLocalJSON(filename, data) {
 
     } catch (err) {
         console.error(`❌ Error writing ${filename} to Supabase:`, err.message);
-        // Don't throw, let the app continue with cached data (Offline mode essentially)
+        throw err; // Throw error so the caller knows the save failed!
     }
 }
 

@@ -479,11 +479,15 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
 
     if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
 
+    // DEBUG: Log the Origin we are seeing vs what we expect
+    const clientOrigin = req.get('origin');
+    console.log(`[WebAuthn] Register Verify. Origin: ${clientOrigin}`);
+
     try {
         const verification = await verifyRegistrationResponse({
             response,
             expectedChallenge,
-            expectedOrigin: ORIGIN,
+            expectedOrigin: ORIGIN, // If this fails, enable the debug log above to see why
             expectedRPID: RP_ID,
         });
 
@@ -492,10 +496,9 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             if (!Array.isArray(systemData.adminPasskeys)) systemData.adminPasskeys = [];
 
             const regInfo = verification.registrationInfo;
-            console.log("[WebAuthn] Verify Success. Info Keys:", Object.keys(regInfo));
+            // console.log("[WebAuthn] Register Info Keys:", Object.keys(regInfo));
 
-            // SAFETY CHECKS & COMPATIBILITY
-            // SimpleWebAuthn v9+ vs v10+ structure difference
+            // Compatibility: Handle different versions of simplewebauthn returning slightly different shapes
             let credentialID = regInfo.credentialID;
             let credentialPublicKey = regInfo.credentialPublicKey;
 
@@ -504,37 +507,43 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
                 credentialPublicKey = regInfo.credential.publicKey;
             }
 
-            if (!credentialID) {
-                console.error("RegInfo Keys:", Object.keys(regInfo));
-                // Optional: check inside credential if it exists
-                if (regInfo.credential) console.error("Credential Keys:", Object.keys(regInfo.credential));
-                throw new Error("Missing credentialID in verification result");
-            }
+            if (!credentialID) throw new Error("Missing credentialID");
             if (!credentialPublicKey) throw new Error("Missing credentialPublicKey");
 
+            // SAFE CONVERSION: Ensure we store as Base64URL Strings
+            const idString = Buffer.isBuffer(credentialID) ?
+                Buffer.from(credentialID).toString('base64url') :
+                credentialID; // Assume already string if not buffer
+
+            const keyString = Buffer.isBuffer(credentialPublicKey) ?
+                Buffer.from(credentialPublicKey).toString('base64url') :
+                credentialPublicKey;
+
             const newValues = {
-                id: Buffer.from(credentialID).toString('base64url'),
-                publicKey: Buffer.from(credentialPublicKey).toString('base64url'),
+                id: idString,
+                publicKey: keyString,
                 counter: regInfo.counter,
                 transports: regInfo.credentialTransports,
                 device: req.headers['user-agent'] || 'Unknown Device',
                 created: new Date().toISOString()
             };
 
-            systemData.adminPasskeys.push(newValues);
-            await writeDB('system_data.json', systemData);
+            // Check duplicate ID before pushing
+            if (!systemData.adminPasskeys.find(k => k.id === idString)) {
+                systemData.adminPasskeys.push(newValues);
+                await writeDB('system_data.json', systemData);
+            }
 
             delete challengeStore['admin-register'];
 
-            // Set Cookie to remember this device
             res.cookie('admin_device_registered', 'true', {
                 maxAge: 365 * 24 * 60 * 60 * 1000,
-                httpOnly: false // Accessible by client JS to check existence
+                httpOnly: false
             });
 
             res.json({ success: true, verified: true });
         } else {
-            res.status(400).json({ success: false, verified: false });
+            res.status(400).json({ success: false, verified: false, message: "Verification failed (Signature mismatch)" });
         }
     } catch (error) {
         console.error("WebAuthn Verify Error:", error);
@@ -554,12 +563,14 @@ router.get('/auth/webauthn/login-options', async (req, res) => {
     try {
         const options = await generateAuthenticationOptions({
             rpID: RP_ID,
+            // Map credentials and handle potentially legacy Buffer/Array formats in DB
             allowCredentials: adminPasskeys.map(key => {
                 let id = key.id;
+                // Normalize to Buffer for the library
                 if (typeof id === 'string') {
                     id = base64urlToBuffer(id);
-                } else if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
-                    id = new Uint8Array(id.data);
+                } else if (id && id.type === 'Buffer') {
+                    id = Buffer.from(id.data);
                 } else if (Array.isArray(id)) {
                     id = new Uint8Array(id);
                 }
@@ -587,60 +598,44 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
 
     if (!expectedChallenge) return res.status(400).json({ success: false, message: "Challenge expired" });
 
+    // DEBUG LOG
+    const clientOrigin = req.get('origin');
+    console.log(`[WebAuthn] Login Verify. Origin: ${clientOrigin}, Cred ID: ${response.id}`);
+
     try {
         const systemData = await readDB('system_data.json') || {};
         const adminPasskeys = systemData.adminPasskeys || [];
 
-        if (!response.id) {
-            console.error("[WebAuthn] Login Response missing ID. Keys:", Object.keys(response));
-            throw new Error("Invalid Passkey Response: Missing ID");
-        }
-        const credentialID = response.id;
+        const credentialID = response.id; // Base64URL String from client
 
-        // Find matching key.
+        // Robust matching
         const dbAuthenticator = adminPasskeys.find(key => {
+            // Case 1: Stored as String
             if (typeof key.id === 'string') {
                 return key.id === credentialID;
             }
-            // Legacy JSON Buffer support
-            if (key.id.type === 'Buffer') {
+            // Case 2: Stored as Buffer object
+            if (key.id && key.id.type === 'Buffer') {
                 const buf = Buffer.from(key.id.data);
                 return base64urlToBuffer(credentialID).equals(buf);
             }
-            return key.id === credentialID;
+            return false;
         });
 
         if (!dbAuthenticator) {
-            console.error("[WebAuthn] No Authenticator found for ID:", credentialID);
-            return res.status(400).json({ success: false, message: "Authenticator not found" });
+            console.error(`[WebAuthn] Credential ID ${credentialID} not found in DB.`);
+            console.log("Known IDs:", adminPasskeys.map(k => typeof k.id === 'string' ? k.id.substring(0, 10) + '...' : 'Buffer'));
+            return res.status(400).json({ success: false, message: "Authenticator not recognized. Please re-register it." });
         }
 
-        // Convert stored public key back to Uint8Array/Buffer
+        // Prepare Public Key and ID for verification function
         let storedPublicKey = dbAuthenticator.publicKey;
-        if (typeof storedPublicKey === 'string') {
-            storedPublicKey = base64urlToBuffer(storedPublicKey);
-        } else if (storedPublicKey.type === 'Buffer') {
-            storedPublicKey = Buffer.from(storedPublicKey.data);
-        }
+        if (typeof storedPublicKey === 'string') storedPublicKey = base64urlToBuffer(storedPublicKey);
+        else if (storedPublicKey.type === 'Buffer') storedPublicKey = Buffer.from(storedPublicKey.data);
 
-        // Convert stored ID back to Buffer
         let storedCredentialID = dbAuthenticator.id;
-        if (typeof storedCredentialID === 'string') {
-            storedCredentialID = base64urlToBuffer(storedCredentialID);
-        } else if (storedCredentialID.type === 'Buffer') {
-            storedCredentialID = Buffer.from(storedCredentialID.data);
-        }
-        if (!storedCredentialID || storedCredentialID.length === 0) throw new Error("Invalid Stored Credential ID");
-        if (!storedPublicKey || storedPublicKey.length === 0) throw new Error("Invalid Stored Public Key");
-
-        console.log("DEBUG Verify:", {
-            storedIDType: typeof storedCredentialID,
-            storedIDLen: storedCredentialID.length,
-            storedKeyType: typeof storedPublicKey,
-            storedKeyLen: storedPublicKey.length,
-            isBufferID: Buffer.isBuffer(storedCredentialID),
-            isBufferKey: Buffer.isBuffer(storedPublicKey)
-        });
+        if (typeof storedCredentialID === 'string') storedCredentialID = base64urlToBuffer(storedCredentialID);
+        else if (storedCredentialID.type === 'Buffer') storedCredentialID = Buffer.from(storedCredentialID.data);
 
         const verification = await verifyAuthenticationResponse({
             response,
@@ -655,25 +650,25 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         });
 
         if (verification.verified) {
-            // Update counter and last used
+            // Update counter
             dbAuthenticator.counter = verification.authenticationInfo.newCounter;
             dbAuthenticator.lastUsed = new Date().toISOString();
             await writeDB('system_data.json', systemData);
 
             delete challengeStore['admin-login'];
 
-            // Log in successful - Issue JWT
             const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
             res.json({ success: true, verified: true, token: sessionToken });
         } else {
+            console.warn("[WebAuthn] Verification failed logic returned false.");
             res.status(400).json({ success: false, verified: false });
         }
     } catch (error) {
         console.error("LOGIN-VERIFY-CRASH:", error);
         res.status(500).json({
             success: false,
-            message: "DEBUG-FIX: " + error.message,
-            stack: error.stack // DEBUG: Send stack to client
+            message: "Verify Error: " + error.message,
+            // stack: error.stack 
         });
     }
 });

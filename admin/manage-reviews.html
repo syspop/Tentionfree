@@ -236,14 +236,14 @@
                         <div style="margin-top:15px; display:flex; gap:10px;">
                             <input type="text" id="reply-input-${r.id}" placeholder="Write a reply..." 
                                 style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; padding:8px 12px; border-radius:6px; font-size:13px;">
-                            <button onclick="submitReply(${r.id})" 
+                            <button onclick="submitReply('${r.id}')" 
                                 style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:6px; font-size:13px; cursor:pointer;">
                                 Reply
                             </button>
                         </div>
 
                     </div>
-                    <button class="delete-btn" onclick="deleteReview(${r.id})" title="Delete Review">
+                    <button class="delete-btn" onclick="deleteReview('${r.id}')" title="Delete Review">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>

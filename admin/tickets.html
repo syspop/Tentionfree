@@ -83,6 +83,8 @@
 
     <script src="script.js?v=5"></script>
     <script>
+        let allTickets = []; // Global cache
+
         document.addEventListener('DOMContentLoaded', loadTickets);
 
         // --- TICKET LOGIC ---
@@ -92,7 +94,6 @@
             list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Loading Tickets...</td></tr>";
 
             try {
-                // Adjusted path to ../api/tickets
                 const res = await fetch('/api/tickets?t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                 });
@@ -100,8 +101,9 @@
                 console.log("DEBUG: Fetched Tickets:", tickets);
 
                 if (Array.isArray(tickets)) {
+                    allTickets = tickets.reverse(); // Store globally
                     document.getElementById('ticket-debug-msg').innerText = `(Debug: Found ${tickets.length} tickets)`;
-                    renderTickets(tickets.reverse());
+                    renderTickets(allTickets);
                 } else {
                     document.getElementById('ticket-debug-msg').innerText = `(Debug: Invalid Data)`;
                     list.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No tickets found.</td></tr>";
@@ -129,6 +131,7 @@
 
                 let imgHtml = displayImg ? `<img src="${displayImg}" style="width:50px; height:50px; object-fit:cover; border-radius:5px; cursor:pointer; border:1px solid #334155;" onclick="openImageModal('${displayImg}')">` : '<span style="color:var(--gray); font-size:12px;">No Img</span>';
 
+                // Safe ID handling and NO JSON in HTML attributes
                 list.innerHTML += `
                     <tr>
                         <td>
@@ -145,9 +148,9 @@
                         </td>
                         <td>${imgHtml}</td>
                         <td>
-                            <button onclick='openTicketDetails(${JSON.stringify(t)})' class="action-btn" style="background:#0ea5e9; margin-right:5px;"><i class="fa-solid fa-eye"></i> View</button>
-                            <button onclick="resolveTicket(${t.id})" class="success-btn" style="margin-right:5px;"><i class="fa-solid fa-check"></i></button>
-                            <button onclick="deleteTicket(${t.id})" class="action-btn"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="openTicketDetails('${t.id}')" class="action-btn" style="background:#0ea5e9; margin-right:5px;"><i class="fa-solid fa-eye"></i> View</button>
+                            <button onclick="resolveTicket('${t.id}')" class="success-btn" style="margin-right:5px;"><i class="fa-solid fa-check"></i></button>
+                            <button onclick="deleteTicket('${t.id}')" class="action-btn"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -173,7 +176,6 @@
 
         async function performDeleteTicket(id) {
             try {
-                // Adjusted path to ../api/tickets
                 const res = await fetch('/api/tickets/' + id, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
@@ -192,7 +194,12 @@
         }
 
         // --- VIEW DETAILS FUNCTION ---
-        function openTicketDetails(ticket) {
+        function openTicketDetails(id) {
+            // Find in global array
+            // Use loose comparison to match string/number IDs
+            const ticket = allTickets.find(t => String(t.id) === String(id));
+            if (!ticket) return showAlert("Error", "Ticket not found", "error");
+
             document.getElementById('view-subject').innerText = ticket.subject;
             document.getElementById('view-desc').innerText = ticket.desc;
 

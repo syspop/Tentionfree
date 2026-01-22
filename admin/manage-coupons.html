@@ -420,9 +420,9 @@
                 return `
                 <div class="coupon-card" style="border-left: 4px solid ${statusColor}">
                     <div style="position:absolute; top:20px; right:20px; display:flex; gap:10px;">
-                        <button class="action-btn" onclick="openViewModal(${c.id})" title="View Details" style="background:rgba(59, 130, 246, 0.1); color:#3b82f6; border:none; border-radius:8px; width:32px; height:32px; cursor:pointer;"><i class="fa-solid fa-eye"></i></button>
-                        <button class="action-btn" onclick="openEditModal(${c.id})" title="Edit Limits" style="background:rgba(245, 158, 11, 0.1); color:#f59e0b; border:none; border-radius:8px; width:32px; height:32px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-                        <button class="action-btn" onclick="deleteCoupon(${c.id})" title="Delete" style="background:rgba(239, 68, 68, 0.1); color:#ef4444; border:none; border-radius:8px; width:32px; height:32px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+                        <button class="action-btn" onclick="openViewModal('${c.id}')" title="View Details" style="background:rgba(59, 130, 246, 0.1); color:#3b82f6; border:none; border-radius:8px; width:32px; height:32px; cursor:pointer;"><i class="fa-solid fa-eye"></i></button>
+                        <button class="action-btn" onclick="openEditModal('${c.id}')" title="Edit Limits" style="background:rgba(245, 158, 11, 0.1); color:#f59e0b; border:none; border-radius:8px; width:32px; height:32px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+                        <button class="action-btn" onclick="deleteCoupon('${c.id}')" title="Delete" style="background:rgba(239, 68, 68, 0.1); color:#ef4444; border:none; border-radius:8px; width:32px; height:32px; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
                     </div>
 
                     <div class="coupon-code">${c.code} ${c.isActive === false ? '<span style="font-size:10px; color:#ef4444; background:rgba(239,68,68,0.1); padding:2px 6px; border-radius:4px;">INACTIVE</span>' : ''}</div>
@@ -602,21 +602,28 @@
         }
 
         async function deleteCoupon(id) {
+            console.log("Attempting to delete coupon:", id);
             showConfirm("Delete Coupon?", "This action cannot be undone.", async () => {
                 try {
                     const res = await fetch(`/api/coupons/${id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
                     });
+
+                    if (!res.ok) {
+                        throw new Error(`Server returned ${res.status}`);
+                    }
+
                     const data = await res.json();
                     if (data.success) {
                         showToast("Coupon Deleted");
                         loadCoupons();
                     } else {
-                        showAlert("Error", "Failed to delete", "error");
+                        showAlert("Error", data.message || "Failed to delete", "error");
                     }
                 } catch (err) {
-                    console.error(err);
+                    console.error("Delete Error:", err);
+                    showAlert("Error", "Failed to delete coupon properly. Please check console.", "error");
                 }
             });
         }
