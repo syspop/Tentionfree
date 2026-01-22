@@ -4,21 +4,19 @@ const axios = require('axios');
 const { readLocalJSON, writeLocalJSON } = require('../data/db');
 const { authenticateAdmin } = require('../middleware/auth');
 
-// --- PAYMENT SETTINGS ---
-
 // GET Payment Mode
 router.get('/settings/payment-mode', async (req, res) => {
     try {
         const systemData = await readLocalJSON('system_data.json');
         res.json({ success: true, mode: systemData.payment_mode || 'auto' });
     } catch (err) {
-        res.status(500).json({ success: false, mode: 'auto' });
+        res.json({ success: true, mode: 'auto' });
     }
 });
 
 // UPDATE Payment Mode
 router.post('/settings/payment-mode', authenticateAdmin, async (req, res) => {
-    const { mode } = req.body; // 'auto' or 'manual'
+    const { mode } = req.body;
     if (!['auto', 'manual'].includes(mode)) {
         return res.status(400).json({ success: false, message: "Invalid mode" });
     }
@@ -27,141 +25,103 @@ router.post('/settings/payment-mode', authenticateAdmin, async (req, res) => {
         const systemData = await readLocalJSON('system_data.json');
         systemData.payment_mode = mode;
         await writeLocalJSON('system_data.json', systemData);
-        res.json({ success: true, message: `Payment mode set to ${mode}` });
+        res.json({ success: true, message: Payment mode set to ${mode} });
     } catch (err) {
-        console.error("Error updating payment mode:", err);
         res.status(500).json({ success: false, message: "Failed to update mode" });
     }
 });
 
-// POST Create Payment
+// CREATE PAYMENT
 router.post('/payment/create', async (req, res) => {
     const { orderId } = req.body;
-
-    if (!orderId) {
-        return res.status(400).json({ success: false, message: "Order ID required" });
-    }
+    if (!orderId) return res.status(400).json({ success: false, message: "Order ID required" });
 
     try {
-        // Check Payment Mode First
         const systemData = await readLocalJSON('system_data.json');
         const paymentMode = systemData.payment_mode || 'auto';
 
         const allOrders = await readLocalJSON('orders.json');
-        const order = allOrders.find(o => o.id === orderId || o.id == orderId);
+        const order = allOrders.find(o => String(o.id) === String(orderId));
+        if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-        if (!order) {
-            return res.status(404).json({ success: false, message: "Order not found" });
-        }
-
-        // --- MANUAL MODE REDIRECT ---
         if (paymentMode === 'manual') {
-            console.log(`ℹ️ Manual Payment Mode Active. Redirecting Order ${orderId}`);
-            // Return local manual payment page URL
             return res.json({
                 success: true,
-                payment_url: `/manual-payment.html?orderId=${orderId}&amount=${order.price}`
+                payment_url: /manual-payment.html?orderId=${orderId}&amount=${order.price}
             });
         }
 
-        // --- AUTO MODE (Gateway) ---
-        // Credentials from ENV
-        const API_KEY = process.env.NEXORA_API_KEY;
-
-        if (!API_KEY) {
-            console.error("❌ Link Error: NEXORA_API_KEY is missing in .env");
-            return res.status(500).json({ success: false, message: "Payment Gateway Not Linked (Missing Key)" });
+        if (!process.env.NEXORA_API_KEY || !process.env.NEXORA_SECRET_KEY || !process.env.NEXORA_BRAND_KEY) {
+            return res.status(500).json({ success: false, message: "Payment Gateway Not Configured" });
         }
 
-        // NexoraPay Payload Construction
         const payload = {
-            api_key: API_KEY,
+            api_key: process.env.NEXORA_API_KEY,
             secret_key: process.env.NEXORA_SECRET_KEY,
             brand_key: process.env.NEXORA_BRAND_KEY,
             order_id: String(order.id),
-            amount: order.price,
+            amount: Number(order.price),
             currency: "BDT",
-            cus_name: order.customer,
-            cus_email: order.email || "customer@tentionfree.store",
-            cus_phone: order.phone,
+            cus_name: order.customer || "Customer",
+            cus_email: order.email || "customer@example.com",
+            cus_phone: order.phone || "01700000000",
             product_name: order.product || "Digital Product",
-            success_url: `https://tentionfree.store/payment-success.html`,
-            cancel_url: `https://tentionfree.store/payment-failed.html`,
-            fail_url: `https://tentionfree.store/payment-failed.html`,
-            desc: "Purchase from TentionFree"
+            success_url: "https://tentionfree.store/payment-success.html",
+            cancel_url: "https://tentionfree.store/payment-failed.html",
+            fail_url: "https://tentionfree.store/payment-failed.html",
+            desc: Order #${order.id} Payment
         };
 
-        console.log("💳 Creating Payment via NexoraPay...", { orderId: order.id, amount: order.price });
-
-        const GATEWAY_URL = "https://pay.nexorapay.top/api/payment/create";
-
-        const response = await axios.post(GATEWAY_URL, payload, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            timeout: 10000 // 10s timeout
+        const response = await axios.post("https://pay.nexorapay.top/api/payment/create", payload, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 15000
         });
 
         const data = response.data;
 
-        if (data && data.status === 'success' && data.payment_url) {
-            console.log("✅ Payment Created. Redirecting to:", data.payment_url);
+        if (data && (data.status === "success" || data.success === true) && data.payment_url) {
+            order.payment_url = data.payment_url;
+            order.status = "Unpaid";
+            await writeLocalJSON('orders.json', allOrders);
+
             return res.json({ success: true, payment_url: data.payment_url });
-        } else {
-            console.error("❌ Payment Gateway Response Error:", data);
-            return res.status(400).json({ success: false, message: "Gateway Error", details: data });
         }
 
+        return res.status(400).json({ success: false, message: "Gateway Error", details: data });
+
     } catch (err) {
-        console.error("⚡ Payment Request Failed:", err.message);
-        if (err.response) {
-            console.error("   Gateway Response:", err.response.data);
-        }
         return res.status(502).json({ success: false, message: "Payment Gateway Unreachable" });
     }
 });
 
-// POST Manual Payment Submit
+// MANUAL PAYMENT SUBMIT
 router.post('/payment/manual-submit', async (req, res) => {
     const { orderId, method, sender, trx } = req.body;
-
     if (!orderId || !method || !sender || !trx) {
         return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     try {
         const allOrders = await readLocalJSON('orders.json');
-        const orderIndex = allOrders.findIndex(o => String(o.id) === String(orderId));
+        const index = allOrders.findIndex(o => String(o.id) === String(orderId));
+        if (index === -1) return res.status(404).json({ success: false, message: "Order not found" });
 
-        if (orderIndex === -1) {
-            return res.status(404).json({ success: false, message: "Order not found" });
-        }
-
-        const order = allOrders[orderIndex];
-
-        // Update Order
-        order.status = 'Pending'; // Admin needs to approve
-        order.paymentMethod = `Manual (${method.toUpperCase()})`;
+        const order = allOrders[index];
+        order.status = "Pending";
+        order.paymentMethod = Manual (${method.toUpperCase()});
         order.trx = trx;
         order.senderNumber = sender;
-        order.isHidden = false; // Show in Admin Panel
-        order.date = new Date().toISOString(); // Update timestamp
+        order.isHidden = false;
+        order.date = new Date().toISOString();
 
-        // Save
-        allOrders[orderIndex] = order;
+        allOrders[index] = order;
         await writeLocalJSON('orders.json', allOrders);
-
-        // Notify Admin (Optional: Add email notification here if needed)
-        console.log(`📝 Manual Payment Submitted: Order #${orderId} | Trx: ${trx}`);
 
         res.json({ success: true, message: "Payment submitted successfully" });
 
     } catch (err) {
-        console.error("Manual Payment Error:", err);
         res.status(500).json({ success: false, message: "Server Error" });
     }
 });
-
-console.log("💳 Payment Routes Loaded (Live + Manual Mode)");
 
 module.exports = router;
