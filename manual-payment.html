@@ -64,19 +64,31 @@
                 </button>
                 <button onclick="selectMethod('nagad')" id="btn-nagad"
                     class="method-btn p-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 transition flex flex-col items-center justify-center gap-1">
-                    <img src="/assets/images/Nagad.webp" class="h-6 w-6 object-contain rounded bg-white p-0.5">
+                    <img src="/assets/images/Nagad.png" class="h-6 w-6 object-contain rounded bg-white p-0.5">
                     <span class="text-[10px] font-bold text-slate-300">Nagad</span>
                 </button>
                 <button onclick="selectMethod('rocket')" id="btn-rocket"
                     class="method-btn p-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 transition flex flex-col items-center justify-center gap-1">
-                    <img src="/assets/images/Rocket.webp" class="h-6 w-6 object-contain rounded bg-white p-0.5">
+                    <img src="/assets/images/Rocket.png" class="h-6 w-6 object-contain rounded bg-white p-0.5">
                     <span class="text-[10px] font-bold text-slate-300">Rocket</span>
                 </button>
                 <button onclick="selectMethod('upay')" id="btn-upay"
                     class="method-btn p-2 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 transition flex flex-col items-center justify-center gap-1">
-                    <img src="/assets/images/Upay.webp" class="h-6 w-6 object-contain rounded bg-white p-0.5">
+                    <img src="/assets/images/upay.webp" class="h-6 w-6 object-contain rounded bg-white p-0.5">
                     <span class="text-[10px] font-bold text-slate-300">Upay</span>
                 </button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="bg-blue-500/10 rounded-lg p-3 mb-4 border border-blue-500/20">
+                <h3 class="text-blue-400 text-[10px] uppercase font-bold mb-1"><i
+                        class="fa-solid fa-circle-info mr-1"></i> How to Pay</h3>
+                <ol class="text-xs text-slate-300 space-y-1 list-decimal list-inside">
+                    <li>Copy the <strong>Personal Number</strong> below.</li>
+                    <li>Go to your App and select <strong>Send Money</strong>.</li>
+                    <li>Enter Amount: <span id="instruction-amount" class="font-bold text-white">---</span></li>
+                    <li>Copy the <strong>TrxID</strong> and paste it below.</li>
+                </ol>
             </div>
 
             <!-- Send Money Details -->
@@ -131,6 +143,7 @@
 
         document.getElementById('order-id').innerText = orderId || 'N/A';
         document.getElementById('amount').innerText = '৳ ' + amount;
+        document.getElementById('instruction-amount').innerText = '৳ ' + amount;
 
         // Configuration
         const methods = {
