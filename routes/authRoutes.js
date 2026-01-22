@@ -683,8 +683,33 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         // Guard: Ensure Valid Inputs
         if (!process.env.NODE_ENV) process.env.NODE_ENV = 'production';
 
-        const finalCredentialID = Buffer.isBuffer(storedCredentialID) ? storedCredentialID : new Uint8Array(storedCredentialID);
+        // Fix: simplewebauthn v13 often implies Base64URL string for IDs if it crashes on Buffers with input.replace
+        // We convert to Base64URL String explicitly.
+        let finalCredentialID = storedCredentialID;
+        if (Buffer.isBuffer(finalCredentialID) || finalCredentialID instanceof Uint8Array) {
+            finalCredentialID = Buffer.from(finalCredentialID).toString('base64url');
+        } else if (typeof finalCredentialID !== 'string') {
+            console.warn("[WebAuthn] Unknown CredentialID type:", typeof finalCredentialID);
+            finalCredentialID = String(finalCredentialID);
+        }
+
+        // Public Key -> Buffer/Uint8Array
         const finalPublicKey = Buffer.isBuffer(storedPublicKey) ? storedPublicKey : new Uint8Array(storedPublicKey);
+
+        // Sanitize Response Inputs (ensure strings)
+        if (typeof response.clientDataJSON !== 'string') {
+            console.warn("[WebAuthn] Sanitizing clientDataJSON (was " + typeof response.clientDataJSON + ")");
+            response.clientDataJSON = String(response.clientDataJSON || '');
+        }
+        if (typeof response.authenticatorData !== 'string') {
+            console.warn("[WebAuthn] Sanitizing authenticatorData (was " + typeof response.authenticatorData + ")");
+            response.authenticatorData = String(response.authenticatorData || '');
+        }
+        if (typeof response.signature !== 'string') {
+            console.warn("[WebAuthn] Sanitizing signature (was " + typeof response.signature + ")");
+            response.signature = String(response.signature || '');
+        }
+        // response.userHandle is optional
 
         const verification = await verifyAuthenticationResponse({
             response,
@@ -692,7 +717,7 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             expectedOrigin: ORIGIN,
             expectedRPID: expectedRPID,
             authenticator: {
-                credentialID: finalCredentialID,
+                credentialID: finalCredentialID, // Passed as String
                 credentialPublicKey: finalPublicKey,
                 counter: dbAuthenticator.counter,
                 transports: dbAuthenticator.transports,
