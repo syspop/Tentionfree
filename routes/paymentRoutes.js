@@ -131,7 +131,7 @@ router.post('/payment/create', async (req, res) => {
 
         const data = response.data;
 
-        if (data && data.status === 'success' && data.payment_url) {
+        if (data && (data.status === 'success' || data.status === 1) && data.payment_url) {
             console.log("✅ Payment Created. Redirecting to:", data.payment_url);
             return res.json({ success: true, payment_url: data.payment_url });
         } else {
