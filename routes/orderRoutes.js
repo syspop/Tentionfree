@@ -139,7 +139,7 @@ router.post('/orders', async (req, res) => {
         res.json({ success: true, message: 'Order created successfully', orderId: newOrder.id });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ success: false, error: 'Failed to save order' });
+        return res.status(500).json({ success: false, error: 'Failed to save order', details: err.message });
     } finally {
         unlock();
     }
