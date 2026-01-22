@@ -595,23 +595,36 @@ router.get('/auth/webauthn/login-options', async (req, res) => {
     try {
         const options = await generateAuthenticationOptions({
             rpID: effectiveRpId,
-            // Map credentials and handle potentially legacy Buffer/Array formats in DB
+            // simplewebauthn v13: allowCredentials.id can be Base64URL String or Uint8Array.
+            // Using Base64URL String is safer against internal "input.replace" crashes if the library tries to stringify it.
             allowCredentials: adminPasskeys.map(key => {
                 let id = key.id;
-                // Normalize to Buffer for the library
-                if (typeof id === 'string') {
-                    id = base64urlToBuffer(id);
-                } else if (id && id.type === 'Buffer') {
-                    id = Buffer.from(id.data);
-                } else if (Array.isArray(id)) {
-                    id = new Uint8Array(id);
+                // If stored as Buffer Object in JSON
+                if (id && id.type === 'Buffer') {
+                    return {
+                        id: Buffer.from(id.data).toString('base64url'),
+                        type: 'public-key',
+                        transports: key.transports,
+                    };
                 }
-                return {
-                    id: id,
-                    type: 'public-key',
-                    transports: key.transports,
-                };
-            }),
+                // If stored as Array
+                if (Array.isArray(id)) {
+                    return {
+                        id: Buffer.from(id).toString('base64url'),
+                        type: 'public-key',
+                        transports: key.transports,
+                    };
+                }
+                // If stored as String (Base64URL already)
+                if (typeof id === 'string') {
+                    return {
+                        id: id,
+                        type: 'public-key',
+                        transports: key.transports,
+                    };
+                }
+                return null;
+            }).filter(c => c !== null),
             userVerification: 'preferred',
         });
 
@@ -619,7 +632,7 @@ router.get('/auth/webauthn/login-options', async (req, res) => {
         res.json(options);
     } catch (err) {
         console.error("WebAuthn Login Options Error:", err);
-        res.status(500).json({ success: false, message: "Server Error: " + err.message });
+        res.status(500).json({ success: false, message: "Options Error: " + err.message + (err.stack ? " | " + err.stack.split('\n')[1] : "") });
     }
 });
 
