@@ -410,6 +410,7 @@
         }
 
         function toggleBulkProductOption(key, input) {
+            console.log(`[UI] Toggling ${key}...`);
             const value = input.checked;
             const label = key === 'viewInIndex' ? "Show All on Home" : "Auto Stockout";
             const token = localStorage.getItem('adminToken');
@@ -438,11 +439,13 @@
                             window.showToast(`${label} Updated Successfully!`);
                         } else {
                             input.checked = !value;
-                            window.showToast(data.message || "Failed to update", "error");
+                            window.showToast(data.message || data.error || "Failed to update", "error");
+                            console.error("Bulk Update Failed:", data);
                         }
                     } catch (e) {
                         input.checked = !value;
-                        window.showToast("Network Error", "error");
+                        window.showToast("Update Failed: " + (e.message || "Network Error"), "error");
+                        console.error("Network Error:", e);
                     }
                 }
             );
