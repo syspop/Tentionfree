@@ -454,19 +454,30 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
             try {
                 // Handle legacy format if exists
                 if (id && id.type === 'Buffer' && Array.isArray(id.data)) {
-                    id = new Uint8Array(id.data);
-                } else if (Array.isArray(id)) {
-                    // Handle plain array (corrupted save?)
-                    id = new Uint8Array(id);
-                } else if (typeof id === 'string') {
-                    id = base64urlToBuffer(id);
+                    id = base64urlToBuffer(Buffer.from(id.data).toString('base64url')); // Convert to Buffer
+                    // Actually, simplewebauthn v13 prefers String for ID in options to avoid ambiguity
+                    id = Buffer.from(id.data).toString('base64url');
                 }
+                else if (typeof id === 'object' && !Array.isArray(id) && !(id instanceof Uint8Array) && !Buffer.isBuffer(id)) {
+                    // Handle the { "0": 123... } object case
+                    const keys = Object.keys(id).filter(k => !isNaN(parseInt(k))).sort((a, b) => a - b);
+                    if (keys.length > 0) {
+                        const vals = keys.map(k => id[k]);
+                        id = Buffer.from(vals).toString('base64url');
+                    }
+                }
+                else if (Array.isArray(id)) {
+                    id = Buffer.from(id).toString('base64url');
+                } else if (Buffer.isBuffer(id) || id instanceof Uint8Array) {
+                    id = Buffer.from(id).toString('base64url');
+                }
+                // If it is already string, keep it as string
             } catch (bufErr) {
                 console.warn("[WebAuthn] Failed to convert passkey ID:", bufErr);
                 return null;
             }
 
-            if (!id) return null;
+            if (!id || typeof id !== 'string') return null;
 
             return {
                 id: id,
