@@ -147,7 +147,7 @@ router.post('/payment/create', async (req, res) => {
 
         console.log("💳 Creating Payment via NexoraPay...", { orderId: order.id, amount: order.price });
 
-        const GATEWAY_URL = "https://pay.nexorapay.top/api/payment/create";
+        const GATEWAY_URL = "https://pay.tentionfree.store/api/payment/create";
 
         const response = await axios.post(GATEWAY_URL, new URLSearchParams(payload), {
             headers: {
