@@ -537,13 +537,15 @@ router.post('/auth/webauthn/register-verify', async (req, res) => {
             if (!credentialPublicKey) throw new Error("Missing credentialPublicKey");
 
             // SAFE CONVERSION: Ensure we store as Base64URL Strings
-            const idString = Buffer.isBuffer(credentialID) ?
-                Buffer.from(credentialID).toString('base64url') :
-                credentialID; // Assume already string if not buffer
+            let idString = credentialID;
+            if (Buffer.isBuffer(idString) || idString instanceof Uint8Array) {
+                idString = Buffer.from(idString).toString('base64url');
+            }
 
-            const keyString = Buffer.isBuffer(credentialPublicKey) ?
-                Buffer.from(credentialPublicKey).toString('base64url') :
-                credentialPublicKey;
+            let keyString = credentialPublicKey;
+            if (Buffer.isBuffer(keyString) || keyString instanceof Uint8Array) {
+                keyString = Buffer.from(keyString).toString('base64url');
+            }
 
             const newValues = {
                 id: idString,
