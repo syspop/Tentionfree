@@ -693,6 +693,8 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             storedKeyType: Buffer.isBuffer(storedPublicKey) ? 'Buffer' : typeof storedPublicKey
         });
 
+        console.log("[WebAuthn] dbAuthenticator (Found):", JSON.stringify(dbAuthenticator)); // DEBUG LOG
+
         // Guard: Ensure Valid Inputs
         if (!process.env.NODE_ENV) process.env.NODE_ENV = 'production';
 
@@ -724,17 +726,20 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         }
         // response.userHandle is optional
 
+        const authenticatorObj = {
+            credentialID: finalCredentialID, // Passed as String
+            credentialPublicKey: finalPublicKey,
+            counter: parseInt(dbAuthenticator.counter || 0), // Fix: Default to 0 if undefined to prevent library crash
+            transports: dbAuthenticator.transports,
+        };
+        console.log("[WebAuthn] Constructed Authenticator:", authenticatorObj);
+
         const verification = await verifyAuthenticationResponse({
             response,
             expectedChallenge,
             expectedOrigin: ORIGIN,
             expectedRPID: expectedRPID,
-            authenticator: {
-                credentialID: finalCredentialID, // Passed as String
-                credentialPublicKey: finalPublicKey,
-                counter: parseInt(dbAuthenticator.counter || 0), // Fix: Default to 0 if undefined to prevent library crash
-                transports: dbAuthenticator.transports,
-            },
+            authenticator: authenticatorObj
         });
 
         if (verification.verified) {
@@ -753,14 +758,13 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         }
     } catch (error) {
         console.error("LOGIN-VERIFY-CRASH:", error);
+        if (error.stack) console.error(error.stack); // PRINT STACK
 
-        // Re-construct Debug Info if available in scope, or just what we know
+        // Re-construct Debug Info
         const errDebug = {
             msg: error.message,
             stackTop: error.stack ? error.stack.split('\n')[1] : 'No Stack',
-            // Simple generic debug info since we can't access local scope variables in catch block easily without wider refactor
-            // But usually the message + stack is enough now.
-            hint: "Check server logs for [WebAuthn] Verify Inputs"
+            hint: "Check server logs"
         };
 
         res.status(500).json({

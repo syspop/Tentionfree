@@ -73,32 +73,42 @@ async function writeLocalJSON(filename, data) {
             dbData = formatForSystemDB(data);
         }
 
-        // 3. Sync to Supabase (Delete All + Insert All)
+        // 3. Sync to Supabase (Safe Sync: Upsert + Cleanup)
+        // This prevents data loss if the process hangs/crashes during sync.
 
-        // A. Delete All Rows
-        // Logic: Delete everything that is NOT equal to a "safe impossible value"
-        const deleteFilter = filename === 'system_data.json' ? 'key' : 'id';
-        let safeImpossibleValue = 'placeholder_impossible_value';
+        // A. Upsert New/Updated Data
+        if (dbData && dbData.length > 0) {
+            const { error: upsertError } = await supabase
+                .from(config.table)
+                .upsert(dbData, { onConflict: config.pk });
 
-        // If ID is numeric (BigInt), we must use a numeric impossible value
-        if (config.idType === 'number') {
-            safeImpossibleValue = -1;
+            if (upsertError) throw upsertError;
         }
 
-        const { error: delError } = await supabase
-            .from(config.table)
-            .delete()
-            .neq(deleteFilter, safeImpossibleValue);
-
-        if (delError) throw delError;
-
-        // B. Insert New Data
+        // B. Delete Stale Data (Cleaning up items that were removed locally)
+        // We delete anything in the DB that is NOT in our current 'dbData' list.
         if (dbData && dbData.length > 0) {
-            const { error: insError } = await supabase
-                .from(config.table)
-                .insert(dbData);
+            const currentIDs = dbData.map(item => item[config.pk]);
 
-            if (insError) throw insError;
+            // Chunking might be needed for very large arrays, but for this scale (10-100 items), this is safe.
+            const { error: cleanupError } = await supabase
+                .from(config.table)
+                .delete()
+                .not(config.pk, 'in', `(${currentIDs.join(',')})`); // PostgREST syntax for 'not.in'
+
+            if (cleanupError) {
+                console.warn(`⚠️ Non-fatal cleanup error for ${filename}:`, cleanupError.message);
+            }
+        } else {
+            // Edge Case: If dbData is empty array [], it implies we want to clear the table.
+            // We only do this if it's explicitly strictly empty array.
+            if (Array.isArray(dbData) && dbData.length === 0) {
+                const { error: clearError } = await supabase
+                    .from(config.table)
+                    .delete()
+                    .neq(config.pk, -1); // Delete all
+                if (clearError) throw clearError;
+            }
         }
 
         console.log(`✅ Synced ${filename} to Supabase`);
