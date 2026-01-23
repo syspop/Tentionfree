@@ -127,7 +127,7 @@ router.post('/payment/create', async (req, res) => {
             return res.status(500).json({ success: false, message: "Payment Gateway Error" });
         }
 
-        // NexoraPay Payload Construction
+        // Payment Gateway Payload Construction
         const payload = {
             api_key: API_KEY,
             secret_key: process.env.NEXORA_SECRET_KEY,
@@ -145,7 +145,7 @@ router.post('/payment/create', async (req, res) => {
             desc: "Purchase from TentionFree"
         };
 
-        console.log("💳 Creating Payment via NexoraPay...", { orderId: order.id, amount: order.price });
+        console.log("💳 Creating Payment...", { orderId: order.id, amount: order.price });
 
         const GATEWAY_URL = "https://pay.tentionfree.store/api/payment/create";
 

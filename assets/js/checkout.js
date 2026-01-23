@@ -344,7 +344,7 @@ function togglePaymentSection() {
                 </div>
                 <div>
                      <h4 class="text-white font-bold text-lg">Secure Online Payment</h4>
-                     <p class="text-slate-400 text-sm mt-1">You will be redirected to NexoraPay to complete your purchase securely.</p>
+                     <p class="text-slate-400 text-sm mt-1">You will be redirected to TentionFree to complete your purchase securely.</p>
                 </div>
                 <div class="flex justify-center flex-wrap gap-4 mt-2">
                     <img src="/assets/images/Bkash.webp" alt="Bkash" class="h-10 object-contain bg-white rounded px-2 py-1">
@@ -480,7 +480,7 @@ async function submitOrder(e) {
             showErrorModal("Payment Required", "Please select a payment method.");
             return;
         }
-        paymentMethod = isPayNow ? 'Online (NexoraPay)' : 'Pay Later';
+        paymentMethod = isPayNow ? 'Online (TentionFree)' : 'Pay Later';
         trxValue = isPayNow ? "PENDING_NEXORA" : "Pay Later";
     }
 
