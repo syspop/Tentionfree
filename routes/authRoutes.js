@@ -747,24 +747,20 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             console.error("❌ [WebAuthn] CRITICAL: response.response is MISSING!");
         }
 
-        const authenticatorObj = {
-            credentialID: finalCredentialID, // Passed as String
-            credentialPublicKey: finalPublicKey,
+        const credential = {
+            id: finalCredentialID,
+            publicKey: finalPublicKey,
             counter: parseInt(dbAuthenticator.counter || 0),
             transports: dbAuthenticator.transports,
         };
-        console.log("[WebAuthn] Constructed Authenticator:", {
-            ...authenticatorObj,
-            credentialPublicKey: `Buffer(${authenticatorObj.credentialPublicKey.length})`
-        });
-        // console.log("[WebAuthn] Constructed Authenticator:", authenticatorObj); // Reduced Log
+        // Removed debug logs for cleaner production code
 
         const verification = await verifyAuthenticationResponse({
             response,
             expectedChallenge,
             expectedOrigin: ORIGIN,
             expectedRPID: expectedRPID,
-            authenticator: authenticatorObj
+            credential: credential
         });
 
         if (verification.verified) {
