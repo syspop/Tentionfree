@@ -713,35 +713,44 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
         if (!Buffer.isBuffer(finalPublicKey) && !(finalPublicKey instanceof Uint8Array)) {
             // Handle { "0": 123, "1": 45 ... } object structure from JSON
             if (typeof finalPublicKey === 'object' && finalPublicKey !== null) {
-                // Convert object values to array, then buffer
-                // We assume keys are "0", "1", etc. and Object.values returns them in order for simple numeric keys
-                // Ideally we should start with a clean buffer based on Object.keys length if we want to be 100% safe,
-                // but Object.values() is generally standard for this JSON output.
-                const vals = Object.values(finalPublicKey);
-                if (vals.length > 0 && typeof vals[0] === 'number') {
-                    finalPublicKey = Buffer.from(vals);
+                try {
+                    const keys = Object.keys(finalPublicKey).filter(k => !isNaN(parseInt(k)));
+                    // Sort numerically to be safe
+                    keys.sort((a, b) => parseInt(a) - parseInt(b));
+
+                    if (keys.length > 0) {
+                        const vals = keys.map(k => finalPublicKey[k]);
+                        finalPublicKey = Buffer.from(vals);
+                        console.log(`[WebAuthn] Reconstructed PublicKey from JSON. Len: ${vals.length}`);
+                    } else {
+                        console.warn("[WebAuthn] PublicKey object has no numeric keys!", finalPublicKey);
+                    }
+                } catch (e) {
+                    console.error("[WebAuthn] PublicKey conversion error:", e);
                 }
             }
         }
-        // Fallback or ensure it's typed
-        if (!Buffer.isBuffer(finalPublicKey)) {
-            finalPublicKey = new Uint8Array(finalPublicKey);
+        // Fallback
+        if (!Buffer.isBuffer(finalPublicKey) && !(finalPublicKey instanceof Uint8Array)) {
+            // If still invalid, try standard cast (though likely empty)
+            finalPublicKey = new Uint8Array(finalPublicKey || []);
+            console.warn("[WebAuthn] Final PublicKey is coerced to Uint8Array/Empty.");
         }
 
-        // Sanitize Response Inputs (ensure strings)
-        if (typeof response.clientDataJSON !== 'string') {
+        // Sanitize Response Inputs (ONLY if they exist and are wrong type)
+        // DO NOT set to empty string if undefined, as response might be nested!
+        if (response.clientDataJSON !== undefined && typeof response.clientDataJSON !== 'string') {
             console.warn("[WebAuthn] Sanitizing clientDataJSON (was " + typeof response.clientDataJSON + ")");
             response.clientDataJSON = String(response.clientDataJSON || '');
         }
-        if (typeof response.authenticatorData !== 'string') {
+        if (response.authenticatorData !== undefined && typeof response.authenticatorData !== 'string') {
             console.warn("[WebAuthn] Sanitizing authenticatorData (was " + typeof response.authenticatorData + ")");
             response.authenticatorData = String(response.authenticatorData || '');
         }
-        if (typeof response.signature !== 'string') {
+        if (response.signature !== undefined && typeof response.signature !== 'string') {
             console.warn("[WebAuthn] Sanitizing signature (was " + typeof response.signature + ")");
             response.signature = String(response.signature || '');
         }
-        // response.userHandle is optional
 
         const authenticatorObj = {
             credentialID: finalCredentialID, // Passed as String
@@ -749,6 +758,10 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             counter: parseInt(dbAuthenticator.counter || 0),
             transports: dbAuthenticator.transports,
         };
+        console.log("[WebAuthn] Constructed Authenticator:", {
+            ...authenticatorObj,
+            credentialPublicKey: `Buffer(${authenticatorObj.credentialPublicKey.length})`
+        });
         // console.log("[WebAuthn] Constructed Authenticator:", authenticatorObj); // Reduced Log
 
         const verification = await verifyAuthenticationResponse({
