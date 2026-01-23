@@ -737,19 +737,14 @@ router.post('/auth/webauthn/login-verify', async (req, res) => {
             console.warn("[WebAuthn] Final PublicKey is coerced to Uint8Array/Empty.");
         }
 
-        // Sanitize Response Inputs (ONLY if they exist and are wrong type)
-        // DO NOT set to empty string if undefined, as response might be nested!
-        if (response.clientDataJSON !== undefined && typeof response.clientDataJSON !== 'string') {
-            console.warn("[WebAuthn] Sanitizing clientDataJSON (was " + typeof response.clientDataJSON + ")");
-            response.clientDataJSON = String(response.clientDataJSON || '');
-        }
-        if (response.authenticatorData !== undefined && typeof response.authenticatorData !== 'string') {
-            console.warn("[WebAuthn] Sanitizing authenticatorData (was " + typeof response.authenticatorData + ")");
-            response.authenticatorData = String(response.authenticatorData || '');
-        }
-        if (response.signature !== undefined && typeof response.signature !== 'string') {
-            console.warn("[WebAuthn] Sanitizing signature (was " + typeof response.signature + ")");
-            response.signature = String(response.signature || '');
+        // DEBUG: INSPECT THE ACTUAL PAYLOAD SENT TO LIBRARY
+        console.log("[WebAuthn] Response Payload Keys:", Object.keys(response));
+        if (response.response) {
+            console.log("[WebAuthn] Nested .response Keys:", Object.keys(response.response));
+            console.log("[WebAuthn] Nested .authenticatorData type:", typeof response.response.authenticatorData);
+            console.log("[WebAuthn] Nested .clientDataJSON type:", typeof response.response.clientDataJSON);
+        } else {
+            console.error("❌ [WebAuthn] CRITICAL: response.response is MISSING!");
         }
 
         const authenticatorObj = {
