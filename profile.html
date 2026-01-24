@@ -1648,7 +1648,7 @@
                     modal.classList.add('opacity-0');
                     setTimeout(() => modal.classList.add('hidden'), 300);
                 } else {
-                    showNotification(result.message || "Failed to update profile", "error");
+                    showNotification(result.error || result.message || "Failed to update profile", "error");
                 }
             } catch (err) {
                 console.error(err);
