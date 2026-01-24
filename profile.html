@@ -1340,6 +1340,33 @@
             }, 300);
         }
 
+        // Added for Passkey flow compatibility
+        function showCustomAlert(title, msg, type = "success") {
+            const modal = document.getElementById('custom-alert');
+            const icon = document.getElementById('alert-icon');
+            const bg = document.getElementById('alert-icon-bg');
+            const titleEl = document.getElementById('alert-title');
+
+            if (!modal) return console.error("Modal not found: " + msg);
+
+            document.getElementById('alert-msg').innerText = msg;
+            titleEl.innerText = title;
+
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.style.opacity = "1";
+                modal.children[1].style.transform = "scale(1)";
+            });
+
+            if (type === "success") {
+                icon.className = "fa-solid fa-check text-emerald-400 text-3xl";
+                bg.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/20";
+            } else {
+                icon.className = "fa-solid fa-triangle-exclamation text-red-500 text-3xl"; // Changed icon to distinguish
+                bg.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 border border-red-500/20";
+            }
+        }
+
         let base64Image = "";
 
         function previewImage(input) {

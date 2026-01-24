@@ -1127,7 +1127,7 @@ router.post('/auth/customer/passkey/otp', async (req, res) => {
     // Send Email
     // Using require here to ensure we have it if missing upstream
     const { sendOtpEmail } = require('../backend_services/emailService');
-    await sendOtpEmail(userEmail, otp);
+    await sendOtpEmail(userEmail, otp, 'passkey');
 
     res.json({ success: true, message: "OTP Sent to Email" });
 });

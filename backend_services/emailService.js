@@ -414,11 +414,19 @@ async function sendBackupEmail(backupData) {
     }
 }
 
-async function sendOtpEmail(email, otpCode) {
+async function sendOtpEmail(email, otpCode, type = 'register') {
     try {
-        console.log(`Sending OTP to ${email}...`);
+        console.log(`Sending OTP to ${email} (Type: ${type})...`);
 
-        const subject = `Verify Your TentionFree Account: ${otpCode}`;
+        let subject = `Verify Your TentionFree Account: ${otpCode}`;
+        let title = "Verify Your Email Address";
+        let message = "Thanks for starting the registration process. Please use the following code to complete your signup.";
+
+        if (type === 'passkey') {
+            subject = `Passkey Verification Code: ${otpCode}`;
+            title = "Verify Passkey Action";
+            message = "You requested to add or remove a passkey. Please use the code below to verify this action.";
+        }
 
         // Simple, clean OTP email design
         const htmlContent = `
@@ -433,9 +441,9 @@ async function sendOtpEmail(email, otpCode) {
                     </div>
 
                     <div style="padding: 40px 30px;">
-                        <h2 style="margin: 0; color: #1e293b; font-size: 20px;">Verify Your Email Address</h2>
+                        <h2 style="margin: 0; color: #1e293b; font-size: 20px;">${title}</h2>
                         <p style="color: #64748b; font-size: 15px; margin-top: 10px; line-height: 1.5;">
-                            Thanks for starting the registration process. Please use the following code to complete your signup.
+                            ${message}
                         </p>
 
                         <div style="margin: 30px 0;">
