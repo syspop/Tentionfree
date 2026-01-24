@@ -776,11 +776,11 @@
                     localStorage.setItem('userToken', result.token);
                     window.location.href = 'profile.html';
                 } else {
-                    showCustomAlert("Login Failed", result.message, "error");
+                    showCustomAlert("Login Failed", result.message || "Server Error", "error");
                 }
-            } catch (e) {
-                console.error(e);
-                showCustomAlert("Error", "Passkey login failed or cancelled.", "error");
+            } catch (err) {
+                console.error(err);
+                showCustomAlert("Login Failed", err.message || "Connection Failed", "error");
             } finally {
                 btn.innerHTML = original;
                 btn.disabled = false;

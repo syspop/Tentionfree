@@ -412,7 +412,7 @@ async function handleSocialLogin(req, res, provider) {
 
     } catch (err) {
         console.error("Social Login Error:", err);
-        res.status(500).json({ success: false, message: "Server Error during Social Login" });
+        res.status(500).json({ success: false, message: "Server Error: " + err.message });
     }
 }
 
