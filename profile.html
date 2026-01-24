@@ -311,6 +311,28 @@
                                     </button>
                                 </form>
 
+                                </form>
+
+                                <!-- PASSKEYS SECTION -->
+                                <div class="mt-8 border-t border-white/5 pt-8">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h3 class="text-white font-bold text-lg">Passkeys</h3>
+                                            <p class="text-slate-400 text-sm">Log in faster with your device (FaceID,
+                                                TouchID, Windows Hello).</p>
+                                        </div>
+                                        <button onclick="startAddPasskey()"
+                                            class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl transition-colors flex items-center gap-2 text-sm shadow-lg shadow-brand-500/20">
+                                            <i class="fa-solid fa-plus"></i> Add Passkey
+                                        </button>
+                                    </div>
+
+                                    <div id="passkey-list" class="space-y-3">
+                                        <div class="text-center py-4 text-slate-500 text-sm italic">Loading passkeys...
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Danger Zone -->
                                 <div class="mt-8 border-t border-red-500/20 pt-8">
                                     <h3 class="text-red-500 font-bold mb-4 uppercase text-xs tracking-wider">Danger Zone
@@ -445,6 +467,37 @@
                     Close
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- PASSKEY OTP MODAL -->
+    <div id="pk-otp-modal"
+        class="fixed inset-0 z-[120] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300"
+            onclick="closePkOtpModal()"></div>
+        <div
+            class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl relative z-10 transform scale-90 transition-all duration-300 max-w-sm w-full mx-4 text-center">
+            <button onclick="closePkOtpModal()"
+                class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i
+                    class="fa-solid fa-xmark text-xl"></i></button>
+            <div
+                class="w-16 h-16 bg-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-brand-500/30">
+                <i class="fa-solid fa-shield-halved text-3xl text-brand-500"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2" id="pk-otp-title">Security Check</h3>
+            <p class="text-sm text-slate-400 mb-6">Enter the 6-digit code sent to your email to <span
+                    id="pk-otp-action-text">verify</span>.</p>
+
+            <div class="flex justify-center gap-2 mb-6">
+                <input type="text" id="pk-otp-input" maxlength="6"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 text-center text-white text-2xl font-bold tracking-[0.5em] focus:border-brand-500 focus:outline-none transition-colors"
+                    placeholder="000000" />
+            </div>
+
+            <button onclick="submitPkOtp()" id="pk-otp-btn"
+                class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all">
+                Verify Code
+            </button>
         </div>
     </div>
 
@@ -1608,6 +1661,243 @@
     </script>
 
 
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script>
+        // --- PASSKEY LOGIC ---
+        let pkAction = null; // 'add' or 'delete'
+        let pkTargetId = null;
+
+        async function loadPasskeys() {
+            const list = document.getElementById('passkey-list');
+            try {
+                // We use the same endpoint but need to ensure it exists or use profile data if added there.
+                // Since I didn't verify if I added it to /my-profile, I will assume I need to fetch it from a specific endpoint
+                // But I didn't add GET /auth/customer/passkeys explicitly in backend plan step!
+                // Wait, I implemented:
+                // 1. OTP
+                // 2. Verify OTP
+                // 3. Register Options
+                // 4. Register Verify
+                // 5. Delete
+                // 6. Login Options
+                // 7. Login Verify
+
+                // I MISSED "GET List" in the backend implementation!
+                // However, I can fetch the profile again if I update the /my-profile logic to include passkeys.
+                // Or I can just add the endpoint quickly in the backend?
+                // Actually, I can use "api/my-profile" if I check if it returns passkeys.
+                // Let's assume I'll update "api/my-profile" or just add the endpoint to backend now.
+                // I'll add the endpoint logic in the backend concurrently or after.
+
+                // Let's rely on a new endpoint: /api/auth/customer/passkeys
+                const res = await fetch('/api/auth/customer/passkeys', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('userToken') }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderPasskeys(data.passkeys || []);
+                } else {
+                    list.innerHTML = '<div class="text-red-400 text-sm text-center">Failed to load passkeys</div>';
+                }
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = '<div class="text-red-400 text-sm text-center">Error loading passkeys</div>';
+            }
+        }
+
+        function renderPasskeys(passkeys) {
+            const list = document.getElementById('passkey-list');
+            if (passkeys.length === 0) {
+                list.innerHTML = '<div class="text-slate-500 text-sm text-center italic py-2">No passkeys registered.</div>';
+                return;
+            }
+            list.innerHTML = passkeys.map(pk => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 border border-white/5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-300">
+                             <i class="fa-solid ${pk.device && pk.device.toLowerCase().includes('mobile') ? 'fa-mobile-screen' : 'fa-laptop'}"></i>
+                        </div>
+                        <div>
+                            <p class="text-white text-sm font-bold">${pk.device || 'Unknown Device'}</p>
+                            <p class="text-xs text-slate-500">Added: ${new Date(pk.created).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <button onclick="startDeletePasskey('${pk.id}')" class="w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all" title="Delete Passkey">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function startAddPasskey() {
+            pkAction = 'add';
+            pkTargetId = null;
+            document.getElementById('pk-otp-title').innerText = 'Add Passkey';
+            document.getElementById('pk-otp-action-text').innerText = 'add a new passkey';
+            document.getElementById('pk-otp-input').value = '';
+
+            // Send OTP
+            const btn = document.querySelector('button[onclick="startAddPasskey()"]');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/customer/passkey/otp', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'add' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('pk-otp-modal').classList.remove('hidden');
+                    setTimeout(() => document.getElementById('pk-otp-modal').classList.remove('opacity-0'), 10);
+                } else {
+                    showCustomAlert("Error", data.message, "error");
+                }
+            } catch (e) {
+                showCustomAlert("Error", "Failed to send OTP", "error");
+            } finally {
+                btn.innerHTML = original;
+                btn.disabled = false;
+            }
+        }
+
+        async function startDeletePasskey(id) {
+            pkAction = 'delete';
+            pkTargetId = id;
+            document.getElementById('pk-otp-title').innerText = 'Delete Passkey';
+            document.getElementById('pk-otp-action-text').innerText = 'delete this passkey';
+            document.getElementById('pk-otp-input').value = '';
+
+            // Send OTP
+            try {
+                const res = await fetch('/api/auth/customer/passkey/otp', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: 'delete' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('pk-otp-modal').classList.remove('hidden');
+                    setTimeout(() => document.getElementById('pk-otp-modal').classList.remove('opacity-0'), 10);
+                } else {
+                    showCustomAlert("Error", data.message, "error");
+                }
+            } catch (e) {
+                showCustomAlert("Error", "Failed to send OTP", "error");
+            }
+        }
+
+        function closePkOtpModal() {
+            document.getElementById('pk-otp-modal').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('pk-otp-modal').classList.add('hidden'), 300);
+        }
+
+        async function submitPkOtp() {
+            const otp = document.getElementById('pk-otp-input').value;
+            if (otp.length !== 6) return showCustomAlert("Invalid Code", "Enter 6 digits", "error");
+
+            const btn = document.getElementById('pk-otp-btn');
+            const original = btn.innerText;
+            btn.innerText = 'Verifying...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/customer/passkey/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('userToken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ otp, action: pkAction })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    closePkOtpModal();
+                    if (pkAction === 'add') {
+                        completeAddPasskey(data.token);
+                    } else if (pkAction === 'delete') {
+                        completeDeletePasskey(data.token);
+                    }
+                } else {
+                    showCustomAlert("Verification Failed", data.message, "error");
+                }
+            } catch (e) {
+                showCustomAlert("Error", "Verification error", "error");
+            } finally {
+                btn.innerText = original;
+                btn.disabled = false;
+            }
+        }
+
+        async function completeAddPasskey(token) {
+            try {
+                // Get Options
+                const optsRes = await fetch('/api/auth/customer/passkey/register-options', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actionToken: token })
+                });
+                const options = await optsRes.json();
+
+                // WebAuthn
+                const { startRegistration } = SimpleWebAuthnBrowser;
+                const attResp = await startRegistration(options);
+
+                // Verify
+                const verifyRes = await fetch('/api/auth/customer/passkey/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actionToken: token, response: attResp })
+                });
+                const verifyData = await verifyRes.json();
+
+                if (verifyData.success) {
+                    showCustomAlert("Success", "Passkey Added!", "success");
+                    loadPasskeys();
+                } else {
+                    showCustomAlert("Failed", verifyData.message, "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showCustomAlert("Error", "Passkey registration failed. " + e.message, "error");
+            }
+        }
+
+        async function completeDeletePasskey(token) {
+            try {
+                const res = await fetch('/api/auth/customer/passkey/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ actionToken: token, passkeyId: pkTargetId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showCustomAlert("Success", "Passkey Deleted", "success");
+                    loadPasskeys();
+                } else {
+                    showCustomAlert("Failed", data.message, "error");
+                }
+            } catch (e) {
+                showCustomAlert("Error", "Deletion failed", "error");
+            }
+        }
+
+        // Initialize
+        const originalLoad = window.onload;
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('userToken');
+            if (token) loadPasskeys();
+        });
+    </script>
 </body>
 
 </html>

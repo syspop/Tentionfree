@@ -1073,4 +1073,341 @@ router.post('/auth/admin/setup-2fa', async (req, res) => {
     }
 });
 
+
+// --- CUSTOMER PASSKEY MANAGEMENT ---
+const customerPasskeyChallenges = {};
+const customerPasskeyOTPs = {}; // { email: { otp, expires, action, attempts } }
+
+// Helper: Require OTP Token
+function verifyOtpToken(req, res, next) {
+    const token = req.headers['x-otp-token'];
+    if (!token) return res.status(403).json({ success: false, message: "Missing OTP Verification Token" });
+
+    // Validate Token (Simple Memory Check for now, or JWT)
+    // For simplicity, we'll verify it matches a verified session in memory
+    // In production, use a short-lived JWT signed with a different secret
+
+    // We'll use a simple approach: logic inside routes for now to keep it self-contained
+    next();
+}
+
+// 1. Send OTP for Passkey (Add/Delete)
+router.post('/auth/customer/passkey/otp', async (req, res) => {
+    // Auth Check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+    let userEmail;
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userEmail = decoded.email;
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const { action } = req.body; // 'add' or 'delete'
+    if (!['add', 'delete'].includes(action)) return res.status(400).json({ success: false, message: "Invalid action" });
+
+    // Generate OTP
+    const otp = speakeasy.totp({
+        secret: speakeasy.generateSecret().base32,
+        encoding: 'base32',
+        digits: 6,
+        step: 300 // 5 minutes valid but we handle expiry manually too
+    });
+
+    customerPasskeyOTPs[userEmail] = {
+        otp,
+        expires: Date.now() + 10 * 60 * 1000, // 10 mins
+        action,
+        attempts: 0
+    };
+
+    // Send Email
+    // Using require here to ensure we have it if missing upstream
+    const { sendOtpEmail } = require('../backend_services/emailService');
+    await sendOtpEmail(userEmail, otp);
+
+    res.json({ success: true, message: "OTP Sent to Email" });
+});
+
+// 2. Verify OTP & Return Token
+router.post('/auth/customer/passkey/verify-otp', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+    let userEmail;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userEmail = decoded.email;
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const { otp, action } = req.body;
+    const stored = customerPasskeyOTPs[userEmail];
+
+    if (!stored) return res.status(400).json({ success: false, message: "No OTP found. Request a new one." });
+    if (stored.action !== action) return res.status(400).json({ success: false, message: "Invalid action context" });
+    if (Date.now() > stored.expires) {
+        delete customerPasskeyOTPs[userEmail];
+        return res.status(400).json({ success: false, message: "OTP Expired" });
+    }
+    if (stored.attempts >= 5) {
+        delete customerPasskeyOTPs[userEmail];
+        return res.status(400).json({ success: false, message: "Too many failed attempts" });
+    }
+
+    if (stored.otp !== otp) {
+        stored.attempts++;
+        return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    // Success - Clear OTP and Issue Temporary Action Token
+    delete customerPasskeyOTPs[userEmail];
+
+    const actionToken = jwt.sign(
+        { email: userEmail, action, type: 'passkey_action' },
+        JWT_SECRET,
+        { expiresIn: '5m' }
+    );
+
+    res.json({ success: true, message: "Verified", token: actionToken });
+});
+
+// 3. Register Options (Device Bound)
+router.post('/auth/customer/passkey/register-options', async (req, res) => {
+    const { actionToken } = req.body;
+    if (!actionToken) return res.status(403).json({ success: false, message: "Missing Action Token" });
+
+    let userEmail;
+    try {
+        const decoded = jwt.verify(actionToken, JWT_SECRET);
+        if (decoded.action !== 'add' || decoded.type !== 'passkey_action') throw new Error("Invalid Token Type");
+        userEmail = decoded.email;
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid or Expired Verification" });
+    }
+
+    const customers = await readDB('customers.json') || [];
+    const user = customers.find(c => c.email === userEmail);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const userPasskeys = user.passkeys || [];
+
+    const options = await generateRegistrationOptions({
+        rpName: 'TentionFree Store',
+        rpID: RP_ID,
+        userID: userEmail, // Use Email as ID for simplicity
+        userName: user.name || userEmail,
+        attestationType: 'none',
+        authenticatorSelection: {
+            authenticatorAttachment: 'platform', // DEVICE BOUND (e.g., Windows Hello, TouchID)
+            userVerification: 'preferred',
+            residentKey: 'preferred'
+        },
+        excludeCredentials: userPasskeys.map(pk => ({
+            id: typeof pk.id === 'string' ? base64urlToBuffer(pk.id) : pk.id, // Handle legacy buffer
+            type: 'public-key',
+        })),
+    });
+
+    customerPasskeyChallenges[userEmail] = options.challenge;
+    res.json(options);
+});
+
+// 4. Register Verify
+router.post('/auth/customer/passkey/register-verify', async (req, res) => {
+    const { actionToken, response } = req.body;
+
+    let userEmail;
+    try {
+        const decoded = jwt.verify(actionToken, JWT_SECRET);
+        if (decoded.action !== 'add') throw new Error();
+        userEmail = decoded.email;
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const challenge = customerPasskeyChallenges[userEmail];
+    if (!challenge) return res.status(400).json({ success: false, message: "Challenge not found" });
+
+    try {
+        const verification = await verifyRegistrationResponse({
+            response,
+            expectedChallenge: challenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+        });
+
+        if (verification.verified) {
+            const customers = await readDB('customers.json') || [];
+            const userIndex = customers.findIndex(c => c.email === userEmail);
+            if (userIndex === -1) return res.status(404).json({ success: false, message: "User not found" });
+
+            if (!customers[userIndex].passkeys) customers[userIndex].passkeys = [];
+
+            // Save Passkey
+            // Store ID as base64url string to avoid JSON buffer issues
+            const credentialID = Buffer.from(verification.registrationInfo.credentialID).toString('base64url');
+            const publicKey = Buffer.from(verification.registrationInfo.credentialPublicKey).toString('base64url');
+
+            customers[userIndex].passkeys.push({
+                id: credentialID,
+                publicKey: publicKey,
+                counter: verification.registrationInfo.counter,
+                device: req.headers['user-agent'] || 'Unknown Device',
+                created: new Date().toISOString()
+            });
+
+            await writeDB('customers.json', customers);
+            delete customerPasskeyChallenges[userEmail];
+
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ success: false, message: "Verification failed" });
+        }
+    } catch (error) {
+        console.error("Passkey Register Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 5. Delete Passkey
+router.post('/auth/customer/passkey/delete', async (req, res) => {
+    const { actionToken, passkeyId } = req.body;
+
+    let userEmail;
+    try {
+        const decoded = jwt.verify(actionToken, JWT_SECRET);
+        if (decoded.action !== 'delete') throw new Error();
+        userEmail = decoded.email;
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const customers = await readDB('customers.json') || [];
+    const userIndex = customers.findIndex(c => c.email === userEmail);
+    if (userIndex === -1) return res.status(404).json({ success: false, message: "User not found" });
+
+    let userPasskeys = customers[userIndex].passkeys || [];
+    const initialLen = userPasskeys.length;
+
+    userPasskeys = userPasskeys.filter(pk => pk.id !== passkeyId);
+
+    if (userPasskeys.length === initialLen) {
+        return res.status(404).json({ success: false, message: "Passkey not found" });
+    }
+
+    customers[userIndex].passkeys = userPasskeys;
+    await writeDB('customers.json', customers);
+
+    res.json({ success: true, message: "Passkey Deleted" });
+});
+
+// 6. Login Options (Assertion)
+router.get('/auth/customer/passkey/login-options', async (req, res) => {
+    // For login, we don't know the user yet typically (Resident Key), or they provide email.
+    // If we want "Sign in with Passkey" button that prompts device, we assume user is present.
+    // However, if we don't know the user, we can't fetch their specific allowed credentials (unless Resident Key).
+    // Let's support both: if email provided in query, we filter. If not, we allow any.
+    // For TentionFree, let's implement the flow requiring email first or Just "Sign In" with empty allowCredentials?
+    // "Sign in with Passkey" usually means Resident Key if no username entered.
+
+    // User requested "oikhany passkey diye login kora jabe email ar password diye login kora lagbe na"
+    // So likely proper Passwordless/Usernameless flow (Resident Key).
+
+    const options = await generateAuthenticationOptions({
+        rpID: RP_ID,
+        userVerification: 'preferred',
+        allowCredentials: [], // Empty means allow any resident key
+    });
+
+    // Store challenge globally briefly (keyed by challenge itself or session? No session yet)
+    // We need to map challenge to something. 
+    // Usually we send challenge back.
+    // For verification, we need to look it up.
+    // We'll use the challenge itself as the key in our store.
+
+    customerPasskeyChallenges[options.challenge] = { expires: Date.now() + 60000 };
+    res.json(options);
+});
+
+// 7. Login Verify
+router.post('/auth/customer/passkey/login-verify', async (req, res) => {
+    const { response } = req.body;
+    const challenge = response.clientDataJSON
+        ? JSON.parse(Buffer.from(response.clientDataJSON, 'base64').toString('utf-8')).challenge
+        : null;
+
+    if (!challenge || !customerPasskeyChallenges[challenge]) {
+        return res.status(400).json({ success: false, message: "Invalid or expired challenge" });
+    }
+    delete customerPasskeyChallenges[challenge];
+
+    try {
+        // Find user by credential ID
+        const customers = await readDB('customers.json') || [];
+        let user, passkey;
+
+        // Loop through all users to find matching passkey ID
+        // Note: CredentialID from client is base64url.
+        const credID = response.id;
+
+        user = customers.find(u =>
+            u.passkeys && u.passkeys.some(pk => pk.id === credID)
+        );
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Passkey not recognized" });
+        }
+
+        passkey = user.passkeys.find(pk => pk.id === credID);
+
+        const verification = await verifyAuthenticationResponse({
+            response,
+            expectedChallenge: challenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+            authenticator: {
+                credentialPublicKey: base64urlToBuffer(passkey.publicKey),
+                credentialID: base64urlToBuffer(passkey.id),
+                counter: passkey.counter,
+            },
+        });
+
+        if (verification.verified) {
+            // Update Counter
+            passkey.counter = verification.authenticationInfo.newCounter;
+            passkey.lastUsed = new Date().toISOString();
+            await writeDB('customers.json', customers);
+
+            // Generate JWT Token
+            const token = jwt.sign(
+                { id: user.id, email: user.email, name: user.name, role: 'customer' },
+                JWT_SECRET,
+                { expiresIn: '7d' }
+            );
+
+            res.json({
+                success: true, token, user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    isVerified: user.isVerified,
+                    phone: user.phone,
+                    dob: user.dob
+                }
+            });
+        } else {
+            res.status(400).json({ success: false, message: "Verification failed" });
+        }
+    } catch (error) {
+        console.error("Passkey Login Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 module.exports = router;
+

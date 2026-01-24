@@ -157,6 +157,12 @@
                         Log In Now
                     </button>
 
+                    <button type="button" onclick="loginWithPasskey()" id="btn-passkey"
+                        class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 mt-3 group">
+                        <i class="fa-solid fa-fingerprint text-brand-400 group-hover:text-white transition-colors"></i>
+                        Sign in with Passkey
+                    </button>
+
                     <div class="relative flex py-2 items-center">
                         <div class="flex-grow border-t border-slate-700"></div>
                         <span class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase tracking-wider">Or continue
@@ -533,6 +539,7 @@
     </div>
 
     <!-- VERIFICATION MODAL -->
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
     <div id="verification-modal"
         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
         <div class="glass-card w-full max-w-sm p-8 rounded-3xl text-center relative mx-4">
@@ -733,6 +740,47 @@
             } catch (err) {
                 console.error(err);
                 showCustomAlert("Server Error", "Could not connect to server. Please check your internet.", "error");
+            } finally {
+                btn.innerHTML = original;
+                btn.disabled = false;
+            }
+        }
+
+        // --- PASSKEY LOGIN ---
+        async function loginWithPasskey() {
+            const btn = document.getElementById('btn-passkey');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
+            btn.disabled = true;
+
+            try {
+                // Get Assertion Options
+                const optsRes = await fetch('/api/auth/customer/passkey/login-options');
+                const options = await optsRes.json();
+
+                // WebAuthn
+                const { startAuthentication } = SimpleWebAuthnBrowser;
+                const asseResp = await startAuthentication(options);
+
+                // Verify
+                const verifyRes = await fetch('/api/auth/customer/passkey/login-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response: asseResp })
+                });
+
+                const result = await verifyRes.json();
+
+                if (result.success) {
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('userToken', result.token);
+                    window.location.href = 'profile.html';
+                } else {
+                    showCustomAlert("Login Failed", result.message, "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showCustomAlert("Error", "Passkey login failed or cancelled.", "error");
             } finally {
                 btn.innerHTML = original;
                 btn.disabled = false;
