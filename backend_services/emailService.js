@@ -5,6 +5,10 @@ const { Resend } = require('resend');
 // Initialize Resend with API Key from env
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+if (!resend) {
+    console.warn("⚠️ RESEND_API_KEY is missing. Emails will not be sent.");
+}
+
 // Admin email
 const ADMIN_EMAIL = 'kaziemdadul4@gmail.com';
 const SITE_URL = 'https://tentionfree.store';
@@ -416,6 +420,10 @@ async function sendBackupEmail(backupData) {
 
 async function sendOtpEmail(email, otpCode, type = 'register') {
     try {
+        if (!resend) {
+            console.error("Resend Client Not Initialized (Missing API Key)");
+            return { success: false, error: "Server Email Config Missing (API Key)" };
+        }
         console.log(`Sending OTP to ${email} (Type: ${type})...`);
 
         let subject = `Verify Your TentionFree Account: ${otpCode}`;
