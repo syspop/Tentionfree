@@ -6,12 +6,32 @@ if (!localStorage.getItem('adminToken')) {
     document.addEventListener('DOMContentLoaded', () => {
         document.body.style.visibility = 'visible';
         document.body.style.opacity = '1';
+        setupInactivityTimer(); // Start Inactivity Timer
     });
 }
 
 function logout() {
     localStorage.removeItem('adminToken'); // Clear Token
     window.location.href = '/chodir-vai';
+}
+
+// --- INACTIVITY TIMER ---
+let inactivityTimer;
+const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 Minutes
+
+function setupInactivityTimer() {
+    window.onload = resetTimer;
+    // DOM Events
+    document.onmousemove = resetTimer;
+    document.onkeypress = resetTimer;
+    document.onclick = resetTimer;
+    document.onscroll = resetTimer;
+    document.ontouchmove = resetTimer;
+}
+
+function resetTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(logout, INACTIVITY_LIMIT);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
