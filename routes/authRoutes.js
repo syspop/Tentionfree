@@ -398,7 +398,7 @@ async function handleSocialLogin(req, res, provider) {
                 password: '$2a$10$SOCIAL_LOGIN_NO_PASS_' + Date.now(), // Dummy password for social users
                 joined: new Date().toISOString(),
                 provider: provider,
-                photo: photo || ''
+                // photo: photo || '' // REMOVED: Schema does not support photo column yet
             };
             allCustomers.push(user);
             await writeDB('customers.json', allCustomers);

@@ -88,7 +88,7 @@ router.put('/customers/:id', authenticateUser, async (req, res) => {
             if (exists) return res.status(400).json({ success: false, message: "Phone already taken" });
         }
 
-        const allowedFields = ['name', 'email', 'phone', 'dob', 'photo', 'password'];
+        const allowedFields = ['name', 'email', 'phone', 'dob', 'password']; // Removed 'photo' due to schema mismatch
         if (isAdmin) allowedFields.push('isBanned', 'role', 'joined', 'provider');
 
         const safeUpdates = {};

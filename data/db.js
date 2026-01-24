@@ -71,6 +71,12 @@ async function writeLocalJSON(filename, data) {
         let dbData = data;
         if (filename === 'system_data.json') {
             dbData = formatForSystemDB(data);
+        } else if (filename === 'customers.json') {
+            // Hotfix: Remove 'photo' if exists, as DB schema lacks it
+            dbData = data.map(c => {
+                const { photo, ...rest } = c;
+                return rest;
+            });
         }
 
         // 3. Sync to Supabase (Safe Sync: Upsert + Cleanup)
