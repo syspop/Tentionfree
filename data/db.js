@@ -72,9 +72,9 @@ async function writeLocalJSON(filename, data) {
         if (filename === 'system_data.json') {
             dbData = formatForSystemDB(data);
         } else if (filename === 'customers.json') {
-            // Hotfix: Remove 'photo' if exists, as DB schema lacks it
+            // Hotfix: Remove 'photo' and 'provider' if exists, as DB schema lacks them
             dbData = data.map(c => {
-                const { photo, ...rest } = c;
+                const { photo, provider, ...rest } = c;
                 return rest;
             });
         }
