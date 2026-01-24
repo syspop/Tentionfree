@@ -1409,5 +1409,33 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
     }
 });
 
+// 8. List Passkeys
+router.get('/auth/customer/passkeys', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const token = authHeader.split(' ')[1];
+    let userEmail;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userEmail = decoded.email;
+    } catch {
+        return res.status(403).json({ success: false, message: "Invalid Token" });
+    }
+
+    const customers = await readDB('customers.json') || [];
+    const user = customers.find(c => c.email === userEmail);
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const passkeys = (user.passkeys || []).map(pk => ({
+        id: pk.id,
+        device: pk.device || 'Unknown Device',
+        created: pk.created,
+        lastUsed: pk.lastUsed
+    }));
+
+    res.json({ success: true, passkeys });
+});
+
 module.exports = router;
 
