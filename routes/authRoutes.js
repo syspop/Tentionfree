@@ -270,9 +270,11 @@ router.post('/admin-login', async (req, res) => {
                 const hasPasskeys = Array.isArray(systemData.adminPasskeys) && systemData.adminPasskeys.length > 0;
 
                 // We check if the "admin_device_registered" cookie was sent
-                const isDeviceRegistered = req.headers.cookie && req.headers.cookie.includes('admin_device_registered=true');
+                // const isDeviceRegistered = req.headers.cookie && req.headers.cookie.includes('admin_device_registered=true');
 
-                if (hasPasskeys && isDeviceRegistered) {
+                if (hasPasskeys) {
+                    // ALWAYS try Passkey if configured on server.
+                    // The browser/OS will handle if it doesn't have the key (user can cancel to fallback)
                     return res.json({ success: false, requirePasskey: true });
                 } else {
                     return res.json({ success: false, require2fa: true });
@@ -495,6 +497,7 @@ router.post('/auth/webauthn/register-options', async (req, res) => {
             authenticatorSelection: {
                 residentKey: 'required',
                 userVerification: 'preferred',
+                authenticatorAttachment: 'platform', // Enforce Device-Bound Passkeys
             },
         });
 
