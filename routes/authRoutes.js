@@ -1253,13 +1253,13 @@ router.post('/auth/customer/passkey/register-verify', async (req, res) => {
             if (!customers[userIndex].passkeys) customers[userIndex].passkeys = [];
 
             // Save Passkey
-            console.log("DEBUG: Verification Object:", JSON.stringify(verification, null, 2));
+            // Reduced logging to avoid rate limits
             const regInfo = verification.registrationInfo || {};
-            console.log("DEBUG: regInfo:", regInfo);
 
             // Store ID as base64url string to avoid JSON buffer issues
+            // Safe guard against missing fields
             const credentialID = regInfo.credentialID ? Buffer.from(regInfo.credentialID).toString('base64url') : 'MISSING_ID';
-            const publicKey = Buffer.from(verification.registrationInfo.credentialPublicKey).toString('base64url');
+            const publicKey = regInfo.credentialPublicKey ? Buffer.from(regInfo.credentialPublicKey).toString('base64url') : 'MISSING_KEY';
 
             customers[userIndex].passkeys.push({
                 id: credentialID,
