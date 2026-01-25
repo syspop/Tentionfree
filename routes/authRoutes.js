@@ -1443,8 +1443,8 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
         passkey = user.passkeys.find(pk => pk.id === credID);
 
         const authenticatorData = {
-            credentialPublicKey: base64urlToBuffer(passkey.publicKey),
-            credentialID: base64urlToBuffer(passkey.id),
+            publicKey: base64urlToBuffer(passkey.publicKey),
+            id: base64urlToBuffer(passkey.id),
             counter: parseInt(passkey.counter || 0),
         };
 
@@ -1452,17 +1452,16 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
             expectedChallenge: challenge,
             expectedOrigin: ORIGIN,
             expectedRPID: RP_ID,
-            authenticator: {
+            credential: {
                 ...authenticatorData,
-                credentialPublicKeyLength: authenticatorData.credentialPublicKey.length,
-                credentialIDLength: authenticatorData.credentialID.length
+                publicKeyLength: authenticatorData.publicKey.length,
+                idLength: authenticatorData.id.length
             }
         });
 
         // Ensure key is not empty
-        // Ensure key is not empty
-        if (authenticatorData.credentialPublicKey.length < 32) {
-            console.error(`CRITICAL: Public Key is too short (${authenticatorData.credentialPublicKey.length} bytes)!`);
+        if (authenticatorData.publicKey.length < 32) {
+            console.error(`CRITICAL: Public Key is too short (${authenticatorData.publicKey.length} bytes)!`);
             return res.status(400).json({ success: false, message: "Corrupted Passkey. Please delete and re-register." });
         }
 
