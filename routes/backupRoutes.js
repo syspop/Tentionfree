@@ -1,29 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const speakeasy = require('speakeasy');
+const jwt = require('jsonwebtoken');
 const { readLocalJSON: readDB } = require('../data/db');
 require('dotenv').config();
 
-// BACKUP ENDPOINT
-router.all('/backup', async (req, res) => {
-    console.log("👉 Backup Endpoint Hit!");
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
+
+// MIDDLEWARE: Verify Backup Token
+const verifyBackupToken = (req, res, next) => {
+    let token = req.headers['authorization'] || req.query.token;
+
+    if (token && token.startsWith('Bearer ')) {
+        token = token.slice(7, token.length);
+    }
+
+    if (!token) {
+        return res.status(401).json({ success: false, error: "Access Denied: No Token Provided" });
+    }
+
     try {
-        let pin = (req.body && req.body.pin) || req.query.pin || req.headers['x-backup-pin'];
-
-        if (pin) pin = pin.toString().trim();
-
-        const SECURE_PIN = process.env.BACKUP_PIN || "105090";
-
-        if (!SECURE_PIN) {
-            console.error("FATAL ERROR: BACKUP_PIN is not set in environment variables!");
-            return res.status(500).json({ success: false, error: "Server Configuration Error: PIN not set." });
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.role === 'backup_admin') {
+            req.user = decoded;
+            next();
+        } else {
+            return res.status(403).json({ success: false, error: "Access Denied: Insufficient Permissions" });
         }
+    } catch (err) {
+        return res.status(401).json({ success: false, error: "Invalid Token" });
+    }
+};
 
-        if (pin !== SECURE_PIN) {
-            console.warn(`⚠️ Unauthorized Pin: '${pin}'`);
-            return res.status(403).json({ success: false, error: "Access Denied: Invalid Security PIN." });
-        }
-
+// BACKUP ENDPOINT (Now Secured with JWT)
+router.get('/backup', verifyBackupToken, async (req, res) => {
+    console.log("👉 Backup Endpoint Hit by:", req.user.id);
+    try {
         console.log("Generating Backup...");
         // Fast Read
         const backupData = {
@@ -51,7 +63,7 @@ router.all('/backup', async (req, res) => {
     }
 });
 
-// BACKUP LOGIN (Secure 2FA)
+// BACKUP LOGIN (Secure 2FA -> Returns JWT)
 router.post('/backup-login', async (req, res) => {
     const { u, p, token } = req.body;
 
@@ -77,20 +89,29 @@ router.post('/backup-login', async (req, res) => {
         const systemData = await readDB('system_data.json');
         if (!systemData || !systemData.backup2faSecret) {
             console.error("Backup 2FA Secret Missing!");
+            // Fallback for first time setup or broken state, maybe allow generic?
+            // For now, STRICT: Must have 2FA
             return res.status(500).json({ success: false, message: "2FA Not Configured" });
         }
 
+        // Increased window to 10 (approx +/- 5 mins) to fix "OTP kaj kore na"
         const verified = speakeasy.totp.verify({
             secret: systemData.backup2faSecret,
             encoding: 'base32',
             token: token.trim(),
-            window: 2
+            window: 10
         });
 
         if (verified) {
-            return res.json({ success: true });
+            // Generate Backup Token
+            const sessionToken = jwt.sign(
+                { id: 'backup_admin', role: 'backup_admin' },
+                JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+            return res.json({ success: true, token: sessionToken });
         } else {
-            return res.json({ success: false, message: "Invalid 2FA Code (Use PIN or App)" });
+            return res.json({ success: false, message: "Invalid 2FA Code" });
         }
     }
 
