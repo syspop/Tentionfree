@@ -1408,16 +1408,35 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
 
         passkey = user.passkeys.find(pk => pk.id === credID);
 
+        const authenticatorData = {
+            credentialPublicKey: base64urlToBuffer(passkey.publicKey),
+            credentialID: base64urlToBuffer(passkey.id),
+            counter: parseInt(passkey.counter || 0),
+        };
+
+        console.log("DEBUG: verifyAuth Arguments:", {
+            expectedChallenge: challenge,
+            expectedOrigin: ORIGIN,
+            expectedRPID: RP_ID,
+            authenticator: {
+                ...authenticatorData,
+                credentialPublicKeyLength: authenticatorData.credentialPublicKey.length,
+                credentialIDLength: authenticatorData.credentialID.length
+            }
+        });
+
+        // Ensure key is not empty
+        if (authenticatorData.credentialPublicKey.length === 0) {
+            console.error("CRITICAL: Public Key is improper/empty!");
+            return res.status(500).json({ success: false, message: "Invalid stored public key" });
+        }
+
         const verification = await verifyAuthenticationResponse({
             response,
             expectedChallenge: challenge,
             expectedOrigin: ORIGIN,
             expectedRPID: RP_ID,
-            authenticator: {
-                credentialPublicKey: base64urlToBuffer(passkey.publicKey),
-                credentialID: base64urlToBuffer(passkey.id),
-                counter: parseInt(passkey.counter || 0), // Fix: Ensure counter is a number
-            },
+            authenticator: authenticatorData,
         });
 
         if (verification.verified) {
