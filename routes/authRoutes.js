@@ -1355,7 +1355,11 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
         ? JSON.parse(Buffer.from(response.clientDataJSON, 'base64').toString('utf-8')).challenge
         : null;
 
+    console.log("DEBUG: Login Verify Challenge (Received):", challenge);
+    console.log("DEBUG: Stored Challenges:", Object.keys(customerPasskeyChallenges));
+
     if (!challenge || !customerPasskeyChallenges[challenge]) {
+        console.warn("DEBUG: Challenge Mismatch or Expired");
         return res.status(400).json({ success: false, message: "Invalid or expired challenge" });
     }
     delete customerPasskeyChallenges[challenge];
