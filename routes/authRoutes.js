@@ -1203,7 +1203,7 @@ router.post('/auth/customer/passkey/register-options', async (req, res) => {
     const options = await generateRegistrationOptions({
         rpName: 'TentionFree Store',
         rpID: RP_ID,
-        userID: userEmail, // Use Email as ID for simplicity
+        userID: Buffer.from(userEmail), // Use Email as ID for simplicity
         userName: user.name || userEmail,
         attestationType: 'none',
         authenticatorSelection: {
