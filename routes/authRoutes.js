@@ -1266,7 +1266,15 @@ router.post('/auth/customer/passkey/register-verify', async (req, res) => {
 
             const publicKey = regInfo.credentialPublicKey ? Buffer.from(regInfo.credentialPublicKey).toString('base64url') : 'MISSING_KEY';
 
-            console.log("DEBUG: Saving Passkey:", { credentialID, publicKeyLength: publicKey.length });
+            console.log("DEBUG: Saving Passkey:", {
+                credentialID,
+                publicKeyLength: publicKey.length,
+                rawKeyType: regInfo.credentialPublicKey ? typeof regInfo.credentialPublicKey : 'undefined',
+                rawKeyIsBuffer: regInfo.credentialPublicKey ? Buffer.isBuffer(regInfo.credentialPublicKey) : false
+            });
+            if (regInfo.credentialPublicKey) {
+                console.log("DEBUG: Raw Public Key (Hex):", Buffer.from(regInfo.credentialPublicKey).toString('hex'));
+            }
 
             customers[userIndex].passkeys.push({
                 id: credentialID,
@@ -1426,9 +1434,10 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
         });
 
         // Ensure key is not empty
-        if (authenticatorData.credentialPublicKey.length === 0) {
-            console.error("CRITICAL: Public Key is improper/empty!");
-            return res.status(500).json({ success: false, message: "Invalid stored public key" });
+        // Ensure key is not empty
+        if (authenticatorData.credentialPublicKey.length < 32) {
+            console.error(`CRITICAL: Public Key is too short (${authenticatorData.credentialPublicKey.length} bytes)!`);
+            return res.status(400).json({ success: false, message: "Corrupted Passkey. Please delete and re-register." });
         }
 
         const verification = await verifyAuthenticationResponse({
