@@ -1351,9 +1351,20 @@ router.get('/auth/customer/passkey/login-options', async (req, res) => {
 // 7. Login Verify
 router.post('/auth/customer/passkey/login-verify', async (req, res) => {
     const { response } = req.body;
-    const challenge = response.clientDataJSON
-        ? JSON.parse(Buffer.from(response.clientDataJSON, 'base64').toString('utf-8')).challenge
-        : null;
+    console.log("DEBUG: Raw Response:", JSON.stringify(response, null, 2));
+
+    let parsedClientData = {};
+    try {
+        if (response.clientDataJSON) {
+            const jsonStr = Buffer.from(response.clientDataJSON, 'base64').toString('utf-8');
+            console.log("DEBUG: Decoded clientDataJSON:", jsonStr);
+            parsedClientData = JSON.parse(jsonStr);
+        }
+    } catch (e) {
+        console.error("DEBUG: Failed to parse clientDataJSON:", e);
+    }
+
+    const challenge = parsedClientData.challenge || null;
 
     console.log("DEBUG: Login Verify Challenge (Received):", challenge);
     console.log("DEBUG: Stored Challenges:", Object.keys(customerPasskeyChallenges));
