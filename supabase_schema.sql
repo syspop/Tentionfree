@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS customers (
     password TEXT,
     joined TIMESTAMPTZ,
     "isBanned" BOOLEAN DEFAULT FALSE,
-    "isVerified" BOOLEAN DEFAULT FALSE
+    "isVerified" BOOLEAN DEFAULT FALSE,
+    passkeys JSONB DEFAULT '[]'::JSONB
 );
 
 -- 4. ORDERS TABLE
