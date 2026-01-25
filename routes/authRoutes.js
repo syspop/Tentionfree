@@ -1351,13 +1351,13 @@ router.get('/auth/customer/passkey/login-options', async (req, res) => {
 // 7. Login Verify
 router.post('/auth/customer/passkey/login-verify', async (req, res) => {
     const { response } = req.body;
-    console.log("DEBUG: Raw Response:", JSON.stringify(response, null, 2));
+    // Fix: Access response.response.clientDataJSON (Structure is response.response.clientDataJSON)
+    const clientDataJSON = response.response ? response.response.clientDataJSON : response.clientDataJSON;
 
     let parsedClientData = {};
     try {
-        if (response.clientDataJSON) {
-            const jsonStr = Buffer.from(response.clientDataJSON, 'base64').toString('utf-8');
-            console.log("DEBUG: Decoded clientDataJSON:", jsonStr);
+        if (clientDataJSON) {
+            const jsonStr = Buffer.from(clientDataJSON, 'base64').toString('utf-8');
             parsedClientData = JSON.parse(jsonStr);
         }
     } catch (e) {
@@ -1366,11 +1366,10 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
 
     const challenge = parsedClientData.challenge || null;
 
-    console.log("DEBUG: Login Verify Challenge (Received):", challenge);
-    console.log("DEBUG: Stored Challenges:", Object.keys(customerPasskeyChallenges));
+    // console.log("DEBUG: Login Challenge:", challenge); 
 
     if (!challenge || !customerPasskeyChallenges[challenge]) {
-        console.warn("DEBUG: Challenge Mismatch or Expired");
+        console.warn("DEBUG: Challenge Mismatch or Expired. Received:", challenge);
         return res.status(400).json({ success: false, message: "Invalid or expired challenge" });
     }
     delete customerPasskeyChallenges[challenge];
