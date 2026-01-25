@@ -1383,11 +1383,20 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
         // Note: CredentialID from client is base64url.
         const credID = response.id;
 
+        console.log("DEBUG: Login Received CredID:", credID);
+        // Debug: Log all stored passkey IDs for comparison
+        customers.forEach(u => {
+            if (u.passkeys && u.passkeys.length > 0) {
+                console.log(`DEBUG: User ${u.email} has passkeys:`, u.passkeys.map(pk => pk.id));
+            }
+        });
+
         user = customers.find(u =>
             u.passkeys && u.passkeys.some(pk => pk.id === credID)
         );
 
         if (!user) {
+            console.warn("DEBUG: No user found with matching credential ID");
             return res.status(404).json({ success: false, message: "Passkey not recognized" });
         }
 
