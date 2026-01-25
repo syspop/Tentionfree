@@ -1270,11 +1270,27 @@ router.post('/auth/customer/passkey/register-verify', async (req, res) => {
             }
 
             // Store ID as base64url string
-            const credentialID = rawCredentialID
-                ? Buffer.from(rawCredentialID).toString('base64url')
-                : (response.id || 'MISSING_ID');
+            let credentialID;
+            if (rawCredentialID) {
+                if (typeof rawCredentialID === 'string') {
+                    credentialID = rawCredentialID;
+                } else {
+                    credentialID = Buffer.from(rawCredentialID).toString('base64url');
+                }
+            } else {
+                credentialID = response.id || 'MISSING_ID';
+            }
 
-            const publicKey = rawPublicKey ? Buffer.from(rawPublicKey).toString('base64url') : 'MISSING_KEY';
+            let publicKey;
+            if (rawPublicKey) {
+                if (typeof rawPublicKey === 'string') {
+                    publicKey = rawPublicKey;
+                } else {
+                    publicKey = Buffer.from(rawPublicKey).toString('base64url');
+                }
+            } else {
+                publicKey = 'MISSING_KEY';
+            }
 
             console.log("DEBUG: Saving Passkey:", {
                 credentialID,
