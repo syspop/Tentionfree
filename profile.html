@@ -1875,6 +1875,10 @@
                 });
                 const options = await optsRes.json();
 
+                if (!optsRes.ok || !options.challenge) {
+                    throw new Error(options.message || "Failed to get registration options");
+                }
+
                 // WebAuthn
                 const { startRegistration } = SimpleWebAuthnBrowser;
                 const attResp = await startRegistration(options);

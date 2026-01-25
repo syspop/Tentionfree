@@ -1126,7 +1126,7 @@ router.post('/auth/customer/passkey/otp', async (req, res) => {
 
     // Send Email
     // Using require here to ensure we have it if missing upstream
-    const { sendOtpEmail } = require('../backend_services/emailService');
+    const { sendOtpEmail, sendPasskeyNotification } = require('../backend_services/emailService');
     const emailResult = await sendOtpEmail(userEmail, otp, 'passkey');
 
     if (!emailResult.success) {
@@ -1269,6 +1269,9 @@ router.post('/auth/customer/passkey/register-verify', async (req, res) => {
             delete customerPasskeyChallenges[userEmail];
 
             res.json({ success: true });
+
+            // Send Notification
+            sendPasskeyNotification(userEmail, 'add', req.headers['user-agent'] || 'Unknown Device');
         } else {
             res.status(400).json({ success: false, message: "Verification failed" });
         }
@@ -1308,6 +1311,9 @@ router.post('/auth/customer/passkey/delete', async (req, res) => {
     await writeDB('customers.json', customers);
 
     res.json({ success: true, message: "Passkey Deleted" });
+
+    // Send Notification
+    sendPasskeyNotification(userEmail, 'delete');
 });
 
 // 6. Login Options (Assertion)

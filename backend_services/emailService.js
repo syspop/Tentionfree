@@ -496,4 +496,76 @@ async function sendOtpEmail(email, otpCode, type = 'register') {
     }
 }
 
-module.exports = { sendOrderStatusEmail, sendBackupEmail, sendOtpEmail };
+module.exports = { sendOrderStatusEmail, sendBackupEmail, sendOtpEmail, sendPasskeyNotification };
+
+async function sendPasskeyNotification(email, action, deviceName = 'Unknown Device') {
+    try {
+        if (!resend) return { success: false, error: "No Email Config" };
+
+        let subject, title, message, color, icon;
+
+        if (action === 'add') {
+            subject = "Security Alert: New Passkey Added";
+            title = "New Passkey Added";
+            message = `A new passkey was added to your account from <strong>${deviceName}</strong>. If this was you, you can ignore this email.`;
+            color = "#10b981"; // Emerald
+            icon = "✓";
+        } else if (action === 'delete') {
+            subject = "Security Alert: Passkey Removed";
+            title = "Passkey Removed";
+            message = `A passkey was removed from your account. If you didn't do this, please contact support immediately.`;
+            color = "#ef4444"; // Red
+            icon = "✕";
+        } else {
+            return;
+        }
+
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0; padding:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9;">
+            <center style="width: 100%; background-color: #f1f5f9; padding: 40px 0;">
+                <div style="max-width: 500px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; text-align: center;">
+                    
+                    <div style="background-color: #0f172a; padding: 25px 20px;">
+                        <span style="font-size: 22px; font-weight: bold; color: white;">Tention<span style="color: #6366f1;">Free</span></span>
+                    </div>
+
+                    <div style="padding: 40px 30px;">
+                        <div style="width: 60px; height: 60px; background-color: ${color}15; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; border: 1px solid ${color}30;">
+                            <span style="font-size: 30px; color: ${color}; line-height: 60px;">${icon}</span>
+                        </div>
+
+                        <h2 style="margin: 0; color: #1e293b; font-size: 20px;">${title}</h2>
+                        <p style="color: #64748b; font-size: 15px; margin-top: 15px; line-height: 1.6;">
+                            ${message}
+                        </p>
+
+                        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                            <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                                Device: ${deviceName} <br>
+                                Date: ${new Date().toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </center>
+        </body>
+        </html>
+        `;
+
+        await resend.emails.send({
+            from: 'TentionFree Security <security@tentionfree.store>',
+            to: [email],
+            subject: subject,
+            html: htmlContent
+        });
+
+        console.log(`Passkey Notification (${action}) sent to ${email}`);
+        return { success: true };
+
+    } catch (err) {
+        console.error("Passkey Notification Error:", err);
+        return { success: false, error: err.message };
+    }
+}
