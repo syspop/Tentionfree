@@ -1260,11 +1260,21 @@ router.post('/auth/customer/passkey/register-verify', async (req, res) => {
             // Store ID as base64url string to avoid JSON buffer issues
             // Safe guard against missing fields
             // Fallback to response.id (client provided id) if library doesn't return it
-            const credentialID = regInfo.credentialID
-                ? Buffer.from(regInfo.credentialID).toString('base64url')
+            // Compatibility: Handle different versions of simplewebauthn
+            let rawCredentialID = regInfo.credentialID;
+            let rawPublicKey = regInfo.credentialPublicKey;
+
+            if (!rawCredentialID && regInfo.credential) {
+                rawCredentialID = regInfo.credential.id;
+                rawPublicKey = regInfo.credential.publicKey;
+            }
+
+            // Store ID as base64url string
+            const credentialID = rawCredentialID
+                ? Buffer.from(rawCredentialID).toString('base64url')
                 : (response.id || 'MISSING_ID');
 
-            const publicKey = regInfo.credentialPublicKey ? Buffer.from(regInfo.credentialPublicKey).toString('base64url') : 'MISSING_KEY';
+            const publicKey = rawPublicKey ? Buffer.from(rawPublicKey).toString('base64url') : 'MISSING_KEY';
 
             console.log("DEBUG: Saving Passkey:", {
                 credentialID,
