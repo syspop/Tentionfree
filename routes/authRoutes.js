@@ -1403,7 +1403,6 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
         );
 
         if (!user) {
-            console.warn("DEBUG: No user found with matching credential ID");
             return res.status(404).json({ success: false, message: "Passkey not recognized" });
         }
 
@@ -1417,7 +1416,7 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
             authenticator: {
                 credentialPublicKey: base64urlToBuffer(passkey.publicKey),
                 credentialID: base64urlToBuffer(passkey.id),
-                counter: passkey.counter,
+                counter: parseInt(passkey.counter || 0), // Fix: Ensure counter is a number
             },
         });
 
