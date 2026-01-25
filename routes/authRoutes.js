@@ -11,6 +11,7 @@ const {
     generateAuthenticationOptions,
     verifyAuthenticationResponse,
 } = require('@simplewebauthn/server');
+const { sendOtpEmail, sendPasskeyNotification } = require('../backend_services/emailService');
 
 // In-memory challenge store (simplified for single instance)
 const challengeStore = {};
@@ -1258,8 +1259,14 @@ router.post('/auth/customer/passkey/register-verify', async (req, res) => {
 
             // Store ID as base64url string to avoid JSON buffer issues
             // Safe guard against missing fields
-            const credentialID = regInfo.credentialID ? Buffer.from(regInfo.credentialID).toString('base64url') : 'MISSING_ID';
+            // Fallback to response.id (client provided id) if library doesn't return it
+            const credentialID = regInfo.credentialID
+                ? Buffer.from(regInfo.credentialID).toString('base64url')
+                : (response.id || 'MISSING_ID');
+
             const publicKey = regInfo.credentialPublicKey ? Buffer.from(regInfo.credentialPublicKey).toString('base64url') : 'MISSING_KEY';
+
+            console.log("DEBUG: Saving Passkey:", { credentialID, publicKeyLength: publicKey.length });
 
             customers[userIndex].passkeys.push({
                 id: credentialID,
