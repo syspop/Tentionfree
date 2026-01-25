@@ -1471,7 +1471,7 @@ router.post('/auth/customer/passkey/login-verify', async (req, res) => {
             expectedChallenge: challenge,
             expectedOrigin: ORIGIN,
             expectedRPID: RP_ID,
-            authenticator: authenticatorData,
+            credential: authenticatorData,
         });
 
         if (verification.verified) {
