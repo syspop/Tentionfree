@@ -8,8 +8,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 2. Initialize Data
         await fetchSystemSettings(); // Global Configs (including Auto Stockout)
-        // Fetch and Render Products (if on home/shop page)
-        if (document.getElementById('product-grid') || document.getElementById('home-product-grid') || document.getElementById('product-details-container')) {
+        // Fetch and Render Products (if on home/shop page or search bar exists)
+        if (
+            document.getElementById('product-grid') ||
+            document.getElementById('home-product-grid') ||
+            document.getElementById('product-details-container') ||
+            document.getElementById('search-input') ||
+            document.getElementById('mobile-search-input')
+        ) {
             await fetchProducts(); // From api.js, stores in window.products
         }
 
