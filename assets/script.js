@@ -34,18 +34,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 4. Global Event Listeners
 
         // Live Search
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                window.searchQuery = e.target.value;
-                renderProducts();
-
-                // Auto scroll to grid if searching
-                const grid = document.getElementById('product-grid');
-                if (grid && window.scrollY < grid.offsetTop - 100) {
-                    window.scrollTo({ top: grid.offsetTop - 100, behavior: 'smooth' });
-                }
-            });
+        // Live Search & Suggestions
+        if (typeof initSearch === 'function') {
+            initSearch();
+        } else {
+            // Fallback if ui.js update failed or cached
+            console.warn("initSearch not found, falling back to basic listener");
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    window.searchQuery = e.target.value;
+                    renderProducts();
+                });
+            }
         }
 
         // Cart Sidebar Toggles

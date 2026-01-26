@@ -966,6 +966,7 @@ window.openHowToModal = function () {
     }
 }
 
+
 window.closeHowToModal = function () {
     const m = document.getElementById('howto-modal');
     if (m) {
@@ -973,3 +974,158 @@ window.closeHowToModal = function () {
         document.body.style.overflow = ''; // Restore scrolling
     }
 }
+
+// --- Live Search & Suggestions System ---
+
+window.initSearch = function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const q = urlParams.get('q');
+
+    // Desktop Search
+    setupSearchInput('search-input', q);
+
+    // Mobile Search (Sidebar)
+    setupSearchInput('mobile-search-input', q);
+
+    // Mobile Search Overlay
+    setupSearchInput('mobile-search-overlay-input', q);
+
+    // Large Home Search
+    const homeInput = document.querySelector('.search-input-lg');
+    if (homeInput) {
+        if (!homeInput.id) homeInput.id = 'home-search-input';
+        setupSearchInput(homeInput.id, q);
+    }
+}
+
+function setupSearchInput(inputId, initialValue = '') {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    if (initialValue && (document.getElementById('product-grid') || document.getElementById('home-product-grid'))) {
+        input.value = initialValue;
+        window.searchQuery = initialValue;
+    }
+
+    // Create Suggestions Container
+    const wrapper = input.parentElement;
+    // Ensure relative positioning on wrapper
+    if (wrapper.style.position !== 'relative' && !wrapper.classList.contains('relative')) {
+        wrapper.style.position = 'relative';
+    }
+
+    if (!wrapper.querySelector('.search-suggestions')) {
+        const suggestions = document.createElement('div');
+        suggestions.className = 'search-suggestions custom-scrollbar';
+        suggestions.id = `${inputId}-suggestions`;
+        wrapper.appendChild(suggestions);
+    }
+
+    // Events
+    input.addEventListener('input', (e) => {
+        const query = e.target.value;
+        window.searchQuery = query; // Update global state
+        console.log("Search Input:", query);
+
+        // Reset category filter when searching to search ALL products
+        if (query.trim().length > 0 && window.currentFilter !== 'all') {
+            window.currentFilter = 'all';
+            // Update UI buttons if function exists
+            if (typeof filterProducts === 'function') {
+                // Trigger filter update just to refresh UI state visual
+                const buttons = document.querySelectorAll('#category-filters button');
+                buttons.forEach(btn => {
+                    if (btn.innerText === 'All') btn.className = "filter-btn active bg-brand-500 text-white shadow-lg shadow-brand-500/30 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap";
+                    else btn.className = "filter-btn bg-slate-800/50 text-gray-400 hover:text-white hover:bg-slate-700 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap border border-slate-700/50";
+                });
+            }
+        }
+
+        // If on products page, filter grid immediately
+        if (typeof renderProducts === 'function') {
+            if (document.getElementById('product-grid') || document.getElementById('home-product-grid')) {
+                renderProducts();
+            }
+        }
+
+        // Show suggestions
+        showSuggestions(query, `${inputId}-suggestions`);
+    });
+
+    input.addEventListener('focus', (e) => {
+        if (e.target.value.trim().length > 0) {
+            showSuggestions(e.target.value, `${inputId}-suggestions`);
+        }
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+            const suggestions = document.getElementById(`${inputId}-suggestions`);
+            if (suggestions) {
+                suggestions.classList.remove('show');
+            }
+        }
+    });
+}
+
+function showSuggestions(query, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!query || query.trim().length === 0) {
+        container.classList.remove('show');
+        return;
+    }
+
+    // Ensure products
+    const products = window.products || [];
+    if (products.length === 0) return;
+
+    const normalizedQuery = query.toLowerCase().trim();
+    const matches = products.filter(p =>
+        p.name.toLowerCase().includes(normalizedQuery) ||
+        (p.category && p.category.toLowerCase().includes(normalizedQuery))
+    ).slice(0, 5); // Limit to top 5
+
+    if (matches.length === 0) {
+        container.classList.remove('show');
+        return;
+    }
+
+    container.innerHTML = matches.map(product => `
+        <div class="suggestion-item" onclick="navigateToProduct(${product.id})">
+            <img src="${product.image}" class="suggestion-image" alt="${product.name}"
+                 onerror="this.onerror=null;this.src='https://img.icons8.com/fluency/96/image.png';">
+            <div class="suggestion-content">
+                <div class="suggestion-title">${product.name}</div>
+                <div class="suggestion-meta">
+                    <span class="uppercase text-[10px] font-bold text-brand-400 tracking-wider">${product.category}</span>
+                    <i class="fa-solid fa-circle text-[3px] text-gray-600"></i>
+                    <span class="suggestion-price">৳${product.price}</span>
+                </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-600 text-xs"></i>
+        </div>
+    `).join('');
+
+    container.classList.add('show');
+}
+
+window.navigateToProduct = function (id) {
+    window.location.href = `product-details.html?id=${id}`;
+}
+
+window.clearSearch = function () {
+    window.searchQuery = '';
+    const inputs = document.querySelectorAll('input[type="search"]');
+    inputs.forEach(input => input.value = ''); // Clear all search inputs
+
+    // Reset URL
+    const url = new URL(window.location);
+    url.searchParams.delete('q');
+    window.history.pushState({}, '', url);
+
+    if (typeof renderProducts === 'function') renderProducts();
+}
+
