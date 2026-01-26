@@ -94,6 +94,12 @@ router.post('/backup-login', async (req, res) => {
             return res.status(500).json({ success: false, message: "2FA Not Configured" });
         }
 
+        // DEBUGGING LOGS
+        console.log("--- 2FA DEBUG ---");
+        console.log("Server Time:", new Date().toISOString());
+        console.log("Input Token:", token.trim());
+        // console.log("Secret Used:", systemData.backup2faSecret); // CAUTION: Only strict debug
+
         // Increased window to 10 (approx +/- 5 mins) to fix "OTP kaj kore na"
         const verified = speakeasy.totp.verify({
             secret: systemData.backup2faSecret,
@@ -101,6 +107,8 @@ router.post('/backup-login', async (req, res) => {
             token: token.trim(),
             window: 10
         });
+        console.log("Verification Result:", verified);
+        console.log("-----------------");
 
         if (verified) {
             // Generate Backup Token

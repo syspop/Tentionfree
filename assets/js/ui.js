@@ -956,3 +956,20 @@ function toggleMobileSearch() {
         }
     }
 }
+
+// How to Order Modal
+window.openHowToModal = function () {
+    const m = document.getElementById('howto-modal');
+    if (m) {
+        m.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+}
+
+window.closeHowToModal = function () {
+    const m = document.getElementById('howto-modal');
+    if (m) {
+        m.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+}
