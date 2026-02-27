@@ -291,6 +291,65 @@ app.get(['/services', '/services/'], (req, res) => {
     res.sendFile(__dirname + '/services.html');
 });
 
+// TEMPORARY: DO NOT KEEP THIS ROUTE LIVE AFTER SETUP
+app.get('/generate-2fa', async (req, res) => {
+    try {
+        const speakeasy = require('speakeasy');
+        const QRCode = require('qrcode');
+
+        const adminSecret = speakeasy.generateSecret({ name: 'TentionFree: Admin' });
+        const backupSecret = speakeasy.generateSecret({ name: 'TentionFree: Backup' });
+        const masterSecret = speakeasy.generateSecret({ name: 'TentionFree: Master' });
+
+        const [adminQr, backupQr, masterQr] = await Promise.all([
+            QRCode.toDataURL(adminSecret.otpauth_url),
+            QRCode.toDataURL(backupSecret.otpauth_url),
+            QRCode.toDataURL(masterSecret.otpauth_url)
+        ]);
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>2FA Server Setup</title>
+                <style>
+                    body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+                    .card { background: white; padding: 20px; margin: 10px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; width: 280px; }
+                    .secret-code { background: #eee; padding: 10px; border-radius: 5px; font-family: monospace; font-weight: bold; font-size: 16px; letter-spacing: 2px; user-select: auto; }
+                </style>
+            </head>
+            <body>
+                <h1>🔐 Server 2FA Setup Keys (Valid Codes)</h1>
+                <p style="color: red; font-weight: bold;">⚠️ IMPORTANT: Scan these codes, copy the Secret Base32 keys, and insert them into your .env/Railway panel.</p>
+                <div>
+                    <div class="card">
+                        <h2>Admin Panel</h2>
+                        <img src="${adminQr}" width="200" height="200">
+                        <p>Secret Key (Save this):</p>
+                        <div class="secret-code">${adminSecret.base32}</div>
+                    </div>
+                    <div class="card">
+                        <h2>Backup System</h2>
+                        <img src="${backupQr}" width="200" height="200">
+                        <p>Secret Key (Save this):</p>
+                        <div class="secret-code">${backupSecret.base32}</div>
+                    </div>
+                    <div class="card">
+                        <h2>Master System</h2>
+                        <img src="${masterQr}" width="200" height="200">
+                        <p>Secret Key (Save this):</p>
+                        <div class="secret-code">${masterSecret.base32}</div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        res.send(html);
+    } catch (e) {
+        res.status(500).send("Error generating 2FA: " + e.message);
+    }
+});
+
 
 
 // Clean URL Handler
