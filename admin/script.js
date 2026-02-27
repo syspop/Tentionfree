@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-2">Main Menu</p>
             ${renderNavLink('dashboard', 'fa-chart-pie', 'Dashboard')}
             ${renderNavLink('manage-orders', 'fa-cart-shopping', 'Orders')}
-            ${renderNavLink('manage-manual-payments', 'fa-money-bill-transfer', 'Manual Pays')}
+            ${renderNavLink('manage-manual-payments', 'fa-money-bill-transfer', 'Quick Pays')}
             ${renderNavLink('order-history', 'fa-clock-rotate-left', 'History')}
             ${renderNavLink('customers', 'fa-users', 'Customers')}
             

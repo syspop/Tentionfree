@@ -353,8 +353,8 @@
             const list = document.getElementById('manage-order-list');
             list.innerHTML = "";
 
-            // Filter for Manual Payments ONLY
-            const activeOrders = orders.filter(o => o.paymentMethod && o.paymentMethod.toLowerCase().includes('manual'));
+            // Filter for Quick Payments (/payment)
+            const activeOrders = orders.filter(o => o.plan === 'Custom Amount' || (o.items && o.items.some(i => i.id === 'custom_pay')));
 
             // Apply search
             const search = document.getElementById('order-search').value.toLowerCase();
@@ -362,11 +362,12 @@
                 const matchesId = o.id.toString().includes(search);
                 const matchesTrx = o.trx && o.trx.toLowerCase().includes(search);
                 const matchesMethod = o.paymentMethod && o.paymentMethod.toLowerCase().includes(search);
-                return matchesId || matchesTrx || matchesMethod;
+                const matchesCustomer = o.customer && o.customer.toLowerCase().includes(search);
+                return matchesId || matchesTrx || matchesMethod || matchesCustomer;
             });
 
             if (filtered.length === 0) {
-                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>&#x2705; All clear! No manual payments found.</div></td></tr>";
+                list.innerHTML = "<tr><td colspan='4'><div class='empty-state'>&#x2705; All clear! No quick payments found.</div></td></tr>";
                 return;
             }
 

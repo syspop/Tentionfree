@@ -353,8 +353,8 @@
             const list = document.getElementById('manage-order-list');
             list.innerHTML = "";
 
-            // Server already filters active/archived for us now.
-            const activeOrders = orders;
+            // Filter OUT Quick Payments (they have their own section)
+            const activeOrders = orders.filter(o => o.plan !== 'Custom Amount' && (!o.items || !o.items.some(i => i.id === 'custom_pay')));
 
             // Apply search
             const search = document.getElementById('order-search').value.toLowerCase();
