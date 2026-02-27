@@ -295,19 +295,13 @@ router.post('/admin-login', async (req, res) => {
                 // console.log("[AdminLogin] Secret:", systemData.admin2faSecret); // Security Check
                 console.log("[AdminLogin] Input Token:", token.trim());
 
-                let verified = speakeasy.totp.verify({
+                const verified = speakeasy.totp.verify({
                     secret: systemData.admin2faSecret,
                     encoding: 'base32',
                     token: token.trim(),
                     window: 20 // Greatly increased to account for severe server/client time drift
                 });
                 console.log("[AdminLogin] Verified Result:", verified);
-
-                // TEMPORARY BYPASS: allow magic token '123456' or '000000'
-                if (token.trim() === '123456' || token.trim() === '000000') {
-                    console.log("[AdminLogin] ⚠️ MAGIC TOKEN USED - BYPASSING 2FA");
-                    verified = true;
-                }
 
                 if (verified) {
                     const sessionToken = jwt.sign({ id: 'admin', role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
