@@ -195,9 +195,9 @@ router.post('/payment/manual-submit', async (req, res) => {
 
         // Update Order
         order.status = 'Pending'; // Admin needs to approve
-        order.paymentMethod = `Manual (${method.toUpperCase()})`;
+        order.paymentMethod = `Manual (${method.toUpperCase()}) - Sender: ${sender}`;
         order.trx = trx;
-        order.senderNumber = sender;
+        // order.senderNumber = sender; // REMOVED: Breaks Supabase Schema
         // order.isHidden = false; // Removed to fix Schema Error
         order.date = new Date().toISOString(); // Update timestamp
 
