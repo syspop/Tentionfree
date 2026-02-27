@@ -67,8 +67,8 @@ router.get('/backup', verifyBackupToken, async (req, res) => {
 router.post('/backup-login', async (req, res) => {
     const { u, p, token } = req.body;
 
-    const CORRECT_USER = process.env.BACKUP_USER || "haque@12MW";
-    const CORRECT_PASS = process.env.BACKUP_PASS || "sowrov@12MW";
+    const CORRECT_USER = process.env.BACKUP_USER;
+    const CORRECT_PASS = process.env.BACKUP_PASS;
 
     if (!CORRECT_USER || !CORRECT_PASS) {
         return res.status(500).json({ success: false, message: "Server Configuration Error" });

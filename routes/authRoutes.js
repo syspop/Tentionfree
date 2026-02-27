@@ -220,9 +220,8 @@ router.post('/login', async (req, res) => {
 router.post('/admin-login', async (req, res) => {
     const { username, password, token } = req.body;
 
-    const ADMIN_USER = process.env.ADMIN_USER || "kazi@12MW";
-    const ADMIN_PASS = process.env.ADMIN_PASS || "emdadul@12MW";
-    // const MASTER_PIN = process.env.BACKUP_PIN || "105090"; // Not used here
+    const ADMIN_USER = process.env.ADMIN_USER;
+    const ADMIN_PASS = process.env.ADMIN_PASS;
 
     try {
         if (username === ADMIN_USER && password === ADMIN_PASS) {
@@ -427,7 +426,7 @@ router.post('/auth/google', async (req, res) => {
 // 1. Generate Registration Options (Setup)
 router.post('/auth/webauthn/register-options', async (req, res) => {
     const { pin } = req.body;
-    const BACKUP_PIN = process.env.BACKUP_PIN || "105090";
+    const BACKUP_PIN = process.env.BACKUP_PIN;
 
     if (pin !== BACKUP_PIN) {
         // If PIN is missing or wrong, maybe check for Admin Token?
@@ -1014,7 +1013,7 @@ router.post('/auth/admin/setup-2fa', async (req, res) => {
 
     const { pin } = req.body;
     const systemData = await readDB('system_data.json') || {};
-    const CURRENT_PIN = systemData.backupPin || process.env.BACKUP_PIN || "105090";
+    const CURRENT_PIN = systemData.backupPin || process.env.BACKUP_PIN;
 
     if (pin !== CURRENT_PIN) {
         return res.status(403).json({ success: false, message: "Invalid Authorization PIN" });
