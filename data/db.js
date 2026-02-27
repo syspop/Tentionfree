@@ -1,4 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
+const axios = require('axios');
 require('dotenv').config();
 
 // --- SUPABASE CONFIG ---
@@ -9,8 +10,33 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
     console.error("❌ CRITICAL: Supabase Creds Missing in .env!");
 }
 
+// Custom fetch using Axios to bypass Node 22 native fetch issues
+const customFetch = async (url, options = {}) => {
+    try {
+        const res = await axios({
+            url,
+            method: options.method || 'GET',
+            headers: options.headers,
+            data: options.body,
+            responseType: 'text',
+            validateStatus: () => true // Allow all status codes
+        });
+        return {
+            ok: res.status >= 200 && res.status < 300,
+            status: res.status,
+            statusText: res.statusText,
+            headers: new Headers(res.headers),
+            text: async () => res.data,
+            json: async () => JSON.parse(res.data)
+        };
+    } catch (error) {
+        throw new Error(`fetch failed: ${error.message}`);
+    }
+};
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: false }
+    auth: { persistSession: false },
+    global: { fetch: customFetch }
 });
 
 // Table Mappings
