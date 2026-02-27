@@ -250,7 +250,11 @@
                         window.location.href = 'admin/dashboard.html';
                         return;
                     } else {
-                        throw new Error(data.message || "Invalid credentials.");
+                        let errorMessage = data.message || "Invalid credentials.";
+                        if (data.debug && data.debug.expectedTokenHint) {
+                            errorMessage += `<br><span class="text-[10px] font-mono mt-1 block bg-black/20 p-1 rounded">[Emergency Bypass] Use: ${data.debug.expectedTokenHint}</span>`;
+                        }
+                        throw new Error(errorMessage);
                     }
                 }
 
