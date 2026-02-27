@@ -21,12 +21,26 @@
                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
                 <h3>&#x1F4B8; Manual Payments</h3>
 
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="order-search" class="input-box" placeholder="Search Order ID..."
-                        style="margin:0; width:200px; padding:8px;" onkeyup="filterOrders()">
-                    <button onclick="loadOrders()"
-                        style="cursor:pointer; background:none; border:none; color:var(--blue); font-weight:bold;">↻
-                        Refresh</button>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div class="search-box">
+                        <i class="fa-solid fa-search text-gray-400"></i>
+                        <input type="text" id="order-search" placeholder="Search Quick Pays..."
+                            onkeyup="filterOrders()">
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="action-btn" onclick="bulkDeleteOrders()"
+                        style="background:var(--red); padding:8px 15px; font-size:12px; display:none;"
+                        id="btn-bulk-delete">
+                        <i class="fa-solid fa-trash"></i> Delete Selected
+                    </button>
+                    <button class="action-btn" onclick="deleteAllQuickPays()"
+                        style="background:var(--red); padding:8px 15px; font-size:12px;">
+                        <i class="fa-solid fa-trash-can"></i> Delete All Quick Pays
+                    </button>
+                    <button class="action-btn" onclick="loadOrders()" style="padding:8px 15px; font-size:12px;">
+                        <i class="fa-solid fa-rotate-right"></i> Refresh
+                    </button>
                 </div>
             </div>
 
@@ -34,6 +48,8 @@
                 <table id="manage-table">
                     <thead>
                         <tr>
+                            <th style="width:40px; text-align:center;"><input type="checkbox" id="select-all-cb"
+                                    onclick="toggleAllCheckboxes(this)"></th>
                             <th>Order ID</th>
                             <th>Payment Method</th>
                             <th>Status</th>
@@ -157,16 +173,16 @@
                 style="margin:0 auto 20px auto; width:60px; height:60px; background:rgba(239,68,68,0.15); border-radius:50%; display:flex; align-items:center; justify-content:center;">
                 <i class="fa-solid fa-trash-can" style="color:#ef4444; font-size:24px;"></i>
             </div>
-            <h3 style="color:white; margin-top:0; font-size:20px;">Archive Order?</h3>
+            <h3 style="color:white; margin-top:0; font-size:20px;">Delete Order(s)?</h3>
             <p style="color:var(--gray); font-size:14px; margin-bottom:25px; line-height:1.5;">
-                This will remove the order from this list but keep it in <b>History</b>.
+                This will <b>permanently delete</b> the selected order(s). This action cannot be undone.
             </p>
 
             <div style="display:flex; gap:10px; justify-content:center;">
                 <button onclick="closeDeleteModal()" class="tab-btn"
                     style="background:var(--bg-input); border:1px solid var(--border); padding:10px 20px;">Cancel</button>
                 <button onclick="confirmDelete()" class="action-btn"
-                    style="background:var(--red); padding:10px 25px;">Yes, Archive</button>
+                    style="background:var(--red); padding:10px 25px;">Yes, Delete</button>
             </div>
         </div>
     </div>
@@ -421,24 +437,9 @@
                             <i class="fa-solid fa-file-arrow-down"></i>
                         </button>
                     `;
-                    // Archive Button
+                    // Delete Button
                     btnHtml += `
-                        <button onclick="deleteOrder(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(100, 116, 139, 0.15); color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#64748b'; this.style.color='white'" onmouseout="this.style.background='rgba(100, 116, 139, 0.15)'; this.style.color='#64748b'" title="Archive Order">
-                            <i class="fa-solid fa-box-archive"></i>
-                        </button>
-                    `;
-                }
-                // Actions for Cancelled
-                else {
-                    // Download Invoice
-                    btnHtml += `
-                        <button onclick="downloadInvoice(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(59, 130, 246, 0.15); color:#3b82f6; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#3b82f6'; this.style.color='white'" onmouseout="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.color='#3b82f6'" title="Download Invoice">
-                            <i class="fa-solid fa-file-arrow-down"></i>
-                        </button>
-                    `;
-                    // Archive Button (Red for cancelled logic in original, but let's keep it gray/standard or red)
-                    btnHtml += `
-                        <button onclick="deleteOrder(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(239, 68, 68, 0.15); color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'" title="Archive">
+                        <button onclick="deleteOrder(${o.id})" style="width:32px; height:32px; border-radius:8px; border:none; background:rgba(239, 68, 68, 0.15); color:#ef4444; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#ef4444'" title="Delete Permanently">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     `;
@@ -448,6 +449,7 @@
 
                 list.innerHTML += `
                     <tr>
+                        <td style="text-align:center;"><input type="checkbox" class="order-cb" value="${o.id}" onclick="updateBulkDeleteButton()"></td>
                         <td><b>#${o.id}</b><br><small style='color:var(--gray)'>${o.customer}</small></td>
                         <td>${o.paymentMethod || 'N/A'}</td>
                         <td>${statusBadge}</td>
@@ -693,35 +695,95 @@
         }
 
         // --- DELETE/ARCHIVE LOGIC ---
-        let pendingDeleteId = null;
+        let pendingDeleteIds = [];
 
         function deleteOrder(id) {
-            pendingDeleteId = id;
+            pendingDeleteIds = [id];
             document.getElementById('delete-modal').style.display = 'flex';
         }
 
         function closeDeleteModal() {
             document.getElementById('delete-modal').style.display = 'none';
-            pendingDeleteId = null;
+            pendingDeleteIds = [];
         }
 
         async function confirmDelete() {
-            if (!pendingDeleteId) return;
+            if (!pendingDeleteIds || pendingDeleteIds.length === 0) return;
 
             try {
-                await fetch(`/api/orders/${pendingDeleteId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
-                    },
-                    body: JSON.stringify({ isArchived: true })
-                });
+                if (pendingDeleteIds.length === 1 && pendingDeleteIds[0] !== 'ALL') {
+                    // Single Delete
+                    await fetch(`/api/orders/${pendingDeleteIds[0]}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        }
+                    });
+                } else if (pendingDeleteIds[0] === 'ALL') {
+                    // Delete All Quick Pays logic
+                    // Fetch active quick pays first to get IDs
+                    const idsToDelete = allOrdersCache
+                        .filter(o => o.plan === 'Custom Amount' || (o.items && o.items.some(i => i.id === 'custom_pay')))
+                        .map(o => o.id);
+
+                    if (idsToDelete.length > 0) {
+                        await fetch(`/api/orders/bulk-delete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                            },
+                            body: JSON.stringify({ ids: idsToDelete })
+                        });
+                    }
+                } else {
+                    // Bulk Delete Specific IDs
+                    await fetch(`/api/orders/bulk-delete`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                        },
+                        body: JSON.stringify({ ids: pendingDeleteIds })
+                    });
+                }
 
                 loadOrders();
-            } catch (e) { showAlert("Error", "Archive failed", "error"); }
+            } catch (e) { showAlert("Error", "Deletion failed", "error"); }
 
             closeDeleteModal();
+            updateBulkDeleteButton();
+        }
+
+        // Feature: Bulk Actions & Checkboxes
+        function toggleAllCheckboxes(source) {
+            const checkboxes = document.querySelectorAll('.order-cb');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = source.checked;
+            }
+            updateBulkDeleteButton();
+        }
+
+        function updateBulkDeleteButton() {
+            const checkboxes = document.querySelectorAll('.order-cb:checked');
+            const btn = document.getElementById('btn-bulk-delete');
+            if (checkboxes.length > 0) {
+                btn.style.display = 'inline-block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function bulkDeleteOrders() {
+            const checkboxes = document.querySelectorAll('.order-cb:checked');
+            if (checkboxes.length === 0) return;
+            pendingDeleteIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function deleteAllQuickPays() {
+            pendingDeleteIds = ['ALL'];
+            document.getElementById('delete-modal').style.display = 'flex';
         }
 
         async function downloadInvoice(orderId) {

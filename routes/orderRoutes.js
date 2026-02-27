@@ -244,6 +244,61 @@ router.put('/orders/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+// DELETE Single Order (Hard Delete)
+router.delete('/orders/:id', authenticateAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+
+    const unlock = await orderMutex.lock();
+    try {
+        let allOrders = await readDB('orders.json');
+
+        // Remove from DB
+        const initialLength = allOrders.length;
+        allOrders = allOrders.filter(o => o.id !== id);
+
+        if (allOrders.length === initialLength) {
+            unlock();
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        await writeDB('orders.json', allOrders);
+        res.json({ success: true, message: "Order permanently deleted" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to delete order" });
+    } finally {
+        unlock();
+    }
+});
+
+// POST Bulk Delete Orders
+router.post('/orders/bulk-delete', authenticateAdmin, async (req, res) => {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, message: "Invalid or empty IDs list" });
+    }
+
+    const unlock = await orderMutex.lock();
+    try {
+        let allOrders = await readDB('orders.json');
+
+        // Filter out any IDs provided in the array
+        const initialLength = allOrders.length;
+        allOrders = allOrders.filter(o => !ids.includes(o.id));
+
+        const deletedCount = initialLength - allOrders.length;
+
+        await writeDB('orders.json', allOrders);
+        res.json({ success: true, message: `${deletedCount} orders permanently deleted` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to bulk delete orders" });
+    } finally {
+        unlock();
+    }
+});
+
 // GET Single Order (Full Details)
 router.get('/orders/:id', async (req, res) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
