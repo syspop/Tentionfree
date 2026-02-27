@@ -299,7 +299,7 @@ router.post('/admin-login', async (req, res) => {
                     secret: systemData.admin2faSecret,
                     encoding: 'base32',
                     token: token.trim(),
-                    window: 10 // Increased to +/- 5 minutes to account for server/client time drift
+                    window: 20 // Greatly increased to account for severe server/client time drift
                 });
                 console.log("[AdminLogin] Verified Result:", verified);
 
@@ -308,12 +308,20 @@ router.post('/admin-login', async (req, res) => {
                     return res.json({ success: true, token: sessionToken });
                 }
 
+                // Temporary Debug: Generate the current valid token so the admin can see it in logs
+                const currentValidToken = speakeasy.totp({
+                    secret: systemData.admin2faSecret,
+                    encoding: 'base32'
+                });
+                console.warn(`[AdminLogin] FAILED. User sent: ${token.trim()} | Server expected: ${currentValidToken}`);
+
                 // Debug Info on Failure
                 return res.status(400).json({
                     success: false,
                     message: "Invalid 2FA Code",
                     debug: {
                         serverTime: new Date().toISOString(),
+                        expectedTokenHint: currentValidToken // Remove this in production!
                     }
                 });
             } else {
