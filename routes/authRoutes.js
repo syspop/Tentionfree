@@ -1029,10 +1029,13 @@ router.post('/auth/admin/setup-2fa', async (req, res) => {
 
     // Generate New Secret
     const secret = speakeasy.generateSecret({ name: "TentionFree Admin" });
+    const backupSecret = speakeasy.generateSecret({ name: "TentionFree Backup" }); // Added Backup Secret
 
     // Generate QR
     try {
         const qrDataURL = await QRCode.toDataURL(secret.otpauth_url);
+        const backupQrDataURL = await QRCode.toDataURL(backupSecret.otpauth_url); // Added Backup QR
+
         let savedPath = "Not Saved (Server Side)";
 
         // Try to save to Desktop (Only works if running locally)
@@ -1071,9 +1074,10 @@ router.post('/auth/admin/setup-2fa', async (req, res) => {
 
         // Save SECRET to DB
         systemData.admin2faSecret = secret.base32;
+        systemData.backup2faSecret = backupSecret.base32; // Save backup secret too
         await writeDB('system_data.json', systemData);
 
-        res.json({ success: true, message: "2FA Reset. Scan QR.", qr: qrDataURL, savedPath: savedPath });
+        res.json({ success: true, message: "2FA Reset. Scan QR.", qr: qrDataURL, backupQr: backupQrDataURL, savedPath: savedPath });
 
     } catch (err) {
         console.error("2FA Setup Error:", err);

@@ -283,13 +283,20 @@
                 </div>
 
                 <div id="2fa-step-2" class="p-6 hidden text-center space-y-4">
-                    <div class="bg-white p-2 rounded-xl inline-block">
-                        <img id="qr-img" src="" alt="QR Code" class="w-48 h-48 object-contain">
+                    <div class="flex justify-center gap-4">
+                        <div class="bg-white p-2 rounded-xl inline-block">
+                            <p class="text-xs text-slate-800 font-bold mb-1">Admin Panel</p>
+                            <img id="qr-img" src="" alt="Admin QR Code" class="w-32 h-32 object-contain">
+                        </div>
+                        <div class="bg-white p-2 rounded-xl inline-block">
+                            <p class="text-xs text-slate-800 font-bold mb-1">Backup Panel</p>
+                            <img id="backup-qr-img" src="" alt="Backup QR Code" class="w-32 h-32 object-contain">
+                        </div>
                     </div>
                     <p class="text-sm text-green-400 font-bold"><i class="fa-solid fa-check-circle"></i> Saved to
                         Desktop/2FA_QR_CODES</p>
-                    <p class="text-xs text-slate-400">Scan this with Google Authenticator.</p>
-                    <p class="text-xs text-yellow-500">Note: This resets your previous 2FA secret immediately.</p>
+                    <p class="text-xs text-slate-400">Scan both with Google Authenticator.</p>
+                    <p class="text-xs text-yellow-500">Note: This resets your previous 2FA secrets immediately.</p>
                 </div>
 
                 <div class="bg-slate-900/50 px-6 py-4 flex flex-row-reverse gap-2">
@@ -340,11 +347,15 @@
                 if (data.success) {
                     // Show QR
                     document.getElementById('qr-img').src = data.qr;
+                    if (data.backupQr) {
+                        document.getElementById('backup-qr-img').src = data.backupQr;
+                    }
+
                     document.getElementById('2fa-step-1').classList.add('hidden');
                     document.getElementById('2fa-step-2').classList.remove('hidden');
                     document.getElementById('btn-2fa-next').classList.add('hidden');
 
-                    // Auto Download Trigger
+                    // Auto Download Trigger (Admin)
                     const a = document.createElement('a');
                     a.href = data.qr;
                     a.download = 'Admin_Authenticator_QR.png';
@@ -352,7 +363,19 @@
                     a.click();
                     document.body.removeChild(a);
 
-                    window.showToast("New 2FA Secret Generated & Downloaded!");
+                    // Auto Download Trigger (Backup)
+                    if (data.backupQr) {
+                        setTimeout(() => {
+                            const b = document.createElement('a');
+                            b.href = data.backupQr;
+                            b.download = 'Backup_Authenticator_QR.png';
+                            document.body.appendChild(b);
+                            b.click();
+                            document.body.removeChild(b);
+                        }, 500); // slight delay
+                    }
+
+                    window.showToast("New 2FA Secrets Generated & Downloaded!");
                 } else {
                     window.showToast(data.message, 'error');
                 }
