@@ -211,8 +211,7 @@ router.post('/payment/manual-submit', async (req, res) => {
         res.json({ success: true, message: "Payment submitted successfully" });
 
     } catch (err) {
-        console.error("Manual Payment Error:", err);
-        res.status(500).json({ success: false, message: "Server Error" });
+        res.status(500).json({ success: false, message: "Server Error: " + err.message });
     }
 });
 
