@@ -13,10 +13,25 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 // Custom fetch using Axios to bypass Node 22 native fetch issues
 const customFetch = async (url, options = {}) => {
     try {
+        let axiosHeaders = {};
+        if (options.headers) {
+            if (typeof options.headers.entries === 'function') {
+                for (const [key, value] of options.headers.entries()) {
+                    axiosHeaders[key] = value;
+                }
+            } else if (Array.isArray(options.headers)) {
+                for (const [key, value] of options.headers) {
+                    axiosHeaders[key] = value;
+                }
+            } else {
+                Object.assign(axiosHeaders, options.headers);
+            }
+        }
+
         const res = await axios({
             url,
             method: options.method || 'GET',
-            headers: options.headers,
+            headers: axiosHeaders,
             data: options.body,
             responseType: 'text',
             validateStatus: () => true // Allow all status codes
