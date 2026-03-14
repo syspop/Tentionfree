@@ -178,7 +178,18 @@ router.put('/orders/:id', authenticateAdmin, async (req, res) => {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
-        const updatedOrder = { ...allOrders[orderIndex], ...updates };
+        let updatedOrder = { ...allOrders[orderIndex], ...updates };
+
+        // AUTO DELIVER FROM STOCK
+        if (updates.status === 'Completed' && updates.autoDeliver) {
+            console.log(`[Auto-Deliver] Triggered for Manual Order #${id}`);
+            const result = await processAutoDelivery(updatedOrder, true);
+            if (result.deliveryInfo) {
+                updatedOrder.deliveryInfo = result.deliveryInfo;
+                updates.deliveryInfo = result.deliveryInfo; // Also pass to email
+            }
+        }
+
         allOrders[orderIndex] = updatedOrder;
 
         await writeDB('orders.json', allOrders);
