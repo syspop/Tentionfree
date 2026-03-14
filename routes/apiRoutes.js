@@ -228,8 +228,8 @@ router.put('/products/:id', authenticateAdmin, async (req, res) => {
 
         res.json({ success: true, message: "Product updated successfully" });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "Failed to update product" });
+        console.error("Product Update Complete Error Stack:", err);
+        res.status(500).json({ success: false, message: "Failed to update product: " + err.message, error: err });
     }
 });
 

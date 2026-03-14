@@ -112,6 +112,12 @@ async function writeLocalJSON(filename, data) {
         let dbData = data;
         if (filename === 'system_data.json') {
             dbData = formatForSystemDB(data);
+        } else if (filename === 'products.json') {
+            // Hotfix: Remove temporary '_isAdminView' property added by frontend fetching
+            dbData = data.map(p => {
+                const { _isAdminView, ...rest } = p;
+                return rest;
+            });
         } else if (filename === 'customers.json') {
             // Hotfix: Remove 'photo' and 'provider' if exists, as DB schema lacks them
             dbData = data.map(c => {
