@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -295,13 +295,22 @@ app.get(['/services', '/services/'], (req, res) => {
 
 
 
-// Clean URL Handler
+// Clean URL Handler (Supports /admin/ paths)
 app.use((req, res, next) => {
     if (req.method !== 'GET') return next();
     if (req.path.startsWith('/api') || req.path.startsWith('/assets')) return next();
 
+    // If no extension, try to append .html
     if (!path.extname(req.path)) {
-        const potentialHtml = path.join(__dirname, req.path + '.html');
+        // First try exact path match + .html
+        let potentialHtml = path.join(__dirname, req.path + '.html');
+        
+        // If it's an /admin/ route, try looking in the admin folder explicitly
+        // Though express.static('/admin') handles direct accesses, clean URLs need help
+        if (req.path.startsWith('/admin/') && !fs.existsSync(potentialHtml)) {
+           potentialHtml = path.join(__dirname, 'admin', req.path.replace('/admin/', '') + '.html');
+        }
+
         if (fs.existsSync(potentialHtml)) {
             return res.sendFile(potentialHtml);
         }
