@@ -139,7 +139,7 @@ router.post('/payment/create', async (req, res) => {
             cus_email: order.email || "customer@tentionfree.store",
             cus_phone: order.phone,
             product_name: order.product || "Digital Product",
-            success_url: `https://tentionfree.store/payment-success.html`,
+            success_url: `https://tentionfree.store/payment-success.html?oid=${order.id}`,
             cancel_url: `https://tentionfree.store/payment-failed.html`,
             fail_url: `https://tentionfree.store/payment-failed.html`,
             desc: "Purchase from TentionFree"
