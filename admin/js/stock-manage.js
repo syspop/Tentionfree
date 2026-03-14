@@ -330,7 +330,10 @@ async function saveProductUpdate() {
         body: JSON.stringify(latestProduct)
     });
 
-    if (!saveRes.ok) throw new Error("Save Failed");
+    if (!saveRes.ok) {
+        const errorData = await saveRes.json().catch(() => ({}));
+        throw new Error(errorData.message || `Save Failed! HTTP ${saveRes.status}`);
+    }
 
     // Update local reference
     currentProduct = latestProduct;
