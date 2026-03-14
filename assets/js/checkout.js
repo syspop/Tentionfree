@@ -16,7 +16,7 @@ function initCheckoutPage() {
         togglePaymentSection();
 
         // Fetch Config
-        fetch('/api/config/pay-later')
+        fetch('/api/settings/pay-later')
             .then(res => res.json())
             .then(data => {
                 const globalEnabled = data.success ? data.enabled : true;
