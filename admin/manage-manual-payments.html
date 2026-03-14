@@ -993,7 +993,9 @@
             const delContainer = document.getElementById('view-delivery-container');
             if (order.deliveryInfo || order.deliveryImage) {
                 delContainer.style.display = 'block';
-                document.getElementById('view-delivery').innerText = order.deliveryInfo || 'No Text Info';
+                let renderedDeliveryInfo = order.deliveryInfo || 'No Text Info';
+                renderedDeliveryInfo = renderedDeliveryInfo.replace(/\[Reference Image\]:\s*(.+)/g, '<br><a href="/$1" target="_blank"><img src="/$1" style="max-height:200px; max-width:100%; border-radius:8px; margin-top:5px; border:1px solid rgba(255,255,255,0.1);"></a>').replace(/\/\//g, '/');
+                document.getElementById('view-delivery').innerHTML = renderedDeliveryInfo;
 
                 const delImgWrapper = document.getElementById('view-delivery-img-wrapper');
                 const delImg = document.getElementById('view-delivery-img');

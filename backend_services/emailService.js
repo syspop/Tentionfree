@@ -102,10 +102,14 @@ async function sendOrderStatusEmail(order, updates) {
             statusMessage = `Great news! Your order has been completed successfully.`;
 
             if (updates.deliveryInfo) {
+                let renderedDeliveryInfo = updates.deliveryInfo.replace(/\[Reference Image\]:\s*(.+)/g, (match, url) => {
+                    const resolvedUrl = resolveImage(url);
+                    return `<br><br><a href="${resolvedUrl}" target="_blank" style="color: #34d399; text-decoration: underline;">View Attached Document/Image</a><br><a href="${resolvedUrl}" target="_blank"><img src="${resolvedUrl}" style="max-height:200px; max-width:100%; border-radius:8px; margin-top:5px; border:1px solid rgba(16, 185, 129, 0.2);"></a>`;
+                });
                 additionalContent += `
                     <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 12px; margin: 25px 0;">
                         <h4 style="margin: 0 0 10px 0; color: #34d399; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">📦 Delivery Info</h4>
-                        <div style="font-family: 'Courier New', monospace; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; white-space: pre-wrap; font-size: 14px;">${updates.deliveryInfo}</div>
+                        <div style="font-family: 'Courier New', monospace; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; white-space: pre-wrap; font-size: 14px;">${renderedDeliveryInfo}</div>
                     </div>
                 `;
             }
